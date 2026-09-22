@@ -32,4 +32,4 @@
 
 真实 iClicker 签到和答题回执仍需在课堂中完成最终验收。网站结构变化可能影响识别。首次真实使用请保留人工确认，不要把这个预览版本作为唯一签到保障。
 
-[English](RELEASE-v0.1.0.md) · [隐私边界](../PRIVACY.md) · [项目首页](../README.md)
+[English](https://github.com/tzuo5/attendance-handler/blob/main/docs/RELEASE-v0.1.0.md) · [隐私边界](https://github.com/tzuo5/attendance-handler/blob/main/PRIVACY.md) · [项目首页](https://github.com/tzuo5/attendance-handler/blob/main/README.md)

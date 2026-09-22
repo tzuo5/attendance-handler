@@ -32,4 +32,4 @@ The repository has 22 unit tests and 15 local mock-classroom integration checks.
 
 Live iClicker attendance and answer receipts still require final classroom verification. Website changes can affect page recognition. Use the first live session with manual confirmation and do not rely on this preview as the sole attendance safeguard.
 
-[中文说明](RELEASE-v0.1.0.zh-CN.md) · [Privacy boundary](../PRIVACY.md) · [Project README](../README.md)
+[中文说明](https://github.com/tzuo5/attendance-handler/blob/main/docs/RELEASE-v0.1.0.zh-CN.md) · [Privacy boundary](https://github.com/tzuo5/attendance-handler/blob/main/PRIVACY.md) · [Project README](https://github.com/tzuo5/attendance-handler/blob/main/README.md)
