@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
+import { version } from '../../package.json';
 import { ACTIVE, STATUS_LABELS, type AppState, type CourseConfig, type RemoteCourse } from '../shared/types';
 import './styles.css';
 
@@ -81,7 +82,7 @@ function App() {
           <section className="panel activity-panel"><div className="section-heading"><h2>最近动态</h2><span className="small-label">本机记录</span></div>{state.logs.length ? <ol>{state.logs.slice(0, 5).map(entry => <li key={entry.id}><span className={`event-dot ${entry.level}`}/><div><p>{entry.message}</p><time>{new Date(entry.at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time></div></li>)}</ol> : <p className="empty-log">签到、题目与连接状态会记录在这里。</p>}</section>
         </aside>
       </div>}
-      <footer className="page-footer"><span>ATTENDANCE HANDLER</span><span>保持窗口可见，保持课堂连接。</span><span>v0.1.0</span></footer>
+      <footer className="page-footer"><span>ATTENDANCE HANDLER</span><span>保持窗口可见，保持课堂连接。</span><span>v{version}</span></footer>
     </main>
     {form !== null && <CourseForm initial={form} imported={imported} demo={state.demo} onClose={() => setForm(null)} onSave={async course => { const updated = await window.attendance.saveCourse(course); setState(updated); setForm(null); }} onImport={async () => { const courses = await window.attendance.importCourses(); setImported(courses); }}/>
     }

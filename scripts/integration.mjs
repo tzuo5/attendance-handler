@@ -116,6 +116,10 @@ try {
 } finally {
   await watchdog.stop(); await browser.dispose();
   // Close only the explicitly created test browser/profile.
-  if (browser.browser?.isConnected()) await browser.browser.close();
+  if (browser.browser?.isConnected()) {
+    const cdp = await browser.browser.newBrowserCDPSession();
+    await cdp.send('Browser.close').catch(() => {});
+    await browser.browser.close();
+  }
   await mock.close();
 }

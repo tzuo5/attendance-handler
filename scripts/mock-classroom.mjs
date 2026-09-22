@@ -14,7 +14,9 @@ export async function createMockClassroom(port = 0) {
     state.version++;
   };
   const server = createServer(async (req, res) => {
-    const address = server.address(); const origin = `http://127.0.0.1:${address.port}`;
+    const address = server.address();
+    if (!address) { res.writeHead(503); res.end(); return; }
+    const origin = `http://127.0.0.1:${address.port}`;
     res.setHeader('Cache-Control', 'no-store');
     if (req.url === '/state') {
       res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ ...state, courses: [{ courseId: 'demo', name: '模拟课堂' }] })); return;

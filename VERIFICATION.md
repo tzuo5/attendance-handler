@@ -1,4 +1,21 @@
-# 本机验证记录
+# 验证记录
+
+## Windows v0.2.0
+
+构建目标为 Windows 10/11 x64，提供 NSIS 安装包和 ZIP；固定标识 `com.attendancehandler.desktop`，未代码签名。自动化运行环境为 GitHub 托管的 Windows Server 2022 x64；执行记录见 [Windows 构建工作流](https://github.com/tzuo5/attendance-handler/actions/workflows/windows.yml)。
+
+发布流程必须通过以下检查，才会上传 Release 附件：
+
+- 22 项单元测试、TypeScript 检查、生产构建及公开源码隐私扫描。
+- 15 项独立 Chrome 模拟课堂检查，包括后台启动、最小化答题、完整浏览器重启和加密会话恢复。
+- 对 `win-unpacked` 的应用归档和文件进行公开数据审计。
+- 静默安装最终 EXE，验证已安装程序与审计包的应用归档一致。
+- 启动已安装 App，检查课程列表、表单保存、设置页、专用 Chrome、解包后的原生辅助程序、模拟签到，以及 safeStorage / Windows DPAPI 加密和解密。
+- 解压最终 ZIP，核对应用归档一致性，生成 EXE 和 ZIP 的 SHA-256 校验值。
+
+Windows 10/11 实体设备、系统通知显示和声音、点击通知后的焦点恢复、睡眠唤醒及真实课堂仍需交互式验证。CI 的通知事件单独记录，不把系统未展示通知判定为课堂流程通过。ZIP 不注册开始菜单快捷方式，系统通知建议使用安装版。
+
+## macOS v0.1.0 本机验证
 
 构建目标：macOS 13+ 通用包（Apple Silicon / Intel）；固定标识 `com.attendancehandler.desktop`；ad-hoc 签名，未公证。运行时验证在 Apple Silicon 上进行，尚无实体 Intel Mac 验证。
 

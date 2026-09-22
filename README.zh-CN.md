@@ -15,7 +15,7 @@
 
 <p align="center">
   <a href="https://github.com/tzuo5/attendance-handler/actions/workflows/ci.yml"><img src="https://github.com/tzuo5/attendance-handler/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI 状态" /></a>
-  <a href="https://github.com/tzuo5/attendance-handler/releases/tag/v0.1.0"><img src="https://img.shields.io/github/v/release/tzuo5/attendance-handler?display_name=tag&style=flat-square&color=0f766e" alt="最新版本" /></a>
+  <a href="https://github.com/tzuo5/attendance-handler/releases/latest"><img src="https://img.shields.io/github/v/release/tzuo5/attendance-handler?display_name=tag&style=flat-square&color=0f766e" alt="最新版本" /></a>
   <img src="https://img.shields.io/badge/macOS-13%2B-111827?style=flat-square&logo=apple&logoColor=white" alt="macOS 13 或更新" />
   <img src="https://img.shields.io/badge/Universal-arm64%20%2B%20x64-0f766e?style=flat-square" alt="Apple Silicon 与 Intel" />
 </p>
