@@ -1,35 +1,38 @@
-# Attendance Handler v0.1.0
+# Attendance Handler v0.1.0 — macOS + Windows
 
-保留可见、可操作 iClicker Chrome 窗口的 macOS 课堂助手。
+面向 iClicker 的本地优先课堂助手，两个系统统一使用 v0.1.0，保留可见的专用 Chrome 课堂窗口。
 
-## 下载与安装
+## 下载
 
-1. 下载下方的 **Attendance-Handler-0.1.0-mac-universal.dmg**，不要选择 GitHub 自动生成的 Source code。
-2. 打开 DMG，把 **Attendance Handler** 拖到 **Applications**。
-3. 需要 macOS 13 或更新版本，支持 Apple Silicon 与 Intel。请先把 Google Chrome 安装到 `/Applications`，不需要 Node.js。
-4. 首次启动时完成 iClicker 登录、学校验证和通知授权。安装包不含账号、课程或位置。
+| 系统 | 推荐下载 | 备用下载 |
+| --- | --- | --- |
+| Windows 10/11 x64 | [Windows 安装包（EXE）](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-win-x64-Setup.exe) | [免安装 ZIP](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-win-x64.zip) |
+| macOS 13+，Apple Silicon / Intel | [通用 DMG](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-mac-universal.dmg) | [通用 ZIP](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-mac-universal.zip) |
 
-同时提供 ZIP 备用包，`SHA256SUMS.txt` 提供文件校验值。
+[全部下载的 SHA-256 校验值](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/SHA256SUMS.txt)。请下载上表中的程序包，不要选择 GitHub 自动生成的源码压缩包。
 
-## 签名状态
+## 安装
 
-此版本使用 ad-hoc 签名，**尚未经过 Apple 公证**。macOS 可能要求首次手动允许。确认来源可信后，在 **系统设置 → 隐私与安全性** 中允许打开。不要全局关闭 macOS 安全保护，也不要绕过“App 已损坏”或恶意软件警告。
+- **Windows：**运行安装包，从开始菜单启动。免安装版需要完整解压后运行 `Attendance Handler.exe`；系统通知建议使用安装版，以完成开始菜单注册。
+- **macOS：**打开 DMG，将 Attendance Handler 拖入 Applications 后启动。
+- 两个系统都需要预先安装 Google Chrome，macOS 上需安装在 `/Applications`，不需要 Node.js。在专用 Chrome 窗口完成登录及学校验证后配置课程。
 
-未来配置 Developer ID 和 Apple 公证后，可以去掉首次启动提示。本安装包不含安装脚本，也不会修改系统安全设置。
+关闭 App 窗口后继续在 macOS 菜单栏或 Windows 系统托盘运行，可通过菜单退出；Windows 支持双击托盘图标重新打开 App。
 
-## 包含功能
+## 功能与版本
 
-- 本地课程配置、每 5 秒检查和同时运行一门课。
-- 可见的独立 Chrome 窗口，最小化后继续监控。
-- 对识别出的实时单选题自动选择 A，并确认题目回执。
-- 题目开放且未完成时立即提醒，每 30 秒重复提醒。
-- 菜单栏运行、防闲置睡眠，到时清除位置覆盖。
-- 加密保存登录会话，不保存密码。
+- 本地课程配置、每 5 秒检查、截止停止、防止闲置睡眠。
+- 签到确认、符合条件的单选题自动 A、手动作答提醒。
+- 专用 Chrome 资料目录、最小化监控和用户主动触发的课堂窗口恢复。
+- 通过 Electron safeStorage 加密登录会话，使用 macOS 钥匙串或 Windows DPAPI；App 不保存密码。
+- 两个系统的程序版本、界面显示和下载文件名统一为 **v0.1.0**。
 
-## 验证与限制
+## 验证范围与限制
 
-仓库包含 22 项单元测试和 15 项本地模拟课堂集成检查。已在 Apple Silicon 上验证打包 App、系统通知、DMG 结构、通用架构和公开数据扫描。通用包中的 Intel 部分为交叉编译，尚未在实体 Intel Mac 上验证。
+Windows 工作流运行 22 项单元测试、15 项模拟课堂检查，安装最终 EXE 并检查课程保存、Chrome 连接、原生辅助程序、模拟签到、系统加密和正常退出，同时完成安装包隐私审计及 ZIP 内容核对。自动化环境为 Windows Server 2022 x64，实体 Windows 10/11 验收仍待完成。
 
-真实 iClicker 签到和答题回执仍需在课堂中完成最终验收。网站结构变化可能影响识别。首次真实使用请保留人工确认，不要把这个预览版本作为唯一签到保障。
+macOS 通用包包含 Apple Silicon 与 Intel 架构，运行检查在 Apple Silicon 上进行，实体 Intel 验证仍待完成。两个系统均检查程序内版本号及公开数据边界。
 
-[English](https://github.com/tzuo5/attendance-handler/blob/main/docs/RELEASE-v0.1.0.md) · [隐私边界](https://github.com/tzuo5/attendance-handler/blob/main/PRIVACY.md) · [项目首页](https://github.com/tzuo5/attendance-handler/blob/main/README.md)
+Windows 包尚未代码签名，可能显示“未知发布者”或 SmartScreen 提示；macOS 使用 ad-hoc 签名，尚未经过 Apple 公证，首次运行可能需要在“系统设置 → 隐私与安全性”允许打开。通知声音、点击恢复、睡眠唤醒及真实 iClicker 课堂回执仍需交互式验证，请在真实课堂中确认签到和提交结果。
+
+[English](https://github.com/tzuo5/attendance-handler/blob/main/docs/RELEASE-v0.1.0.md) · [隐私边界](https://github.com/tzuo5/attendance-handler/blob/main/PRIVACY.md) · [验证记录](https://github.com/tzuo5/attendance-handler/blob/main/VERIFICATION.md)

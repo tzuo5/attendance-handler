@@ -5,7 +5,7 @@
   <p>
     <a href="https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-mac-universal.dmg"><strong>Download for macOS</strong></a>
     ·
-    <a href="https://github.com/tzuo5/attendance-handler/releases/download/v0.2.0/Attendance-Handler-0.2.0-win-x64-Setup.exe"><strong>Download for Windows</strong></a>
+    <a href="https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-win-x64-Setup.exe"><strong>Download for Windows</strong></a>
     ·
     <a href="https://github.com/tzuo5/attendance-handler/releases">All releases</a>
     ·
@@ -57,11 +57,11 @@ Automatic actions run through the page and CDP connection. They do not simulate 
 
 ### Windows 10/11 (64-bit)
 
-1. Download the [Windows installer](https://github.com/tzuo5/attendance-handler/releases/download/v0.2.0/Attendance-Handler-0.2.0-win-x64-Setup.exe) and install for your Windows user.
+1. Download the [Windows installer](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-win-x64-Setup.exe) and install for your Windows user.
 2. Install Google Chrome, then launch **Attendance Handler** from the Start menu. Node.js is not required.
 3. Sign in using the dedicated Chrome window and configure your course. Closing the app window keeps monitoring in the system tray; double-click the tray icon to reopen it.
 
-A [ZIP version](https://github.com/tzuo5/attendance-handler/releases/download/v0.2.0/Attendance-Handler-0.2.0-win-x64.zip) is also available: extract the entire folder and run `Attendance Handler.exe`. Use the installer for Start menu registration and Windows notifications. [Windows SHA-256 checksums](https://github.com/tzuo5/attendance-handler/releases/download/v0.2.0/SHA256SUMS-windows.txt) are included. The Windows build is unsigned, so Windows may show an unknown-publisher or SmartScreen prompt.
+A [ZIP version](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-win-x64.zip) is also available: extract the entire folder and run `Attendance Handler.exe`. Use the installer for Start menu registration and Windows notifications. [Windows SHA-256 checksums](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/SHA256SUMS-windows.txt) are included. The Windows build is unsigned, so Windows may show an unknown-publisher or SmartScreen prompt.
 
 ### macOS
 
@@ -109,7 +109,7 @@ scripts/mock-classroom.mjs local classroom simulator
 tests/                     unit coverage for watchdog and page evidence
 ```
 
-See [verification notes](VERIFICATION.md), the [Windows release notes](docs/RELEASE-v0.2.0.md), and the [macOS release notes](docs/RELEASE-v0.1.0.md) for tested behavior and known limits.
+See [verification notes](VERIFICATION.md) and the [v0.1.0 release notes](docs/RELEASE-v0.1.0.md) for tested behavior and known limits.
 
 ## License and status
 

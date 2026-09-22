@@ -70,6 +70,7 @@ jobs:
         with:
           name: windows-ui
           if-no-files-found: ignore
+          include-hidden-files: true
           path: .test-artifacts/app-*.png
 
   release:
@@ -89,4 +90,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           test "$GITHUB_REF_NAME" = "v$(node -p 'require("./package.json").version')"
-          gh release create "$GITHUB_REF_NAME" release-public/* --verify-tag --draft --title "$GITHUB_REF_NAME · Windows x64" --notes-file "docs/RELEASE-$GITHUB_REF_NAME.md"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "Release already exists; verified files remain available in the workflow artifact."
+          else
+            gh release create "$GITHUB_REF_NAME" release-public/* --verify-tag --draft --title "$GITHUB_REF_NAME · macOS + Windows" --notes-file "docs/RELEASE-$GITHUB_REF_NAME.md"
+          fi

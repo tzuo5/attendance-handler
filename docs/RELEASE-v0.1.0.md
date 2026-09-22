@@ -1,35 +1,38 @@
-# Attendance Handler v0.1.0
+# Attendance Handler v0.1.0 — macOS + Windows
 
-macOS classroom companion with a visible, controllable iClicker Chrome window.
+A local-first iClicker classroom companion for both platforms, with a visible dedicated Chrome window.
 
-## Download and install
+## Downloads
 
-1. Download **Attendance-Handler-0.1.0-mac-universal.dmg** below. Do not choose GitHub's generated “Source code” archive.
-2. Open the DMG and drag **Attendance Handler** to **Applications**.
-3. macOS 13 or later is required. The package supports Apple Silicon and Intel. Install Google Chrome in `/Applications`; Node.js is not required.
-4. Complete iClicker sign-in, school verification, and notification permission on first launch. No account, course, or location is bundled.
+| System | Recommended download | Alternative |
+| --- | --- | --- |
+| Windows 10/11 x64 | [Windows installer (.exe)](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-win-x64-Setup.exe) | [ZIP](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-win-x64.zip) |
+| macOS 13+, Apple Silicon and Intel | [Universal DMG](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-mac-universal.dmg) | [Universal ZIP](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-mac-universal.zip) |
 
-ZIP is available as a fallback. `SHA256SUMS.txt` contains the artifact checksums.
+[SHA-256 checksums for all downloads](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/SHA256SUMS.txt). Download an application package above, rather than GitHub's generated source-code archives.
 
-## Signing status
+## Installation
 
-This build is ad-hoc signed and **not notarized by Apple**. Gatekeeper may require a one-time manual approval. After confirming the source, use **System Settings → Privacy & Security** to allow the app. Do not disable macOS security globally, and never bypass a damaged-app or malware warning.
+- **Windows:** run the installer and launch Attendance Handler from the Start menu. The ZIP must be extracted completely before opening `Attendance Handler.exe`; use the installer for Start menu registration and system notifications.
+- **macOS:** open the DMG and drag Attendance Handler into Applications, then launch it from there.
+- Install Google Chrome first (in `/Applications` on macOS). Node.js is not required. Sign in and complete school verification in the app's dedicated Chrome window, then configure a course.
 
-A future Developer ID + notarized build can remove this first-launch warning. This package contains no installer script and does not change system security settings.
+Closing the app window keeps monitoring in the macOS menu bar or Windows system tray. Use its menu to quit; on Windows, double-click the tray icon to reopen the app.
 
 ## Included
 
-- Local course configuration, 5-second checks, and one active classroom session.
-- A visible dedicated Chrome profile that continues monitoring while minimized.
-- Automatic A for recognized live single-choice polls, with receipt confirmation.
-- Manual-answer reminders immediately and every 30 seconds while a question remains open.
-- Menu-bar operation, idle-sleep prevention, and cleanup of the location override at the deadline.
-- Encrypted login session storage without saving passwords.
+- Local course configuration, 5-second monitoring, deadlines, and idle-sleep prevention.
+- Attendance confirmation, automatic A for recognized single-choice polls, and manual-answer reminders.
+- A dedicated Chrome profile that continues monitoring while minimized, with explicit classroom window restoration.
+- Encrypted login session storage via Electron safeStorage: macOS Keychain or Windows DPAPI. Passwords are not stored.
+- Both application builds, their displayed versions, and their download filenames use **v0.1.0**.
 
 ## Verification and limitations
 
-The repository has 22 unit tests and 15 local mock-classroom integration checks. The packaged app, macOS notification delivery, DMG layout, universal architectures, and public-data audit were verified on Apple Silicon. The universal Intel slice is cross-compiled and has not been tested on physical Intel hardware.
+The Windows workflow runs 22 unit tests and 15 mock-classroom integration checks, installs the final installer, and checks course persistence, Chrome connection, the native helper, mock attendance, OS encryption, and graceful application exit. It also audits packaged files and verifies the ZIP. The hosted test environment is Windows Server 2022 x64; physical Windows 10/11 testing remains pending.
 
-Live iClicker attendance and answer receipts still require final classroom verification. Website changes can affect page recognition. Use the first live session with manual confirmation and do not rely on this preview as the sole attendance safeguard.
+The macOS universal build contains Apple Silicon and Intel code. macOS runtime checks are performed on Apple Silicon; physical Intel testing remains pending. Both packages are checked for their embedded version and public-data boundary.
 
-[中文说明](https://github.com/tzuo5/attendance-handler/blob/main/docs/RELEASE-v0.1.0.zh-CN.md) · [Privacy boundary](https://github.com/tzuo5/attendance-handler/blob/main/PRIVACY.md) · [Project README](https://github.com/tzuo5/attendance-handler/blob/main/README.md)
+The Windows build is **unsigned**, so Windows may display an unknown-publisher or SmartScreen prompt. The macOS build is ad-hoc signed and **not notarized by Apple**; first launch may require approval in System Settings → Privacy & Security. Notification sounds, notification click-to-focus, sleep/wake behavior, and live iClicker attendance and answer receipts still require interactive verification. This preview is not a substitute for confirming a live classroom receipt.
+
+[中文说明](https://github.com/tzuo5/attendance-handler/blob/main/docs/RELEASE-v0.1.0.zh-CN.md) · [Privacy boundary](https://github.com/tzuo5/attendance-handler/blob/main/PRIVACY.md) · [Verification notes](https://github.com/tzuo5/attendance-handler/blob/main/VERIFICATION.md)

@@ -1,6 +1,6 @@
 {
   "name": "attendance-handler",
-  "version": "0.2.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Visible-window iClicker classroom companion for macOS and Windows",
   "author": "Attendance Handler",

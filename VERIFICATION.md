@@ -1,6 +1,6 @@
 # 验证记录
 
-## Windows v0.2.0
+## Windows v0.1.0
 
 构建目标为 Windows 10/11 x64，提供 NSIS 安装包和 ZIP；固定标识 `com.attendancehandler.desktop`，未代码签名。自动化运行环境为 GitHub 托管的 Windows Server 2022 x64；执行记录见 [Windows 构建工作流](https://github.com/tzuo5/attendance-handler/actions/workflows/windows.yml)。
 
