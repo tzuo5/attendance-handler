@@ -53,7 +53,7 @@ if (appIndex >= 0) {
 } else {
   const files = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean);
   if (!files.length) throw new Error('No tracked files: stage the public allowlist before auditing.');
-  const rootFiles = new Set(['.gitignore', 'package.json', 'package-lock.json', 'tsconfig.json', 'vite.config.ts', 'vitest.config.ts', 'README.md', 'VERIFICATION.md', 'PRIVACY.md']);
+  const rootFiles = new Set(['.gitignore', 'package.json', 'package-lock.json', 'tsconfig.json', 'vite.config.ts', 'vitest.config.ts', 'README.md', 'README.zh-CN.md', 'VERIFICATION.md', 'PRIVACY.md']);
   for (const name of files) {
     if (!rootFiles.has(name) && !/^(?:src\/|tests\/|scripts\/|docs\/|\.github\/workflows\/)/.test(name) && name !== 'build/entitlements.mac.plist') failures.push([name, 'not in public source allowlist']);
     if ((await lstat(name)).isSymbolicLink()) failures.push([name, 'symlink not permitted']);

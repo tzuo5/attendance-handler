@@ -1,72 +1,107 @@
-# Attendance Handler
+<div align="center">
+  <img src="docs/assets/attendance-handler-mark.svg" width="96" height="96" alt="Attendance Handler mark" />
+  <h1>Attendance Handler</h1>
+  <p><strong>A local-first macOS classroom companion for iClicker.</strong><br />Keep the real classroom window visible while monitoring runs quietly in the background.</p>
+  <p>
+    <a href="https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-mac-universal.dmg"><strong>Download for macOS</strong></a>
+    ·
+    <a href="https://github.com/tzuo5/attendance-handler/releases">All releases</a>
+    ·
+    <a href="README.zh-CN.md">中文说明</a>
+  </p>
+</div>
 
-macOS 课堂助手。保留一个可见的专用 Chrome 窗口，在后台检查 iClicker 签到与课堂题目。
+<p align="center">
+  <a href="https://github.com/tzuo5/attendance-handler/actions/workflows/ci.yml"><img src="https://github.com/tzuo5/attendance-handler/actions/workflows/ci.yml/badge.svg?branch=main" alt="CI status" /></a>
+  <a href="https://github.com/tzuo5/attendance-handler/releases/tag/v0.1.0"><img src="https://img.shields.io/github/v/release/tzuo5/attendance-handler?display_name=tag&style=flat-square&color=0f766e" alt="Latest release" /></a>
+  <img src="https://img.shields.io/badge/macOS-13%2B-111827?style=flat-square&logo=apple&logoColor=white" alt="macOS 13 or later" />
+  <img src="https://img.shields.io/badge/Universal-arm64%20%2B%20x64-0f766e?style=flat-square" alt="Apple Silicon and Intel" />
+</p>
 
-## Mac 下载与安装
+> **Preview release** — This project is designed for personal, local use. The simulated classroom flow is tested; final verification against a live iClicker class is still pending. Use it only where your course policy permits.
 
-**[下载 macOS 通用安装包（DMG）](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-mac-universal.dmg)** · [全部下载与更新说明](https://github.com/tzuo5/attendance-handler/releases)
+## What it does
 
-支持 macOS 13+，Apple Silicon 与 Intel。打开 DMG，把 App 拖入 Applications 后启动；请预先安装 Google Chrome，无需 Node.js。
+Attendance Handler turns a repetitive classroom setup into one visible, supervised session:
 
-**当前版本未公证**：采用 ad-hoc 签名，没有 Developer ID 证书。首次打开可能被 macOS 拦截；确认来源可信后，按 [Apple 官方说明](https://support.apple.com/102445) 在“隐私与安全性”中允许打开。不要关闭系统整体安全保护。真正无此类警告的发行版仍需 Developer ID 签名与 Apple 公证。
+| | Capability | What to expect |
+| --- | --- | --- |
+| ◉ | **Visible Chrome** | A dedicated Chrome profile stays open and usable. Monitoring continues when the window is covered or minimized. |
+| ✓ | **Attendance** | Applies the saved location, opens the course, joins when available, and waits for a confirmed attendance state. |
+| A | **Automatic A** | For eligible open single-choice polls, selects A once and waits for the website receipt. Existing answers are never overwritten. |
+| ♧ | **Answer reminders** | For accuracy-sensitive courses or unsupported question types, sends a notification immediately and repeats every 30 seconds until the question is resolved. |
+| ⏱ | **Session watchdog** | Checks every 5 seconds, uses the configured duration as a hard deadline, backs off during network failures, and keeps the Mac awake without preventing the display from sleeping. |
+| ◎ | **Local-first storage** | Courses stay on the Mac. Login session storage is encrypted with Electron `safeStorage`; passwords are never stored. |
 
-这是第一版预览质量的软件，真实课堂签到和提交回执尚待最终验收。Intel 包含在通用构建中，但尚未在实体 Intel Mac 上实测。
+## The classroom flow
 
-## 使用
+```text
+Configure a course
+        ↓
+Start session → dedicated Chrome + location override
+        ↓
+Wait for class / confirm attendance
+        ↓
+Poll the existing page every 5 seconds
+        ├─ eligible single-choice → select A → verify receipt
+        └─ manual-answer mode     → notify → user clicks to return
+        ↓
+Deadline or “End class” → stop checks, reminders, and location override
+```
 
-1. 打开已安装的 Attendance Handler；本机构建也可打开 `release/mac-arm64/Attendance Handler.app`。
-2. 点击 **登录 iClicker**，在专用 Chrome 窗口中登录并完成学校验证。
-3. 在 **连接与提醒** 中发送测试通知，并在 macOS 设置中允许通知和声音。
-4. **从 iClicker 导入** 课程，或者手动填写课程页面链接。设置经纬度、课程时长和答题方式。
-5. 点击 **开始上课**。Chrome 保持可见；切换应用、遮挡或最小化窗口后仍持续监控。
+Automatic actions run through the page and CDP connection. They do not simulate system mouse or keyboard input and do not activate the frontmost app. Only an explicit **Log in**, **View classroom**, or notification click brings the dedicated Chrome window forward.
 
-自动 A 模式仅适用于已识别的实时单选投票。有其他题型、已有选择或不确定的提交结果时，会提醒用户处理。提醒模式每 30 秒提醒未作答且仍开放的题目，点击通知显示原窗口。
+## Download and install
 
-关闭 App 主窗口会驻留菜单栏。关闭课堂标签页会暂停自动操作，点击 **查看课堂** 恢复。到时或结束上课后，停止监控并解除定位覆盖，但保留浏览器窗口。菜单栏中的 **退出** 会停止 App。
+1. Download the [universal DMG](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-mac-universal.dmg). It runs on macOS 13+ with Apple Silicon or Intel.
+2. Open it and drag **Attendance Handler** into **Applications**.
+3. Launch it from Applications. Google Chrome must already be installed in `/Applications`; Node.js is not required.
+4. Complete iClicker sign-in and any school verification in the dedicated Chrome window, then import or configure a course.
 
-## 开发与验证
+The release also includes a [ZIP fallback](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-mac-universal.zip) and [SHA-256 checksums](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/SHA256SUMS.txt).
 
-需要 macOS、Apple Command Line Tools、Node.js 22.12+，以及 `/Applications/Google Chrome.app`。
+### Gatekeeper notice
+
+`v0.1.0` is ad-hoc signed and not notarized with Apple. macOS may require a one-time manual approval in **System Settings → Privacy & Security** after you confirm that the download came from this release. Do not disable macOS security globally, and do not bypass a damaged-app or malware warning. A future Developer ID + notarized build can remove this first-launch warning.
+
+## Build from source
+
+Requirements: macOS, Apple Command Line Tools, Node.js 22.12+, and Google Chrome in `/Applications`.
 
 ```sh
 npm install
-npm run dev
-npm test
-npm run build
-npm run test:integration
-npm run package
-npm run dist:mac
-npm run audit:public
+npm run dev                 # local app development
+npm test                    # unit tests
+npm run test:integration    # isolated mock Chrome classroom
+npm run audit:public        # public-data allowlist and secret scan
+npm run dist:mac            # universal DMG + ZIP in release-public/
 ```
 
-`npm run demo` 启动完全本地的模拟课堂和独立演示 App 数据。模拟页面底部提供教师控制台，可开课、发单选／填空题和结束题目。演示模式不会访问真实 iClicker。
+`npm run demo` starts a completely local classroom simulator. It never contacts real iClicker and uses synthetic course data and coordinates. The integration suite uses a temporary Chrome profile and never touches a daily Chrome session.
 
-集成测试使用独立临时 Chrome 资料目录，测试结束仅关闭测试浏览器。测试报告与截图写入 `.test-artifacts/`，临时目录路径记录在报告中。模拟测试不能替代实际账号、学校 SSO 和正在进行的课堂验收。
+## Privacy boundary
 
-`npm run dist:mac` 在 `release-public/` 生成通用 DMG 和 ZIP。原生辅助程序也同时编译为 arm64/x86_64，最低 macOS 13；打包使用白名单并排除源码映射。公开源码及模拟数据不包含真实坐标。发布前还需对安装包中的 App 运行隐私扫描，详见 [隐私说明](PRIVACY.md)。
+The public repository and release artifacts do not contain personal courses, real course IDs, coordinates, credentials, tokens, browser profiles, run logs, or personal screenshots. The app stores user-entered course coordinates locally because the classroom site needs them; the course list only displays **Location configured** instead of exposing them at a glance.
 
-## 结构
+Read the full [privacy and release boundary](PRIVACY.md) before sharing diagnostics. The public-data audit is part of the build workflow, but you should still review any file before attaching it to an issue.
 
-- `src/renderer`：React 课程管理、监控状态和连接设置。
-- `src/main/browser.ts`：专用 Chrome 生命周期、CDP、定位、加密会话及用户触发的窗口操作。
-- `src/main/iclicker.ts`：DOM 检测与被动网络证据，基于公开前端中可确认的 Join、单选及答案回执结构。
-- `src/main/watchdog.ts`：5 秒检查、截止时间、提交去重、30 秒通知及异常恢复。
-- `scripts/mock-classroom.mjs`：本机模拟课堂；`scripts/native.swift`：指定浏览器进程激活与焦点测试。
+## Project layout
 
-Chrome 先以 `--no-startup-window` 后台启动，再通过 CDP 创建 `background: true` 的有窗口页面，避免 Chrome 启动时主动激活。只有“登录”“查看课堂”或通知点击会显式激活 App 专用 Chrome 进程。
+```text
+src/main/browser.ts        dedicated Chrome, CDP, geolocation, encrypted session
+src/main/iclicker.ts       page snapshots, passive evidence, safe answer actions
+src/main/watchdog.ts       5-second checks, deadlines, retries, reminders
+src/renderer/              React + TypeScript desktop UI
+scripts/mock-classroom.mjs local classroom simulator
+tests/                     unit coverage for watchdog and page evidence
+```
 
-## 本地数据与运行边界
+See [verification notes](VERIFICATION.md) and the [v0.1.0 release notes](docs/RELEASE-v0.1.0.md) for tested behavior and known limits.
 
-正式数据存放在 `~/Library/Application Support/Attendance Handler/`，包含课程和最近 400 条事件、专用 `chrome-profile`、以及使用 Electron `safeStorage`／macOS 钥匙串加密的 `session.enc`。App 不保存密码，不把会话令牌写入日志或源码。课程在设备本地保存，不提供云同步。
+## License and status
 
-- 同时监控一门课。默认 50 分钟，可设为 1–720 分钟；截止时间包含等待开课、登录和暂停的时间。
-- 定位精度默认 10 米，覆盖仅用于专用浏览器。停止时清除覆盖和临时地理位置授权。
-- 启动、重试和恢复都不会延长截止时间。App 重启后保留上次记录，但需要重新点击开始。
-- 课程期间阻止闲置睡眠，屏幕可以熄灭；合盖或主动睡眠期间无法检查。系统勿扰、通知设置和网络状态仍影响提醒送达。
-- 学校登录失效或 MFA 仍需用户完成。iClicker 页面结构改变、蓝牙签到、无法可靠识别的题目会暂停自动提交并提示检查。
-- 题目 ID 优先使用页面实际标识和页面接收到的课堂事件。缺少稳定标识时只提醒，不猜测重复题。
-- `.app` 为本机 ad-hoc 签名构建。对外分发需要 Developer ID 签名及公证；重新签名后钥匙串或通知权限可能需要重新授权。
+This repository is an early preview and does not currently declare an open-source license. All rights remain with the author. Contributions and bug reports are welcome, but please never include login tokens, course coordinates, screenshots with personal data, or raw browser profiles.
 
-## 真实课堂验收
-
-在用户完成登录并有课堂开放时，检查：课程导入、经纬度、真实签到回执、每种所用题型、已接收答案、最小化运行、通知送达及点击、到期停止。未完成这些检查之前，只能认定本机模拟流程已验证。
+<div align="center">
+  <sub>Built for a calmer classroom workflow · macOS · Electron · React · TypeScript</sub>
+</div>
