@@ -2,7 +2,7 @@ import { build } from 'esbuild';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { mkdir, copyFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 await mkdir('dist-electron', { recursive: true });
 const exec = promisify(execFile);
 if (process.platform === 'darwin') {
@@ -17,7 +17,7 @@ await promisify(execFile)('build/icon-maker');
 await promisify(execFile)('/usr/bin/iconutil', ['-c', 'icns', 'build/AppIcon.iconset', '-o', 'build/icon.icns']);
 } else if (process.platform === 'win32') {
   const compiler = join(process.env.WINDIR || 'C:\\Windows', 'Microsoft.NET', 'Framework64', 'v4.0.30319', 'csc.exe');
-  await exec(compiler, ['/nologo', '/optimize+', '/target:exe', '/out:dist-electron/attendance-native.exe', 'scripts/native-windows.cs'], { windowsHide: true });
+  await exec(compiler, ['/nologo', '/optimize+', '/target:exe', `/out:${resolve('dist-electron/attendance-native.exe')}`, resolve('scripts/native-windows.cs')], { windowsHide: true });
   await copyFile('docs/assets/attendance-handler-icon.png', 'dist-electron/tray.png');
 } else {
   throw new Error('Desktop builds require macOS or Windows.');
