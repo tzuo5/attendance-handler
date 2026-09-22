@@ -34,7 +34,10 @@ export async function createMockClassroom(port = 0) {
     res.setHeader('Content-Type', 'text/html; charset=utf-8'); res.end(html);
   });
   await new Promise(resolve => server.listen(port, '127.0.0.1', resolve));
-  return { server, origin: `http://127.0.0.1:${server.address().port}`, state, control, close: () => new Promise(resolve => server.close(resolve)) };
+  return { server, origin: `http://127.0.0.1:${server.address().port}`, state, control, close: () => new Promise(resolve => {
+    server.close(resolve);
+    server.closeAllConnections();
+  }) };
 }
 
 const html = String.raw`<!DOCTYPE html><html><head><meta charset="utf-8"><title>iClicker · 模拟课堂</title><style>

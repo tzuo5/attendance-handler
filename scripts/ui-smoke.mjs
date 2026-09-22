@@ -64,9 +64,23 @@ try {
   await writeFile('.test-artifacts/ui-report.json', JSON.stringify({ checks, errors, notification, delivered: notifications, data }, null, 2));
   console.log(JSON.stringify({ checks, errors, notification, deliveredCount: notifications.length }, null, 2));
 } finally {
-  if (classroom?.isConnected()) {
-    const cdp = await classroom.newBrowserCDPSession();
-    await cdp.send('Browser.close').catch(() => {});
+  // Let the app disarm its live CDP session before terminating the test Chrome.
+  console.log('Closing packaged application');
+  const shutdownDeadline = setTimeout(() => {
+    console.error('Packaged application did not exit within 20 seconds');
+    process.exitCode = 1;
+    application.process().kill('SIGKILL');
+  }, 20000);
+  try { await application.close(); }
+  finally {
+    clearTimeout(shutdownDeadline);
+    console.log('Closing dedicated test Chrome');
+    if (classroom?.isConnected()) {
+      const cdp = await classroom.newBrowserCDPSession();
+      await cdp.send('Browser.close').catch(() => {});
+      await classroom.close();
+    }
+    await mock.close();
+    console.log('UI smoke cleanup complete');
   }
-  await application.close(); await mock.close();
 }
