@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { readFile, readdir, lstat } from 'node:fs/promises';
-import { join, resolve, relative } from 'node:path';
+import { join, resolve, relative, normalize } from 'node:path';
 
 // Print filenames/rule names only, never a matching secret or personal value.
 const failures = [];
@@ -34,7 +34,7 @@ if (appIndex >= 0) {
     if (forbiddenPath.test(name)) failures.push([name, 'private data path']);
     if (!/^(?:dist\/|dist-electron\/|node_modules\/|package\.json$)/.test(name) && !['dist', 'dist-electron', 'node_modules'].includes(name)) failures.push([name, 'unexpected archive path']);
     if (/^(?:dist\/.*\.(?:js|css|html)|dist-electron\/.*\.cjs|package\.json)$/.test(name)) {
-      inspect(name, extractFile(archive, name)); inspected++;
+      inspect(name, extractFile(archive, normalize(name))); inspected++;
     }
     if (name.endsWith('.map') && !name.startsWith('node_modules/')) failures.push([name, 'source map in release']);
   }
