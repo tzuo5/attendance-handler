@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
-  <title id="title">Attendance Handler</title>
-  <desc id="desc">A dark green rounded square with a lowercase ah mark and a small sage accent.</desc>
-  <rect width="256" height="256" rx="58" fill="#163f30"/>
-  <path d="M52 154c0-30 17-49 42-49 18 0 31 8 38 24v-20h23v91h-23v-21c-8 16-21 24-39 24-25 0-41-19-41-49Zm24 0c0 17 9 28 24 28 16 0 27-11 27-28s-11-28-27-28c-15 0-24 11-24 28Z" fill="#eff4d9"/>
-  <path d="M166 105h24v14c8-10 19-15 33-15 19 0 31 12 31 34v62h-24v-56c0-12-5-18-16-18-14 0-24 9-24 25v49h-24v-95Z" fill="#eff4d9"/>
-  <circle cx="207" cy="58" r="15" fill="#b3ca88"/>
-</svg>

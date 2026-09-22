@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/assets/attendance-handler-mark.svg" width="96" height="96" alt="Attendance Handler 标识" />
+  <img src="docs/assets/attendance-handler-icon.png" width="96" height="96" alt="Attendance Handler 图标" />
   <h1>Attendance Handler</h1>
   <p><strong>面向 iClicker 的本地优先 macOS 课堂助手。</strong><br />保留真实课堂窗口可见，同时在后台安静地监控签到和题目。</p>
   <p>

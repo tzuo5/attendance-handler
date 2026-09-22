@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="docs/assets/attendance-handler-mark.svg" width="96" height="96" alt="Attendance Handler mark" />
+  <img src="docs/assets/attendance-handler-icon.png" width="96" height="96" alt="Attendance Handler icon" />
   <h1>Attendance Handler</h1>
   <p><strong>A local-first macOS classroom companion for iClicker.</strong><br />Keep the real classroom window visible while monitoring runs quietly in the background.</p>
   <p>
