@@ -26,6 +26,8 @@ jobs:
       - run: npm run dist:win
       - run: npm run test:integration
         timeout-minutes: 3
+      - run: npm run test:chrome-lifecycle
+        timeout-minutes: 3
       - name: Audit packaged application
         run: node scripts/audit-public.mjs --app release-public/win-unpacked
       - name: Install and test the actual installer

@@ -3,9 +3,9 @@
   <h1>Attendance Handler</h1>
   <p><strong>A local-first Windows and macOS classroom companion for iClicker.</strong><br />Keep the real classroom window visible while monitoring runs quietly in the background.</p>
   <p>
-    <a href="https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-mac-universal.dmg"><strong>Download for macOS</strong></a>
+    <a href="https://github.com/tzuo5/attendance-handler/releases/download/v0.1.1/Attendance-Handler-0.1.1-mac-universal.dmg"><strong>Download for macOS</strong></a>
     ·
-    <a href="https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-win-x64-Setup.exe"><strong>Download for Windows</strong></a>
+    <a href="https://github.com/tzuo5/attendance-handler/releases/download/v0.1.1/Attendance-Handler-0.1.1-win-x64-Setup.exe"><strong>Download for Windows</strong></a>
     ·
     <a href="https://github.com/tzuo5/attendance-handler/releases">All releases</a>
     ·
@@ -53,28 +53,30 @@ Deadline or “End class” → stop checks, reminders, and location override
 
 Automatic actions run through the page and CDP connection. They do not simulate system mouse or keyboard input and do not activate the frontmost app. Only an explicit **Log in**, **View classroom**, or notification click brings the dedicated Chrome window forward.
 
+Closing the last dedicated Chrome window ends that browser process. You can reopen it with **Log in** or **View classroom**. Quitting Attendance Handler also closes its dedicated Chrome; closing only the App window keeps monitoring in the menu bar or system tray.
+
 ## Download and install
 
 ### Windows 10/11 (64-bit)
 
-1. Download the [Windows installer](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-win-x64-Setup.exe) and install for your Windows user.
+1. Download the [Windows installer](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.1/Attendance-Handler-0.1.1-win-x64-Setup.exe) and install for your Windows user.
 2. Install Google Chrome, then launch **Attendance Handler** from the Start menu. Node.js is not required.
 3. Sign in using the dedicated Chrome window and configure your course. Closing the app window keeps monitoring in the system tray; double-click the tray icon to reopen it.
 
-A [ZIP version](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-win-x64.zip) is also available: extract the entire folder and run `Attendance Handler.exe`. Use the installer for Start menu registration and Windows notifications. [Windows SHA-256 checksums](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/SHA256SUMS-windows.txt) are included. The Windows build is unsigned, so Windows may show an unknown-publisher or SmartScreen prompt.
+A [ZIP version](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.1/Attendance-Handler-0.1.1-win-x64.zip) is also available: extract the entire folder and run `Attendance Handler.exe`. Use the installer for Start menu registration and Windows notifications. [Windows SHA-256 checksums](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.1/SHA256SUMS-windows.txt) are included. The Windows build is unsigned, so Windows may show an unknown-publisher or SmartScreen prompt.
 
 ### macOS
 
-1. Download the [universal DMG](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-mac-universal.dmg). It runs on macOS 13+ with Apple Silicon or Intel.
+1. Download the [universal DMG](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.1/Attendance-Handler-0.1.1-mac-universal.dmg). It runs on macOS 13+ with Apple Silicon or Intel.
 2. Open it and drag **Attendance Handler** into **Applications**.
 3. Launch it from Applications. Google Chrome must already be installed in `/Applications`; Node.js is not required.
 4. Complete iClicker sign-in and any school verification in the dedicated Chrome window, then import or configure a course.
 
-The release also includes a [ZIP fallback](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-mac-universal.zip) and [SHA-256 checksums](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/SHA256SUMS.txt).
+The release also includes a [ZIP fallback](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.1/Attendance-Handler-0.1.1-mac-universal.zip) and [SHA-256 checksums](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.1/SHA256SUMS.txt).
 
 ### Gatekeeper notice
 
-`v0.1.0` is ad-hoc signed and not notarized with Apple. macOS may require a one-time manual approval in **System Settings → Privacy & Security** after you confirm that the download came from this release. Do not disable macOS security globally, and do not bypass a damaged-app or malware warning. A future Developer ID + notarized build can remove this first-launch warning.
+`v0.1.1` is ad-hoc signed and not notarized with Apple. macOS may require a one-time manual approval in **System Settings → Privacy & Security** after you confirm that the download came from this release. Do not disable macOS security globally, and do not bypass a damaged-app or malware warning. A future Developer ID + notarized build can remove this first-launch warning.
 
 ## Build from source
 
@@ -84,6 +86,7 @@ Requirements: Node.js 22.12+ and Google Chrome. On macOS, install Apple Command 
 npm install
 npm run dev                 # local app development
 npm test                    # unit tests
+npm run test:chrome-lifecycle # dedicated Chrome close and reopen checks
 npm run test:integration    # isolated mock Chrome classroom
 npm run audit:public        # public-data allowlist and secret scan
 npm run dist:mac            # on macOS: universal DMG + ZIP in release-public/
@@ -109,7 +112,7 @@ scripts/mock-classroom.mjs local classroom simulator
 tests/                     unit coverage for watchdog and page evidence
 ```
 
-See [verification notes](VERIFICATION.md) and the [v0.1.0 release notes](docs/RELEASE-v0.1.0.md) for tested behavior and known limits.
+See [verification notes](VERIFICATION.md) and the [v0.1.1 release notes](docs/RELEASE-v0.1.1.md) for tested behavior and known limits.
 
 ## License and status
 

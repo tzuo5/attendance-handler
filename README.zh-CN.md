@@ -3,9 +3,9 @@
   <h1>Attendance Handler</h1>
   <p><strong>面向 iClicker 的本地优先 Windows / macOS 课堂助手。</strong><br />保留真实课堂窗口可见，同时在后台安静地监控签到和题目。</p>
   <p>
-    <a href="https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-mac-universal.dmg"><strong>下载 macOS 版本</strong></a>
+    <a href="https://github.com/tzuo5/attendance-handler/releases/download/v0.1.1/Attendance-Handler-0.1.1-mac-universal.dmg"><strong>下载 macOS 版本</strong></a>
     ·
-    <a href="https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-win-x64-Setup.exe"><strong>下载 Windows 版本</strong></a>
+    <a href="https://github.com/tzuo5/attendance-handler/releases/download/v0.1.1/Attendance-Handler-0.1.1-win-x64-Setup.exe"><strong>下载 Windows 版本</strong></a>
     ·
     <a href="https://github.com/tzuo5/attendance-handler/releases">全部 Release</a>
     ·
@@ -51,28 +51,30 @@
 
 自动操作通过页面和 CDP 连接完成，不模拟系统鼠标键盘，也不会切换当前正在使用的 App。只有用户点击 **登录**、**查看课堂** 或系统通知时，才会把专用 Chrome 带到前台。
 
+关闭最后一个专用 Chrome 窗口会结束该浏览器进程；需要时可点击 **登录** 或 **查看课堂** 重开。退出 Attendance Handler 也会关闭专用 Chrome；仅关闭 App 窗口时仍会在菜单栏或系统托盘继续监控。
+
 ## 下载与安装
 
 ### Windows 10/11（64 位）
 
-1. 下载 [Windows 安装包](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-win-x64-Setup.exe)，为当前用户安装。
+1. 下载 [Windows 安装包](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.1/Attendance-Handler-0.1.1-win-x64-Setup.exe)，为当前用户安装。
 2. 安装 Google Chrome，从开始菜单启动 **Attendance Handler**，不需要 Node.js。
 3. 在专用 Chrome 窗口登录并配置课程。关闭 App 窗口后会继续在系统托盘运行；双击托盘图标即可重新打开。
 
-也可下载 [免安装 ZIP](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-win-x64.zip)，完整解压后运行 `Attendance Handler.exe`。建议使用安装包，以完成开始菜单和 Windows 通知注册。附带 [Windows SHA-256 校验值](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/SHA256SUMS-windows.txt)。Windows 版本尚未代码签名，首次运行可能显示“未知发布者”或 SmartScreen 提示。
+也可下载 [免安装 ZIP](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.1/Attendance-Handler-0.1.1-win-x64.zip)，完整解压后运行 `Attendance Handler.exe`。建议使用安装包，以完成开始菜单和 Windows 通知注册。附带 [Windows SHA-256 校验值](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.1/SHA256SUMS-windows.txt)。Windows 版本尚未代码签名，首次运行可能显示“未知发布者”或 SmartScreen 提示。
 
 ### macOS
 
-1. 下载 [通用 DMG](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-mac-universal.dmg)，支持 macOS 13+、Apple Silicon 和 Intel。
+1. 下载 [通用 DMG](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.1/Attendance-Handler-0.1.1-mac-universal.dmg)，支持 macOS 13+、Apple Silicon 和 Intel。
 2. 打开 DMG，把 **Attendance Handler** 拖到 **Applications**。
 3. 从 Applications 启动。需要预先把 Google Chrome 安装在 `/Applications`，不需要 Node.js。
 4. 在专用 Chrome 窗口完成 iClicker 登录和学校验证，然后导入或配置课程。
 
-Release 还提供 [ZIP 备用包](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-mac-universal.zip) 和 [SHA-256 校验值](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/SHA256SUMS.txt)。
+Release 还提供 [ZIP 备用包](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.1/Attendance-Handler-0.1.1-mac-universal.zip) 和 [SHA-256 校验值](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.1/SHA256SUMS.txt)。
 
 ### macOS 安全提示
 
-`v0.1.0` 使用 ad-hoc 签名，尚未经过 Apple 公证。确认下载来自本 Release 后，macOS 首次打开可能需要在 **系统设置 → 隐私与安全性** 手动允许。不要全局关闭 macOS 安全保护，也不要强行绕过“App 已损坏”或恶意软件警告。未来配置 Developer ID 和 Apple 公证后，可以去掉首次启动提示。
+`v0.1.1` 使用 ad-hoc 签名，尚未经过 Apple 公证。确认下载来自本 Release 后，macOS 首次打开可能需要在 **系统设置 → 隐私与安全性** 手动允许。不要全局关闭 macOS 安全保护，也不要强行绕过“App 已损坏”或恶意软件警告。未来配置 Developer ID 和 Apple 公证后，可以去掉首次启动提示。
 
 ## 从源码构建
 
@@ -82,6 +84,7 @@ Release 还提供 [ZIP 备用包](https://github.com/tzuo5/attendance-handler/re
 npm install
 npm run dev                 # 本地开发
 npm test                    # 单元测试
+npm run test:chrome-lifecycle # 专用 Chrome 关闭及重开检查
 npm run test:integration    # 独立模拟 Chrome 课堂
 npm run audit:public        # 公开数据白名单与敏感信息扫描
 npm run dist:mac            # macOS：在 release-public/ 生成通用 DMG + ZIP
@@ -107,7 +110,7 @@ scripts/mock-classroom.mjs   本地模拟课堂
 tests/                       watchdog 和页面证据测试
 ```
 
-更多已验证行为和限制见[验证记录](VERIFICATION.md)及 [v0.1.0 Release 说明](docs/RELEASE-v0.1.0.zh-CN.md)。
+更多已验证行为和限制见[验证记录](VERIFICATION.md)及 [v0.1.1 Release 说明](docs/RELEASE-v0.1.1.zh-CN.md)。
 
 ## 许可证与状态
 
