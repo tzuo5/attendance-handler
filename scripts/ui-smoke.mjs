@@ -4,12 +4,16 @@ import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
 import assert from 'node:assert/strict';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { setTimeout as delay } from 'node:timers/promises';
 
 const mock = await createMockClassroom();
 await mkdir('.test-artifacts', { recursive: true });
 const data = await mkdtemp(join(tmpdir(), 'attendance-ui-'));
 const defaultApp = process.platform === 'win32' ? 'release-public/win-unpacked/Attendance Handler.exe' : 'release/mac-arm64/Attendance Handler.app/Contents/MacOS/Attendance Handler';
 const application = await electron.launch({ executablePath: resolve(process.env.ATTENDANCE_TEST_APP || defaultApp), env: { ...process.env, ATTENDANCE_DEMO: '1', ATTENDANCE_ORIGIN: mock.origin, ATTENDANCE_DATA_DIR: data } });
+const electronPid = await application.evaluate(() => process.pid);
 const errors = [];
 let classroom;
 try {
@@ -66,14 +70,22 @@ try {
 } finally {
   // Let the app disarm its live CDP session before terminating the test Chrome.
   console.log('Closing packaged application');
-  const shutdownDeadline = setTimeout(() => {
-    console.error('Packaged application did not exit within 20 seconds');
-    process.exitCode = 1;
-    application.process().kill('SIGKILL');
-  }, 20000);
-  try { await application.close(); }
+  const isRunning = () => { try { process.kill(electronPid, 0); return true; } catch { return false; } };
+  try {
+    // Queue quit after the inspector reply. On Windows Playwright launches via
+    // cmd.exe, so check the actual Electron PID instead of waiting for that shell.
+    await application.evaluate(({ app }) => { setTimeout(() => app.quit(), 0); });
+    const deadline = Date.now() + 20000;
+    while (isRunning() && Date.now() < deadline) await delay(100);
+    assert.ok(!isRunning(), 'packaged Electron process exits gracefully within 20 seconds');
+    console.log('Packaged Electron process exited');
+  }
   finally {
-    clearTimeout(shutdownDeadline);
+    if (isRunning()) process.kill(electronPid, 'SIGKILL');
+    const launcher = application.process();
+    if (process.platform === 'win32' && launcher.exitCode === null && launcher.pid) {
+      await promisify(execFile)('taskkill', ['/pid', String(launcher.pid), '/T', '/F'], { windowsHide: true, timeout: 5000 }).catch(() => {});
+    }
     console.log('Closing dedicated test Chrome');
     if (classroom?.isConnected()) {
       const cdp = await classroom.newBrowserCDPSession();
