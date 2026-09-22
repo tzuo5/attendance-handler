@@ -1,9 +1,11 @@
 <div align="center">
   <img src="docs/assets/attendance-handler-icon.png" width="96" height="96" alt="Attendance Handler 图标" />
   <h1>Attendance Handler</h1>
-  <p><strong>面向 iClicker 的本地优先 macOS 课堂助手。</strong><br />保留真实课堂窗口可见，同时在后台安静地监控签到和题目。</p>
+  <p><strong>面向 iClicker 的本地优先 Windows / macOS 课堂助手。</strong><br />保留真实课堂窗口可见，同时在后台安静地监控签到和题目。</p>
   <p>
     <a href="https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-mac-universal.dmg"><strong>下载 macOS 版本</strong></a>
+    ·
+    <a href="https://github.com/tzuo5/attendance-handler/releases/download/v0.2.0/Attendance-Handler-0.2.0-win-x64-Setup.exe"><strong>下载 Windows 版本</strong></a>
     ·
     <a href="https://github.com/tzuo5/attendance-handler/releases">全部 Release</a>
     ·
@@ -51,6 +53,16 @@
 
 ## 下载与安装
 
+### Windows 10/11（64 位）
+
+1. 下载 [Windows 安装包](https://github.com/tzuo5/attendance-handler/releases/download/v0.2.0/Attendance-Handler-0.2.0-win-x64-Setup.exe)，为当前用户安装。
+2. 安装 Google Chrome，从开始菜单启动 **Attendance Handler**，不需要 Node.js。
+3. 在专用 Chrome 窗口登录并配置课程。关闭 App 窗口后会继续在系统托盘运行；双击托盘图标即可重新打开。
+
+也可下载 [免安装 ZIP](https://github.com/tzuo5/attendance-handler/releases/download/v0.2.0/Attendance-Handler-0.2.0-win-x64.zip)，完整解压后运行 `Attendance Handler.exe`。建议使用安装包，以完成开始菜单和 Windows 通知注册。附带 [Windows SHA-256 校验值](https://github.com/tzuo5/attendance-handler/releases/download/v0.2.0/SHA256SUMS-windows.txt)。Windows 版本尚未代码签名，首次运行可能显示“未知发布者”或 SmartScreen 提示。
+
+### macOS
+
 1. 下载 [通用 DMG](https://github.com/tzuo5/attendance-handler/releases/download/v0.1.0/Attendance-Handler-0.1.0-mac-universal.dmg)，支持 macOS 13+、Apple Silicon 和 Intel。
 2. 打开 DMG，把 **Attendance Handler** 拖到 **Applications**。
 3. 从 Applications 启动。需要预先把 Google Chrome 安装在 `/Applications`，不需要 Node.js。
@@ -64,7 +76,7 @@ Release 还提供 [ZIP 备用包](https://github.com/tzuo5/attendance-handler/re
 
 ## 从源码构建
 
-需要 macOS、Apple Command Line Tools、Node.js 22.12+ 和位于 `/Applications` 的 Google Chrome。
+需要 Node.js 22.12+ 和 Google Chrome。macOS 还需要 Apple Command Line Tools，并将 Chrome 安装在 `/Applications`。Windows x64 使用系统自带的 .NET Framework C# 编译器，支持查找当前用户或所有用户安装的 Chrome。
 
 ```sh
 npm install
@@ -72,7 +84,8 @@ npm run dev                 # 本地开发
 npm test                    # 单元测试
 npm run test:integration    # 独立模拟 Chrome 课堂
 npm run audit:public        # 公开数据白名单与敏感信息扫描
-npm run dist:mac            # 在 release-public/ 生成通用 DMG + ZIP
+npm run dist:mac            # macOS：在 release-public/ 生成通用 DMG + ZIP
+npm run dist:win            # Windows：在 release-public/ 生成 x64 安装包 + ZIP
 ```
 
 `npm run demo` 会启动完全本地的模拟课堂，不连接真实 iClicker，并使用合成课程数据和坐标。集成测试使用临时 Chrome 资料目录，不会操作日常 Chrome 会话。
@@ -94,7 +107,7 @@ scripts/mock-classroom.mjs   本地模拟课堂
 tests/                       watchdog 和页面证据测试
 ```
 
-更多已验证行为和限制见[验证记录](VERIFICATION.md)及 [v0.1.0 Release 说明](docs/RELEASE-v0.1.0.md)。
+更多已验证行为和限制见[验证记录](VERIFICATION.md)、[Windows Release 说明](docs/RELEASE-v0.2.0.zh-CN.md)及 [macOS Release 说明](docs/RELEASE-v0.1.0.zh-CN.md)。
 
 ## 许可证与状态
 

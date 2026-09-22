@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, Menu, nativeImage, Notification, powerMoni
 import { join } from 'node:path';
 import { z } from 'zod';
 import { ChromeClassroom } from './browser';
+import { nativeHelperName } from './platform';
 import { Store } from './store';
 import { Watchdog } from './watchdog';
 import { validateCourse } from '../shared/validation';
@@ -12,6 +13,7 @@ const origin = demo ? process.env.ATTENDANCE_ORIGIN || 'http://127.0.0.1:43891' 
 if (demo && !['127.0.0.1', 'localhost'].includes(new URL(origin).hostname)) throw new Error('演示课堂仅允许本机地址');
 if (process.env.ATTENDANCE_DATA_DIR && demo) app.setPath('userData', process.env.ATTENDANCE_DATA_DIR);
 app.setName('Attendance Handler');
+if (process.platform === 'win32') app.setAppUserModelId('com.attendancehandler.desktop');
 if (!app.requestSingleInstanceLock()) app.quit();
 else void main();
 
@@ -43,7 +45,7 @@ async function main() {
     if (tray) {
       const run = watchdog?.session;
       const remaining = ACTIVE(run) ? Math.max(0, Math.ceil((run.endsAt - Date.now()) / 60000)) : null;
-      tray.setTitle(remaining !== null ? `${remaining}m` : '');
+      if (process.platform === 'darwin') tray.setTitle(remaining !== null ? `${remaining}m` : '');
       tray.setToolTip(ACTIVE(run) ? `${run.course.name} · ${STATUS_LABELS[run.status]}` : 'Attendance Handler');
       tray.setContextMenu(Menu.buildFromTemplate([
         { label: ACTIVE(run) ? `${run.course.name} · ${remaining} 分钟` : '课堂助手', enabled: false },
@@ -56,7 +58,7 @@ async function main() {
   };
   const log = (level: 'info' | 'success' | 'warning' | 'error', message: string) => { store.log(level, message); emit(); };
   const reportError = (error: unknown) => log('error', error instanceof Error ? error.message : String(error));
-  const nativeHelper = join(__dirname, 'attendance-native').replace('app.asar/', 'app.asar.unpacked/');
+  const nativeHelper = join(__dirname.replace(/app\.asar([/\\])/, 'app.asar.unpacked$1'), nativeHelperName);
   const browser = new ChromeClassroom(app.getPath('userData'), origin, safeStorage, emit, message => log('warning', message), nativeHelper);
   const clearNotifications = () => { for (const notification of notifications.values()) notification.close(); notifications.clear(); };
   const sendNotification = (key: string, title: string, body: string) => {
@@ -69,7 +71,7 @@ async function main() {
       else { window.show(); window.focus(); }
     });
     notification.on('failed', (_event, error) => {
-      notificationError = `系统通知未能送达：${error}。请检查 macOS 通知设置。`;
+      notificationError = `系统通知未能送达：${error}。请检查系统通知设置。`;
       log('error', notificationError);
     });
     notification.on('show', () => { notificationError = undefined; emit(); });
@@ -86,7 +88,8 @@ async function main() {
   const showClassroom = async () => { await browser.show(); await watchdog.resumed(); };
   window = new BrowserWindow({
     width: 1160, height: 800, minWidth: 900, minHeight: 640, title: 'Attendance Handler',
-    titleBarStyle: 'hiddenInset', backgroundColor: '#f6f5f1',
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default', backgroundColor: '#f6f5f1',
+    icon: join(__dirname, 'icon.png'), autoHideMenuBar: process.platform === 'win32',
     webPreferences: { preload: join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true },
   });
   window.on('close', event => { if (!quitting) { event.preventDefault(); window.hide(); } });
@@ -125,10 +128,11 @@ async function main() {
   invoke('session:stop', () => watchdog.stop());
   invoke('notification:test', () => sendNotification('test', '课堂提醒已准备好', '有新题目时，你会在这里收到提醒。点击可返回 App。'));
   const icon = nativeImage.createFromPath(join(__dirname, 'tray.png')).resize({ width: 18, height: 18 });
-  icon.setTemplateImage(true);
+  if (process.platform === 'darwin') icon.setTemplateImage(true);
   tray = new Tray(icon); emit();
+  tray.on('double-click', () => { window.show(); window.focus(); });
   Menu.setApplicationMenu(Menu.buildFromTemplate([
-    { label: 'Attendance Handler', submenu: [{ role: 'about' }, { type: 'separator' }, { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' }, { type: 'separator' }, { role: 'quit' }] },
+    ...(process.platform === 'darwin' ? [{ label: 'Attendance Handler', submenu: [{ role: 'about' as const }, { type: 'separator' as const }, { role: 'hide' as const }, { role: 'hideOthers' as const }, { role: 'unhide' as const }, { type: 'separator' as const }, { role: 'quit' as const }] }] : [{ label: '文件', submenu: [{ role: 'quit' as const }] }]),
     { label: '编辑', submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
     { label: '窗口', submenu: [{ role: 'minimize' }, { role: 'zoom' }, { role: 'close' }] },
   ]));

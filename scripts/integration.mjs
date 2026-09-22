@@ -17,9 +17,9 @@ const { ChromeClassroom } = await import(pathToFileURL(resolve('.test-artifacts/
 const { Watchdog } = await import(pathToFileURL(resolve('.test-artifacts/watchdog.mjs')));
 const mock = await createMockClassroom();
 const profile = await mkdtemp(join(tmpdir(), 'attendance-integration-'));
-const native = resolve('dist-electron/attendance-native');
+const native = resolve(`dist-electron/attendance-native${process.platform === 'win32' ? '.exe' : ''}`);
 const exec = promisify(execFile);
-const frontmost = async () => JSON.parse((await exec(native, ['frontmost'])).stdout).pid;
+const frontmost = async () => JSON.parse((await exec(native, ['frontmost'], { windowsHide: true })).stdout).pid;
 const key = randomBytes(32);
 const cipher = {
   isEncryptionAvailable: () => true,

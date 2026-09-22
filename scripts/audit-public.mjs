@@ -28,8 +28,8 @@ if (appIndex >= 0) {
   if (!process.argv[appIndex + 1]) throw new Error('--app requires an app bundle path');
   const directory = resolve(process.argv[appIndex + 1]);
   const { listPackage, extractFile } = await import('@electron/asar');
-  const archive = join(directory, 'Contents/Resources/app.asar');
-  const files = listPackage(archive).map(name => name.replace(/^\//, ''));
+  const archive = join(directory, process.platform === 'win32' ? 'resources/app.asar' : 'Contents/Resources/app.asar');
+  const files = listPackage(archive).map(name => name.replace(/\\/g, '/').replace(/^\//, ''));
   for (const name of files) {
     if (forbiddenPath.test(name)) failures.push([name, 'private data path']);
     if (!/^(?:dist\/|dist-electron\/|node_modules\/|package\.json$)/.test(name) && !['dist', 'dist-electron', 'node_modules'].includes(name)) failures.push([name, 'unexpected archive path']);
@@ -41,7 +41,7 @@ if (appIndex >= 0) {
   async function walk(path) {
     for (const entry of await readdir(path, { withFileTypes: true })) {
       const file = join(path, entry.name);
-      const name = relative(directory, file);
+      const name = relative(directory, file).replace(/\\/g, '/');
       if (forbiddenPath.test(name)) failures.push([name, 'private data path']);
       if (entry.isDirectory()) await walk(file);
       else if (entry.isFile() && (name.endsWith('attendance-native') || name.endsWith('Info.plist'))) {

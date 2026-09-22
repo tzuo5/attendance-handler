@@ -1,14 +1,12 @@
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
-import { mkdir, readFile, writeFile, rename, access } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, rename } from 'node:fs/promises';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright-core';
 import type { CourseConfig, PageSnapshot, QuestionSnapshot } from '../shared/types';
 import { IClickerAdapter } from './iclicker';
 import type { ClassroomDriver } from './watchdog';
+import { activateChrome, launchChrome } from './platform';
 
-const exec = promisify(execFile);
 export interface Cipher { isEncryptionAvailable(): boolean; encryptString(text: string): Buffer; decryptString(data: Buffer): string; }
 export class SessionVault {
   private previous = '';
@@ -32,7 +30,7 @@ export class SessionVault {
     });
     const json = JSON.stringify({ origin: this.origin, storage });
     if (json === this.previous) return;
-    if (!this.cipher.isEncryptionAvailable()) throw new Error('系统钥匙串加密不可用，无法保存登录状态。');
+    if (!this.cipher.isEncryptionAvailable()) throw new Error('系统安全存储加密不可用，无法保存登录状态。');
     await writeFile(this.path + '.tmp', this.cipher.encryptString(json), { mode: 0o600 });
     await rename(this.path + '.tmp', this.path); this.previous = json;
   }
@@ -74,9 +72,7 @@ export class ChromeClassroom implements ClassroomDriver {
       await mkdir(this.profile, { recursive: true, mode: 0o700 });
       let endpoint = await this.endpoint();
       if (!endpoint) {
-        const chrome = '/Applications/Google Chrome.app';
-        try { await access(chrome); } catch { throw new Error('未找到 Google Chrome，请先安装到 Applications。'); }
-        await exec('/usr/bin/open', ['-g', '-n', '-a', chrome, '--args', `--user-data-dir=${this.profile}`, '--remote-debugging-address=127.0.0.1', '--remote-debugging-port=0', '--no-startup-window', '--no-first-run', '--no-default-browser-check', '--disable-session-crashed-bubble', '--disable-background-timer-throttling', '--disable-backgrounding-occluded-windows', '--disable-renderer-backgrounding']);
+        await launchChrome(this.profile);
         for (let i = 0; i < 60 && !endpoint; i++) {
           signal?.throwIfAborted(); await delay(300); endpoint = await this.endpoint();
         }
@@ -194,7 +190,7 @@ export class ChromeClassroom implements ClassroomDriver {
       try {
         const { processInfo } = await browserCDP.send('SystemInfo.getProcessInfo');
         const process = processInfo.find(p => p.type === 'browser');
-        if (process) await exec(this.nativeHelper, ['activate', String(process.id)]);
+        if (process) await activateChrome(this.nativeHelper, process.id);
       } finally { await browserCDP.detach(); }
     } finally { await cdp.detach(); }
     this.changed();
@@ -210,7 +206,7 @@ export class ChromeClassroom implements ClassroomDriver {
     this.capturing = true;
     try { await this.vault.capture(this.page!); }
     catch (error) {
-      if (!this.cachedCipherError && error instanceof Error && error.message.includes('钥匙串')) { this.cachedCipherError = true; this.report(error.message); }
+      if (!this.cachedCipherError && error instanceof Error && error.message.includes('安全存储')) { this.cachedCipherError = true; this.report(error.message); }
     } finally { this.capturing = false; }
   }
   async disarm() {

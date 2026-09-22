@@ -1,14 +1,17 @@
-import { _electron as electron } from 'playwright-core';
+import { _electron as electron, chromium } from 'playwright-core';
 import { createMockClassroom } from './mock-classroom.mjs';
-import { mkdtemp, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
 import assert from 'node:assert/strict';
 
 const mock = await createMockClassroom();
+await mkdir('.test-artifacts', { recursive: true });
 const data = await mkdtemp(join(tmpdir(), 'attendance-ui-'));
-const application = await electron.launch({ executablePath: resolve(process.env.ATTENDANCE_TEST_APP || 'release/mac-arm64/Attendance Handler.app/Contents/MacOS/Attendance Handler'), env: { ...process.env, ATTENDANCE_DEMO: '1', ATTENDANCE_ORIGIN: mock.origin, ATTENDANCE_DATA_DIR: data } });
+const defaultApp = process.platform === 'win32' ? 'release-public/win-unpacked/Attendance Handler.exe' : 'release/mac-arm64/Attendance Handler.app/Contents/MacOS/Attendance Handler';
+const application = await electron.launch({ executablePath: resolve(process.env.ATTENDANCE_TEST_APP || defaultApp), env: { ...process.env, ATTENDANCE_DEMO: '1', ATTENDANCE_ORIGIN: mock.origin, ATTENDANCE_DATA_DIR: data } });
 const errors = [];
+let classroom;
 try {
   const window = await application.firstWindow();
   window.on('pageerror', e => errors.push(e.message));
@@ -28,6 +31,23 @@ try {
   await window.getByRole('heading', { name: 'UI 测试课程', exact: true }).waitFor();
   const saved = await window.evaluate(() => window.attendance.getState());
   assert.equal(saved.courses.length, 3);
+  assert.equal(JSON.parse(await readFile(join(data, 'state.json'), 'utf8')).courses.length, 3);
+  // Exercise the installed app's unpacked native helper, Chrome discovery, and OS encryption.
+  await window.evaluate(() => window.attendance.login());
+  const [port] = (await readFile(join(data, 'chrome-profile', 'DevToolsActivePort'), 'utf8')).split('\n');
+  classroom = await chromium.connectOverCDP(`http://127.0.0.1:${port.trim()}`);
+  const page = classroom.contexts()[0].pages().find(page => page.url().startsWith(mock.origin));
+  assert.ok(page, 'packaged app opens its dedicated Chrome classroom');
+  await page.locator('#sign-in-button').click();
+  await page.locator('.course-title').first().waitFor();
+  await window.evaluate(id => window.attendance.start(id), saved.courses[0].id);
+  mock.control({ open: true });
+  await window.waitForFunction(async () => (await window.attendance.getState()).session?.attendance === 'confirmed', undefined, { timeout: 20000 });
+  const encrypted = await readFile(join(data, 'session.enc'));
+  assert.ok(!encrypted.includes(Buffer.from('demo-access-token')));
+  const vault = await application.evaluate(({ safeStorage }, base64) => JSON.parse(safeStorage.decryptString(Buffer.from(base64, 'base64'))), encrypted.toString('base64'));
+  assert.equal(vault.storage.access_token, 'demo-access-token');
+  await window.evaluate(() => window.attendance.stop());
   await window.getByRole('button', { name: '连接与提醒', exact: true }).click();
   await window.screenshot({ path: '.test-artifacts/app-settings.png' });
   const notification = await application.evaluate(async ({ Notification }) => {
@@ -38,10 +58,15 @@ try {
       new Promise(resolve => setTimeout(() => resolve({ event: 'timeout' }), 10000)),
     ]);
   });
-  const notifications = await application.evaluate(async ({ Notification }) => (await Notification.getHistory()).map(n => ({ title: n.title, body: n.body })));
+  const notifications = process.platform === 'darwin' ? await application.evaluate(async ({ Notification }) => (await Notification.getHistory()).map(n => ({ title: n.title, body: n.body }))) : [];
   assert.deepEqual(errors, []);
-  await writeFile('.test-artifacts/ui-report.json', JSON.stringify({ errors, notification, delivered: notifications, data }, null, 2));
-  console.log(JSON.stringify({ errors, notification, deliveredCount: notifications.length }, null, 2));
+  const checks = ['course list', 'course persistence', 'settings', 'packaged Chrome launch and native helper', 'mock attendance', 'OS-encrypted session round trip'];
+  await writeFile('.test-artifacts/ui-report.json', JSON.stringify({ checks, errors, notification, delivered: notifications, data }, null, 2));
+  console.log(JSON.stringify({ checks, errors, notification, deliveredCount: notifications.length }, null, 2));
 } finally {
+  if (classroom?.isConnected()) {
+    const cdp = await classroom.newBrowserCDPSession();
+    await cdp.send('Browser.close').catch(() => {});
+  }
   await application.close(); await mock.close();
 }

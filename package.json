@@ -1,11 +1,14 @@
 {
   "name": "attendance-handler",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
-  "description": "Visible-window iClicker classroom companion for macOS",
+  "description": "Visible-window iClicker classroom companion for macOS and Windows",
   "author": "Attendance Handler",
   "homepage": "https://github.com/tzuo5/attendance-handler#readme",
-  "repository": { "type": "git", "url": "https://github.com/tzuo5/attendance-handler.git" },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tzuo5/attendance-handler.git"
+  },
   "type": "module",
   "main": "dist-electron/main.cjs",
   "scripts": {
@@ -18,7 +21,10 @@
     "dist:mac": "ATTENDANCE_UNIVERSAL=1 npm run build && electron-builder --mac dmg zip --universal --config.directories.output=release-public --publish never",
     "audit:public": "node scripts/audit-public.mjs",
     "demo": "node scripts/demo.mjs",
-    "start": "electron ."
+    "start": "electron .",
+    "package:win": "npm run build && electron-builder --win dir --x64 --publish never",
+    "dist:win": "npm run build && electron-builder --win nsis zip --x64 --config.directories.output=release-public --publish never",
+    "test:ui": "node scripts/ui-smoke.mjs"
   },
   "dependencies": {
     "playwright-core": "1.63.0",
@@ -40,12 +46,35 @@
   "build": {
     "appId": "com.attendancehandler.desktop",
     "productName": "Attendance Handler",
-    "directories": { "output": "release" },
-    "files": ["dist/**/*", "dist-electron/main.cjs", "dist-electron/preload.cjs", "dist-electron/tray.png", "dist-electron/attendance-native", "package.json", "!**/*.map"],
-    "asarUnpack": ["node_modules/playwright-core/**/*", "dist-electron/attendance-native"],
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/main.cjs",
+      "dist-electron/preload.cjs",
+      "dist-electron/tray.png",
+      "dist-electron/attendance-native",
+      "package.json",
+      "!**/*.map",
+      "dist-electron/icon.png",
+      "dist-electron/attendance-native.exe"
+    ],
+    "asarUnpack": [
+      "node_modules/playwright-core/**/*",
+      "dist-electron/attendance-native",
+      "dist-electron/attendance-native.exe"
+    ],
     "mac": {
       "category": "public.app-category.education",
-      "target": [{ "target": "dir", "arch": ["arm64"] }],
+      "target": [
+        {
+          "target": "dir",
+          "arch": [
+            "arm64"
+          ]
+        }
+      ],
       "identity": "-",
       "hardenedRuntime": true,
       "entitlements": "build/entitlements.mac.plist",
@@ -57,9 +86,46 @@
     "dmg": {
       "title": "Attendance Handler",
       "contents": [
-        { "x": 140, "y": 170, "type": "file" },
-        { "x": 420, "y": 170, "type": "link", "path": "/Applications" }
+        {
+          "x": 140,
+          "y": 170,
+          "type": "file"
+        },
+        {
+          "x": 420,
+          "y": 170,
+          "type": "link",
+          "path": "/Applications"
+        }
       ]
+    },
+    "win": {
+      "icon": "docs/assets/attendance-handler-icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Attendance-Handler-${version}-win-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Attendance Handler",
+      "runAfterFinish": false,
+      "artifactName": "Attendance-Handler-${version}-win-${arch}-Setup.${ext}"
     }
   }
 }

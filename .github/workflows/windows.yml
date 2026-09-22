@@ -1,0 +1,90 @@
+name: Windows build and release
+
+on:
+  push:
+    branches: [main, codex/windows-release]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run audit:public
+      - run: npm test
+      - run: npm run dist:win
+      - run: npm run test:integration
+      - name: Audit packaged application
+        run: node scripts/audit-public.mjs --app release-public/win-unpacked
+      - name: Install and test the actual installer
+        shell: pwsh
+        run: |
+          $installer = (Get-ChildItem release-public/*-Setup.exe).FullName
+          $installDirectory = Join-Path $env:RUNNER_TEMP 'Attendance Handler Test'
+          $result = Start-Process -FilePath $installer -ArgumentList "/S /D=$installDirectory" -Wait -PassThru
+          if ($result.ExitCode -ne 0) { throw "Installer failed: $($result.ExitCode)" }
+          $env:ATTENDANCE_TEST_APP = Join-Path $installDirectory 'Attendance Handler.exe'
+          if (!(Test-Path $env:ATTENDANCE_TEST_APP)) { throw 'Installed executable missing' }
+          $expected = (Get-FileHash 'release-public/win-unpacked/resources/app.asar' -Algorithm SHA256).Hash
+          $installed = (Get-FileHash (Join-Path $installDirectory 'resources/app.asar') -Algorithm SHA256).Hash
+          if ($expected -ne $installed) { throw 'Installed application differs from the audited build' }
+          npm run test:ui
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Check ZIP and write checksums
+        shell: pwsh
+        run: |
+          $zip = (Get-ChildItem release-public/Attendance-Handler-*-win-x64.zip).FullName
+          $destination = Join-Path $env:RUNNER_TEMP 'Attendance Handler ZIP'
+          Expand-Archive -Path $zip -DestinationPath $destination
+          $expected = (Get-FileHash 'release-public/win-unpacked/resources/app.asar' -Algorithm SHA256).Hash
+          $extracted = (Get-FileHash (Join-Path $destination 'resources/app.asar') -Algorithm SHA256).Hash
+          if ($expected -ne $extracted) { throw 'ZIP application differs from the audited build' }
+          $assets = Get-ChildItem release-public/Attendance-Handler-*.exe, release-public/Attendance-Handler-*.zip
+          $lines = $assets | Sort-Object Name | ForEach-Object { "$((Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower())  $($_.Name)" }
+          $lines | Set-Content release-public/SHA256SUMS-windows.txt -Encoding ascii
+      - name: Upload release files
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: windows-release
+          if-no-files-found: error
+          path: |
+            release-public/Attendance-Handler-*.exe
+            release-public/Attendance-Handler-*.zip
+            release-public/SHA256SUMS-windows.txt
+      - name: Upload synthetic UI screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: windows-ui
+          if-no-files-found: ignore
+          path: .test-artifacts/app-*.png
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: windows
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          name: windows-release
+          path: release-public
+      - name: Create draft release with verified Windows assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$GITHUB_REF_NAME" = "v$(node -p 'require("./package.json").version')"
+          gh release create "$GITHUB_REF_NAME" release-public/* --verify-tag --draft --title "$GITHUB_REF_NAME · Windows x64" --notes-file "docs/RELEASE-$GITHUB_REF_NAME.md"
