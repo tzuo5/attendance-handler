@@ -16,6 +16,7 @@
     "build": "npm run typecheck && node scripts/build.mjs && vite build",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:chrome-lifecycle": "node scripts/chrome-lifecycle.mjs",
     "test:integration": "node scripts/integration.mjs",
     "package": "npm run build && electron-builder --mac dir --arm64 --publish never",
     "dist:mac": "ATTENDANCE_UNIVERSAL=1 npm run build && electron-builder --mac dmg zip --universal --config.directories.output=release-public --publish never",

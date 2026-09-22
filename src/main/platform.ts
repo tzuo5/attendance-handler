@@ -20,7 +20,7 @@ export async function launchChrome(profile: string) {
   if (process.platform === 'darwin') {
     await exec('/usr/bin/open', ['-g', '-n', '-a', chrome, '--args', ...args]);
   } else {
-    // No shell and no console window. Chrome owns its lifetime independently of the app.
+    // No shell or console window. The app closes this dedicated process on exit.
     await new Promise<void>((resolve, reject) => {
       const child = spawn(chrome, args, { detached: true, stdio: 'ignore', windowsHide: true });
       child.once('error', reject);

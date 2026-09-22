@@ -14,6 +14,7 @@ const data = await mkdtemp(join(tmpdir(), 'attendance-ui-'));
 const defaultApp = process.platform === 'win32' ? 'release-public/win-unpacked/Attendance Handler.exe' : 'release/mac-arm64/Attendance Handler.app/Contents/MacOS/Attendance Handler';
 const application = await electron.launch({ executablePath: resolve(process.env.ATTENDANCE_TEST_APP || defaultApp), env: { ...process.env, ATTENDANCE_DEMO: '1', ATTENDANCE_ORIGIN: mock.origin, ATTENDANCE_DATA_DIR: data } });
 const electronPid = await application.evaluate(() => process.pid);
+const launcher = application.process();
 const errors = [];
 let classroom;
 try {
@@ -79,10 +80,11 @@ try {
     while (isRunning() && Date.now() < deadline) await delay(100);
     assert.ok(!isRunning(), 'packaged Electron process exits gracefully within 20 seconds');
     console.log('Packaged Electron process exited');
+    for (let i = 0; i < 50 && classroom?.isConnected(); i++) await delay(100);
+    assert.ok(!classroom?.isConnected(), 'quitting the packaged app must also close its dedicated Chrome');
   }
   finally {
     if (isRunning()) process.kill(electronPid, 'SIGKILL');
-    const launcher = application.process();
     if (process.platform === 'win32' && launcher.exitCode === null && launcher.pid) {
       await promisify(execFile)('taskkill', ['/pid', String(launcher.pid), '/T', '/F'], { windowsHide: true, timeout: 5000 }).catch(() => {});
     }

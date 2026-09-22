@@ -43,6 +43,7 @@ export class ChromeClassroom implements ClassroomDriver {
   adapter?: IClickerAdapter;
   private deadline = 0;
   private startup?: Promise<void>;
+  private shutdown?: Promise<void>;
   private checkpoint?: ReturnType<typeof setInterval>;
   private capturing = false;
   private activeCourse?: CourseConfig;
@@ -65,6 +66,7 @@ export class ChromeClassroom implements ClassroomDriver {
     } catch { return; }
   }
   private async ensureConnected(signal?: AbortSignal) {
+    if (this.shutdown) await this.shutdown;
     if (this.browser?.isConnected()) return;
     if (this.startup) return this.startup;
     this.startup = (async () => {
@@ -89,6 +91,15 @@ export class ChromeClassroom implements ClassroomDriver {
       this.context = this.browser.contexts()[0];
       if (!this.context) throw new Error('无法连接 Chrome 默认会话。');
       this.context.setDefaultTimeout(5000);
+      const context = this.context;
+      const connectedBrowser = this.browser;
+      const onPage = (page: Page) => page.on('close', () => {
+        if (page === this.page) this.changed();
+        // The final window may belong to a tab the user opened manually.
+        if (!context.pages().some(open => !open.isClosed())) void this.closeBrowser(connectedBrowser).catch(error => this.report(String(error)));
+      });
+      for (const page of context.pages()) onPage(page);
+      context.on('page', onPage);
       this.browser.on('disconnected', () => { this.changed(); });
       clearInterval(this.checkpoint);
       this.checkpoint = setInterval(() => { void this.capture(); }, 5000);
@@ -116,7 +127,6 @@ export class ChromeClassroom implements ClassroomDriver {
         page.on('domcontentloaded', disposeRestoration);
       }
     }
-    page.on('close', () => this.changed());
     page.on('dialog', dialog => { void dialog.dismiss().catch(() => {}); this.report('iClicker 出现网页提示，请检查课堂状态。'); });
     page.on('framenavigated', frame => {
       if (frame === page.mainFrame() && this.deadline > Date.now() && new URL(frame.url()).origin === this.origin) void this.armPage().catch(() => {});
@@ -224,9 +234,25 @@ export class ChromeClassroom implements ClassroomDriver {
     }
     await this.capture();
   }
+  private closeBrowser(browser = this.browser): Promise<void> {
+    if (this.shutdown) return this.shutdown;
+    if (browser !== this.browser) return Promise.resolve();
+    if (!browser?.isConnected()) return Promise.resolve();
+    this.shutdown = (async () => {
+      const cdp = await browser.newBrowserCDPSession();
+      try {
+        await cdp.send('Browser.close');
+      } catch (error) {
+        if (browser.isConnected()) throw error;
+      }
+      for (let i = 0; i < 50 && browser.isConnected(); i++) await delay(100);
+      if (browser.isConnected()) throw new Error('专用 Chrome 未能正常退出');
+    })().finally(() => { this.shutdown = undefined; });
+    return this.shutdown;
+  }
   async dispose() {
     clearInterval(this.checkpoint);
-    await this.disarm();
-    // Keep the visible Chrome window; terminating Electron disconnects CDP.
+    try { await this.disarm(); }
+    finally { await this.closeBrowser(); }
   }
 }
