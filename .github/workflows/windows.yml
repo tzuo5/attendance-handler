@@ -25,9 +25,11 @@ jobs:
       - run: npm test
       - run: npm run dist:win
       - run: npm run test:integration
+        timeout-minutes: 3
       - name: Audit packaged application
         run: node scripts/audit-public.mjs --app release-public/win-unpacked
       - name: Install and test the actual installer
+        timeout-minutes: 3
         shell: pwsh
         run: |
           $installer = (Get-ChildItem release-public/*-Setup.exe).FullName

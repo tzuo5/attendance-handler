@@ -56,7 +56,7 @@ export class ChromeClassroom implements ClassroomDriver {
   isOpen() { return !!this.browser?.isConnected() && !!this.page && !this.page.isClosed(); }
   private async endpoint(): Promise<string | undefined> {
     try {
-      const [port, path] = (await readFile(join(this.profile, 'DevToolsActivePort'), 'utf8')).trim().split('\n');
+      const [port, path] = (await readFile(join(this.profile, 'DevToolsActivePort'), 'utf8')).trim().split(/\r?\n/);
       if (!/^\d+$/.test(port) || !path?.startsWith('/devtools/browser/')) return;
       const response = await fetch(`http://127.0.0.1:${port}/json/version`, { signal: AbortSignal.timeout(700) });
       const data = await response.json() as { webSocketDebuggerUrl?: string };
@@ -75,6 +75,12 @@ export class ChromeClassroom implements ClassroomDriver {
         await launchChrome(this.profile);
         for (let i = 0; i < 60 && !endpoint; i++) {
           signal?.throwIfAborted(); await delay(300); endpoint = await this.endpoint();
+          // CDP can disconnect before Chrome releases the profile's process lock.
+          // A launch during shutdown gets forwarded to the exiting process and is
+          // lost. Retry only while this dedicated profile has no live endpoint.
+          if (!endpoint && (i === 19 || i === 39)) {
+            signal?.throwIfAborted(); await launchChrome(this.profile);
+          }
         }
       }
       if (!endpoint) throw new Error('专用 Chrome 连接超时，请关闭 App 的专用浏览器后重试。');
