@@ -63,6 +63,13 @@ export interface LogDetails {
   previousEndsAt?: number; endsAt?: number;
 }
 export interface LogEntry extends LogDetails { id: string; at: number; level: 'info' | 'success' | 'warning' | 'error'; message: string; }
+export type HelpTarget = 'chrome' | 'data' | 'notifications';
+export interface EnvironmentItem {
+  id: 'platform' | 'chrome' | 'storage' | 'encryption' | 'browser';
+  label: string; status: 'passed' | 'action' | 'unverified'; detail: string; help?: HelpTarget;
+}
+export interface EnvironmentReport { checkedAt: number; items: EnvironmentItem[]; }
+export const environmentReady = (report?:EnvironmentReport) => !!report && report.items.length===5 && report.items.every(item=>item.status==='passed');
 export interface AppState {
   courses: CourseConfig[];
   session: SessionState | null;
@@ -72,6 +79,7 @@ export interface AppState {
   browserConnected: boolean;
   demo: boolean;
   notificationError?: string;
+  environment?: EnvironmentReport;
 }
 export interface AttendanceAPI {
   getState(): Promise<AppState>;
@@ -85,6 +93,8 @@ export interface AttendanceAPI {
   showClassroom(): Promise<void>;
   minimizeClassroom(): Promise<void>;
   testNotification(): Promise<void>;
+  checkEnvironment(): Promise<EnvironmentReport>;
+  openHelp(target: HelpTarget): Promise<void>;
   onState(listener: (state: AppState) => void): () => void;
 }
 export const ACTIVE = (session: SessionState | null): session is SessionState => !!session && !['stopped', 'completed'].includes(session.status);

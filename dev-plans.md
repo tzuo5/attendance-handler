@@ -9,7 +9,7 @@
 | 阶段 | 交付目标 | 进入条件 | 状态 |
 | --- | --- | --- | --- |
 | Phase 1 | 状态与恢复、课堂反馈、详细日志、简化课程配置 | 当前版本作为基线 | 已完成（2026-09-30） |
-| Phase 2 | 首次配置向导与环境检查 | Phase 1 验收通过 | 未开始 |
+| Phase 2 | 首次配置向导与环境检查 | Phase 1 验收通过 | 开发中 |
 | Phase 3 | 无 Chrome 窗口的后台模式 | Phase 2 验收通过；模式切换验证通过 | 未开始 |
 | Phase 4 | 设置定时开启 | Phase 3 验收通过 | 未开始 |
 | Phase 5 | Google Calendar / Apple Calendar 与 `@tt` 互动设想 | 可提前调研；实现规划依赖 Phase 4 | 探索待开始 |
@@ -93,7 +93,7 @@
 
 ### 检查点
 
-- [ ] **P2.1 — 环境检查与修复指引**
+- [x] **P2.1 — 环境检查与修复指引**
   - 检查支持的平台、Chrome 可用性、专用浏览器启动与连接、本机数据可写及安全存储可用性。
   - 显示“通过 / 需要处理 / 尚未验证”及对应修复入口，支持修复后重新检查。
   - **验收：**模拟 Chrome 缺失、连接失败、数据目录不可写和加密不可用，每项都有可执行提示；检查不会修改日常 Chrome 资料。
@@ -224,3 +224,4 @@
 | Phase 1 回归补充 | 2026-09-30 | `fix: preserve classroom receipts and wait for confirmed smoke results` | 44 项单元测试、类型检查、模拟 UI、macOS 打包模拟课堂；补充签到历史、关题后的回执及延长后的唤醒边界 | macOS 打包测试使用明确标记的合成加密；系统钥匙串仍待授权验证，Windows 使用真实 DPAPI |
 | P1.3 保留上限边界 | 2026-09-30 | `fix: keep log reading position when older events expire` | 类型检查与模拟 UI：同时插入新事件、清理旧事件后，同一条可见记录的位置保持不变 | 已被清理的详细事件无法恢复，摘要仍按独立上限保留 |
 | Phase 1 阶段出口 | 2026-09-30 | [`a28135f`](https://github.com/tzuo5/attendance-handler/commit/a28135f) · 最终功能提交 | [验证记录](VERIFICATION.md)：44 项单元测试、17 项集成、生命周期、双平台 UI、生产构建、实际 Windows 安装版及隐私审计；[Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36813357714) 全部通过 | 本次 macOS 钥匙串授权、真实课堂及实体设备交互仍按验证记录单独标为待验证；此前 v0.1.1 下载包未更新 |
+| P2.1 | 2026-10-01 | `feat: add environment readiness checks and repair guidance` | 50 项单元测试、类型检查、renderer 验收、生产构建、18 项专用 Chrome 集成；检查探针不覆盖本机数据、不抢焦点 | 安全存储检查验证系统可用性，实际登录加密另行验证；Windows 待本阶段最终 CI |

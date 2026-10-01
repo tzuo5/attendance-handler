@@ -55,6 +55,11 @@ export class ChromeClassroom implements ClassroomDriver {
     this.vault = new SessionVault(join(directory, 'session.enc'), cipher, origin);
   }
   isOpen() { return !!this.browser?.isConnected() && !!this.page && !this.page.isClosed(); }
+  async checkConnection() {
+    await this.ensureConnected();
+    const page=await this.ensurePage();
+    await page.evaluate(()=>true);
+  }
   private async endpoint(): Promise<string | undefined> {
     try {
       const [port, path] = (await readFile(join(this.profile, 'DevToolsActivePort'), 'utf8')).trim().split(/\r?\n/);
@@ -243,12 +248,21 @@ export class ChromeClassroom implements ClassroomDriver {
     if (browser !== this.browser) return Promise.resolve();
     if (!browser?.isConnected()) return Promise.resolve();
     this.shutdown = (async () => {
-      const cdp = await browser.newBrowserCDPSession();
-      try {
+      let disconnectedListener!:()=>void;
+      let timeout:ReturnType<typeof setTimeout>|undefined;
+      const disconnected=new Promise<void>((resolve,reject)=>{
+        disconnectedListener=resolve;browser.once('disconnected',disconnectedListener);
+        timeout=setTimeout(()=>reject(new Error('专用 Chrome 退出超时，请关闭其窗口后重试。')),5000);
+        if(!browser.isConnected())resolve();
+      });
+      const close=(async()=>{
+        const cdp=await browser.newBrowserCDPSession();
         await cdp.send('Browser.close');
-      } catch (error) {
-        if (browser.isConnected()) throw error;
-      }
+      })().catch(error=>{if(browser.isConnected())throw error;});
+      // An external close can tear down CDP before a second close receives its
+      // reply. A completed disconnect must release the reopening wait too.
+      try{await Promise.race([close,disconnected]);}
+      finally{clearTimeout(timeout);browser.off('disconnected',disconnectedListener);}
       for (let i = 0; i < 50 && browser.isConnected(); i++) await delay(100);
       if (browser.isConnected()) throw new Error('专用 Chrome 未能正常退出');
     })().finally(() => { this.shutdown = undefined; });

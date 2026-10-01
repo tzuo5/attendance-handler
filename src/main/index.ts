@@ -1,13 +1,15 @@
-import { app, BrowserWindow, ipcMain, Menu, nativeImage, Notification, powerMonitor, powerSaveBlocker, safeStorage, Tray, dialog } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, nativeImage, Notification, powerMonitor, powerSaveBlocker, safeStorage, Tray, dialog, shell } from 'electron';
+import { release } from 'node:os';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { ChromeClassroom } from './browser';
-import { nativeHelperName } from './platform';
+import { nativeHelperName, findChrome } from './platform';
+import { checkEnvironment, checkDataWritable } from './environment';
 import { summarizeSession } from '../shared/session-summary';
 import { Store } from './store';
 import { Watchdog } from './watchdog';
 import { validateCourse } from '../shared/validation';
-import { ACTIVE, sessionPresentation, type AppState, type LogDetails } from '../shared/types';
+import { ACTIVE, sessionPresentation, type AppState, type LogDetails, type EnvironmentReport } from '../shared/types';
 
 const demo = process.env.ATTENDANCE_DEMO === '1';
 const origin = demo ? process.env.ATTENDANCE_ORIGIN || 'http://127.0.0.1:43891' : 'https://student.iclicker.com';
@@ -25,6 +27,8 @@ async function main() {
   let quitting = false;
   let blockId: number | undefined;
   let notificationError: string | undefined;
+  let environment:EnvironmentReport|undefined;
+  let checkingEnvironment:Promise<EnvironmentReport>|undefined;
   const notifications = new Map<string, Notification>();
   let store: Store;
   try { store = new Store(app.getPath('userData')); }
@@ -41,7 +45,7 @@ async function main() {
       { id: '22222222-2222-4222-8222-222222222222', remoteId: 'demo', name: '模拟课堂 · 提醒作答', url: `${origin}/#/course/demo/overview`, latitude: 0, longitude: 0, accuracy: 10, durationMinutes: 50, mode: 'notify' },
     ]; store.save();
   }
-  const snapshot = (): AppState => ({ courses: store.data.courses, session: watchdog?.session || store.data.session, logs: store.data.logs, summaries: store.data.summaries, classroomOrigin: origin, browserConnected: browser?.isOpen() || false, demo, notificationError });
+  const snapshot = (): AppState => ({ courses: store.data.courses, session: watchdog?.session || store.data.session, logs: store.data.logs, summaries: store.data.summaries, classroomOrigin: origin, browserConnected: browser?.isOpen() || false, demo, notificationError, environment });
   const emit = () => {
     if (window && !window.isDestroyed()) window.webContents.send('state:changed', snapshot());
     if (tray) {
@@ -104,6 +108,21 @@ async function main() {
     });
   };
   invoke('state:get', snapshot);
+  invoke('environment:check',()=>{
+    if(checkingEnvironment)return checkingEnvironment;
+    checkingEnvironment=checkEnvironment({
+      supported:()=>process.platform==='darwin'?Number(release().split('.')[0])>=22:process.platform==='win32'&&Number(release().split('.')[0])>=10&&process.arch==='x64',
+      chrome:findChrome,writable:()=>checkDataWritable(store.directory),encryption:()=>safeStorage.isEncryptionAvailable(),connect:()=>browser.checkConnection(),
+    }).then(report=>{environment=report;emit();return report;}).finally(()=>{checkingEnvironment=undefined;});
+    return checkingEnvironment;
+  });
+  invoke('help:open',async input=>{
+    const target=z.enum(['chrome','data','notifications']).parse(input);
+    if(target==='chrome')await shell.openExternal('https://www.google.com/chrome/');
+    else if(target==='data'){const error=await shell.openPath(store.directory);if(error)throw new Error('数据文件夹无法打开，请检查当前系统账户的权限。');}
+    else if(process.platform==='win32')await shell.openExternal('ms-settings:notifications');
+    else{const error=await shell.openPath('/System/Applications/System Settings.app');if(error)throw new Error('请从 Apple 菜单打开系统设置，选择“通知”。');}
+  });
   invoke('course:save', input => {
     const course = validateCourse(input, origin);
     if (ACTIVE(watchdog.session) && watchdog.session.course.id === course.id) throw new Error('请先结束这门课，再修改配置。');

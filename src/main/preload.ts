@@ -12,6 +12,8 @@ const api: AttendanceAPI = {
   showClassroom: () => ipcRenderer.invoke('browser:show'),
   minimizeClassroom: () => ipcRenderer.invoke('browser:minimize'),
   testNotification: () => ipcRenderer.invoke('notification:test'),
+  checkEnvironment: () => ipcRenderer.invoke('environment:check'),
+  openHelp: target => ipcRenderer.invoke('help:open',target),
   onState: listener => {
     const handler = (_event: Electron.IpcRendererEvent, state: AppState) => listener(state);
     ipcRenderer.on('state:changed', handler);

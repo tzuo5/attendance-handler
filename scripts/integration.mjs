@@ -33,6 +33,9 @@ const course = { id: '11111111-1111-4111-8111-111111111111', remoteId: 'demo', n
 async function until(fn, message, timeout = 10000) { const end = Date.now() + timeout; while (Date.now() < end) { if (await fn()) return; await delay(150); } throw new Error(message); }
 try {
   const focused = await frontmost();
+  await browser.checkConnection();
+  assert.equal(browser.page.url(),'about:blank');
+  assert.equal(await frontmost(),focused);checks.push('environment connection stays isolated and preserves focus');
   await watchdog.start(course);
   assert.equal(await frontmost(), focused, 'background Chrome launch must preserve foreground application'); checks.push('background launch preserves focus');
   await until(async () => (await browser.read()).state === 'login', 'login page did not load');

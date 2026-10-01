@@ -24,6 +24,8 @@ try {
     window.__testState = patch => { Object.assign(state, patch); listener?.(structuredClone(state)); };
     window.attendance = {
       getState: async () => structuredClone(state), onState: cb => { listener = cb; return () => {}; },
+      checkEnvironment:async()=>{state.environment={checkedAt:Date.now(),items:['platform','chrome','storage','encryption','browser'].map(id=>({id,label:id==='chrome'?'Google Chrome':id,status:'passed',detail:'模拟检查通过'}))};listener?.(structuredClone(state));return structuredClone(state.environment);},
+      openHelp:async target=>{window.__lastHelp=target;},
       saveCourse: async c => { state.courses.push(c); listener?.(structuredClone(state)); return structuredClone(state); },
       deleteCourse: async () => structuredClone(state), login: async () => {}, importCourses: async () => [{ remoteId:'new',name:'导入课程',url:'https://student.iclicker.com/#/course/new/overview' }],
       extend:async()=>{state.session.endsAt+=600000;listener?.(structuredClone(state));}, start: async () => {}, stop: async () => {}, showClassroom: async () => {}, minimizeClassroom: async () => {}, testNotification: async () => {},
@@ -130,6 +132,14 @@ try {
   await page.getByRole('radio',{name:'自动选择 A',exact:true}).check();
   await page.getByRole('button',{name:'保存课程',exact:true}).click();
   await page.getByRole('heading',{name:'导入课程',exact:true}).waitFor();
+  await page.getByRole('button',{name:'连接与提醒',exact:true}).click();
+  await page.getByRole('button',{name:'开始检查',exact:true}).click();
+  await page.getByRole('button',{name:'重新检查',exact:true}).waitFor();
+  assert.equal(await page.getByRole('region',{name:'环境检查',exact:true}).getByText('通过',{exact:true}).count(),5);
+  await page.evaluate(async()=>{const state=await window.attendance.getState();state.environment.items[1]={id:'chrome',label:'Google Chrome',status:'action',detail:'请安装 Chrome',help:'chrome'};state.environment.items[4].status='unverified';window.__testState(state);});
+  await page.getByRole('button',{name:'下载 Chrome',exact:true}).click();
+  assert.equal(await page.evaluate(()=>window.__lastHelp),'chrome');
+  await page.getByText('尚未验证',{exact:true}).waitFor();
   await mkdir('.test-artifacts/phase1', { recursive:true });
   await page.screenshot({path:'.test-artifacts/phase1/courses.png'});
   assert.deepEqual(errors,[]);

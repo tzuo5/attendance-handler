@@ -8,6 +8,7 @@ import { CourseForm } from './CourseForm';
 import { SessionSummaryPanel, SummaryHistory } from './SessionSummaryPanel';
 import { QuestionPanel } from './QuestionPanel';
 import { ActivityLog } from './ActivityLog';
+import { EnvironmentPanel } from './EnvironmentPanel';
 
 function App() {
   const [state, setState] = useState<AppState>();
@@ -65,6 +66,7 @@ function App() {
       {toast && <div className="banner success" role="status">{toast}</div>}
       {state.notificationError && <div className="banner error" role="alert">{state.notificationError}</div>}
       {settings ? <section className="settings-grid">
+        <EnvironmentPanel report={state.environment} busy={busy==='environment'} onCheck={()=>action('environment',()=>window.attendance.checkEnvironment())} onHelp={target=>action('help',()=>window.attendance.openHelp(target))}/>
         <article className="panel setting-card"><div className="tile-icon"><Icon name="browser" size={26}/></div><h2>专用 Chrome 窗口</h2><p>首次登录时完成学校验证。后续会保留登录状态，你可以随时查看或手动操作课堂页面。</p><button className="primary" disabled={!!busy} onClick={() => action('login', () => window.attendance.login())}>打开登录窗口<Icon name="arrow" size={17}/></button><div className="hint">切换应用、遮挡或最小化窗口，都不影响监控。</div></article>
         <article className="panel setting-card"><div className="tile-icon amber"><Icon name="bell" size={26}/></div><h2>系统题目提醒</h2><p>需要手动答题时立即提醒。题目未作答且仍开放时，每 30 秒再次提醒；点击通知返回课堂。</p><button className="secondary" onClick={() => action('notification', async () => { await window.attendance.testNotification(); setToast('已请求发送测试通知，请在系统通知中确认。'); })}>发送测试通知<Icon name="arrow" size={17}/></button><div className="hint">请在 系统通知设置中允许 Attendance Handler 通知和声音。</div></article>
         <article className="panel setting-card wide"><h2>运行方式</h2><div className="settings-row"><span>页面检查</span><strong>每 5 秒一次</strong></div><div className="settings-row"><span>上课期间</span><strong>阻止闲置睡眠，允许屏幕熄灭</strong></div><div className="settings-row"><span>关闭 App 窗口</span><strong>继续在菜单栏或系统托盘运行</strong></div><div className="settings-row"><span>关闭课堂窗口</span><strong>暂停操作，倒计时继续</strong></div><p className="hint">合盖或手动睡眠时无法检查题目。唤醒后，监控会在剩余课程时间内恢复。</p></article>
