@@ -29,14 +29,16 @@ export class Watchdog {
   private extending: Promise<void> | null = null;
   private preparation?: Promise<void>;
   private stopping: Promise<void> | null = null;
+  private transitioning = false;
   constructor(private driver: ClassroomDriver, private hooks: WatchdogHooks, private now = () => Date.now()) {}
 
   async start(course: CourseConfig) {
+    if (this.transitioning) throw new Error('课堂正在切换，请稍候再开始。');
     if (ACTIVE(this.session)) throw new Error('已有课程正在监控，请先结束当前课程。');
     if (this.stopping) await this.stopping;
     this.controller = new AbortController();
     this.lastReminders.clear(); this.failures = 0; this.joins = 0; this.lastJoin = -Infinity;
-    this.session = { id: crypto.randomUUID(), course: structuredClone(course), startedAt: this.now(), endsAt: this.now() + course.durationMinutes * 60000, status: 'starting', attendance: 'unknown', questions: {}, handled: {}, detail: '正在打开专用 Chrome 课堂窗口' };
+    this.session = { id: crypto.randomUUID(), course: structuredClone(course), startedAt: this.now(), endsAt: this.now() + course.durationMinutes * 60000, status: 'starting', attendance: 'unknown', questions: {}, handled: {}, detail: '正在连接专用 Chrome 课堂' };
     const run = this.session;
     this.hooks.keepAwake(true); this.hooks.clearNotifications(); this.emit();
     this.event('info', `开始 ${course.name} · ${course.durationMinutes} 分钟`, 'session-started', { endsAt: run.endsAt });
@@ -102,7 +104,7 @@ export class Watchdog {
     if (ACTIVE(this.session)) this.timer = setTimeout(() => { void this.tick(); }, ms);
   }
   async tick() {
-    if (this.inFlight || !ACTIVE(this.session)) return;
+    if (this.inFlight || this.transitioning || !ACTIVE(this.session)) return;
     if (this.now() >= this.session.endsAt) { await this.stop(true); return; }
     const run = this.session;
     const started = this.now();
@@ -111,6 +113,22 @@ export class Watchdog {
     finally {
       this.inFlight = null;
       if (this.live(run)) this.schedule(Math.max(0, Math.min(30000, 5000 * 2 ** this.failures) - (this.now() - started)));
+    }
+  }
+  async transition(action: (signal?: AbortSignal) => Promise<void>) {
+    if (this.transitioning) throw new Error('课堂正在切换，请稍候。');
+    this.transitioning = true;
+    clearTimeout(this.timer);
+    const run = ACTIVE(this.session) ? this.session : null;
+    try {
+      if (this.preparation) await this.preparation.catch(() => {});
+      if (this.inFlight) await this.inFlight;
+      if (run && !this.live(run)) return;
+      if (run) this.change('starting', '正在切换课堂运行方式，原结束时间保留');
+      await action(run ? this.controller?.signal : undefined);
+    } finally {
+      this.transitioning = false;
+      if (run && this.live(run)) { this.hooks.clearNotifications(); await this.resumed(); }
     }
   }
   private async check(run: SessionState) {

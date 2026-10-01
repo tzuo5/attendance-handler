@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile, rename } from 'node:fs/promises';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright-core';
-import type { CourseConfig, PageSnapshot, QuestionSnapshot, LoginReport, CourseImportReport } from '../shared/types';
+import type { BrowserMode, CourseConfig, PageSnapshot, QuestionSnapshot, LoginReport, CourseImportReport } from '../shared/types';
 import { IClickerAdapter } from './iclicker';
 import type { ClassroomDriver } from './watchdog';
 import { activateChrome, launchChrome } from './platform';
@@ -45,17 +45,62 @@ export class ChromeClassroom implements ClassroomDriver {
   private startup?: Promise<void>;
   private shutdown?: Promise<void>;
   private checkpoint?: ReturnType<typeof setInterval>;
-  private capturing = false;
+  private capturing?: Promise<void>;
+  private changingMode?: Promise<void>;
+  mode: BrowserMode = 'visible';
   private activeCourse?: CourseConfig;
   private cachedCipherError = false;
   readonly profile: string;
   readonly vault: SessionVault;
-  constructor(readonly directory: string, readonly origin: string, cipher: Cipher, private changed: () => void, private report: (message: string) => void, private nativeHelper: string) {
+  constructor(readonly directory: string, readonly origin: string, cipher: Cipher, private changed: () => void, private report: (message: string) => void, private nativeHelper: string, private preferredMode: () => BrowserMode = () => 'visible') {
     this.profile = join(directory, 'chrome-profile');
     this.vault = new SessionVault(join(directory, 'session.enc'), cipher, origin);
   }
   isOpen() { return !!this.browser?.isConnected() && !!this.page && !this.page.isClosed(); }
+  isTransitioning() { return !!this.changingMode; }
+  async setMode(mode: BrowserMode, signal?: AbortSignal): Promise<void> {
+    if (this.changingMode) {
+      await this.changingMode;
+      signal?.throwIfAborted();
+      if (this.mode !== mode) return this.setMode(mode, signal);
+      return;
+    }
+    this.changingMode = (async () => {
+      if (this.startup) await this.startup;
+      signal?.throwIfAborted();
+      if (!this.browser?.isConnected()) this.mode = mode;
+      await this.ensureConnected(signal);
+      if (this.mode === mode) return;
+      await this.capture(true);
+      if (this.isOpen()) await this.page!.evaluate(() => { (window as unknown as { __attendanceDeadline: number }).__attendanceDeadline = 0; });
+      const cdp = await this.browser!.newBrowserCDPSession();
+      let pid: number | undefined;
+      try { pid = (await cdp.send('SystemInfo.getProcessInfo')).processInfo.find(p => p.type === 'browser')?.id; }
+      finally { await cdp.detach(); }
+      if (!pid || !Number.isSafeInteger(pid) || pid <= 0) throw new Error('无法确认专用 Chrome 进程，运行方式未切换。请重试。');
+      await this.closeBrowser();
+      // CDP disconnect is earlier than profile release. Never start another
+      // instance of this profile until the previous browser process has exited.
+      if (pid) {
+        let alive = true;
+        for (let i = 0; i < 120; i++) {
+          signal?.throwIfAborted();
+          try { process.kill(pid, 0); }
+          catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error; alive = false; break; }
+          await delay(100);
+        }
+        if (alive) throw new Error('专用 Chrome 尚未退出，运行方式未切换。请稍后重试。');
+      }
+      signal?.throwIfAborted();
+      this.page = undefined; this.adapter = undefined; this.context = undefined;
+      this.mode = mode;
+      await this.ensureConnected(signal);
+    })().finally(() => { this.changingMode = undefined; this.changed(); });
+    this.changed();
+    await this.changingMode;
+  }
   async checkConnection() {
+    if (this.changingMode) await this.changingMode;
     await this.ensureConnected();
     const page=await this.ensurePage();
     await page.evaluate(()=>true);
@@ -79,20 +124,23 @@ export class ChromeClassroom implements ClassroomDriver {
       await mkdir(this.profile, { recursive: true, mode: 0o700 });
       let endpoint = await this.endpoint();
       if (!endpoint) {
-        await launchChrome(this.profile);
+        await launchChrome(this.profile, this.mode);
         for (let i = 0; i < 60 && !endpoint; i++) {
           signal?.throwIfAborted(); await delay(300); endpoint = await this.endpoint();
           // CDP can disconnect before Chrome releases the profile's process lock.
           // A launch during shutdown gets forwarded to the exiting process and is
           // lost. Retry only while this dedicated profile has no live endpoint.
           if (!endpoint && (i === 19 || i === 39)) {
-            signal?.throwIfAborted(); await launchChrome(this.profile);
+            signal?.throwIfAborted(); await launchChrome(this.profile, this.mode);
           }
         }
       }
       if (!endpoint) throw new Error('专用 Chrome 连接超时，请关闭 App 的专用浏览器后重试。');
       signal?.throwIfAborted();
       this.browser = await chromium.connectOverCDP(endpoint, { timeout: 15000 });
+      const modeCDP = await this.browser.newBrowserCDPSession();
+      try { this.mode = (await modeCDP.send('Browser.getVersion')).userAgent.includes('HeadlessChrome') ? 'background' : 'visible'; }
+      finally { await modeCDP.detach(); }
       this.context = this.browser.contexts()[0];
       if (!this.context) throw new Error('无法连接 Chrome 默认会话。');
       this.context.setDefaultTimeout(5000);
@@ -154,7 +202,7 @@ export class ChromeClassroom implements ClassroomDriver {
   }
   async prepare(course: CourseConfig, deadline: number, signal: AbortSignal) {
     this.activeCourse = course; this.deadline = deadline;
-    await this.ensureConnected(signal); signal.throwIfAborted();
+    await this.setMode(this.preferredMode(), signal); signal.throwIfAborted();
     const page = await this.ensurePage(); signal.throwIfAborted();
     await this.context!.grantPermissions(['geolocation'], { origin: this.origin });
     await this.context!.setGeolocation({ latitude: course.latitude, longitude: course.longitude, accuracy: course.accuracy });
@@ -162,11 +210,12 @@ export class ChromeClassroom implements ClassroomDriver {
     await page.goto(course.url, { waitUntil: 'domcontentloaded', timeout: 25000 });
     signal.throwIfAborted(); await this.armPage(); await this.capture(); this.changed();
   }
-  async login() {
-    await this.ensureConnected();
+  async login(signal?: AbortSignal) {
+    await this.setMode('visible', signal);
+    signal?.throwIfAborted();
     const page = await this.ensurePage();
     if (!page.url().startsWith(this.origin)) await page.goto(`${this.origin}/#/courses`, { waitUntil: 'domcontentloaded', timeout: 25000 });
-    await this.show();
+    await this.show(signal);
   }
   async checkLogin(): Promise<LoginReport> {
     const checkedAt = Date.now();
@@ -221,9 +270,13 @@ export class ChromeClassroom implements ClassroomDriver {
   }
   async join(signal: AbortSignal) { await this.adapter!.clickJoin(this.deadline, signal); }
   async answerA(q: QuestionSnapshot, signal: AbortSignal) { await this.adapter!.selectA(q, this.deadline, signal); }
-  async show() {
-    await this.ensureConnected();
+  async show(signal?: AbortSignal) {
+    const previousUrl = this.page && !this.page.isClosed() && this.page.url().startsWith(this.origin) ? this.page.url() : `${this.origin}/#/courses`;
+    await this.setMode('visible', signal);
+    signal?.throwIfAborted();
     const page = await this.ensurePage();
+    if (page.url() === 'about:blank') await page.goto(previousUrl, { waitUntil: 'domcontentloaded', timeout: 25000 });
+    signal?.throwIfAborted();
     if (this.activeCourse && this.deadline > Date.now()) {
       const courseId = `${new URL(page.url()).pathname}${new URL(page.url()).hash}`.match(/\/(?:class|course)\/([^/?#]+)/)?.[1];
       // Explicit user action permits restoring a closed/navigated classroom.
@@ -248,18 +301,21 @@ export class ChromeClassroom implements ClassroomDriver {
     this.changed();
   }
   async minimize() {
-    if (!this.isOpen()) return;
+    if (!this.isOpen() || this.mode === 'background') return;
     const cdp = await this.context!.newCDPSession(this.page!);
     try { const { windowId } = await cdp.send('Browser.getWindowForTarget'); await cdp.send('Browser.setWindowBounds', { windowId, bounds: { windowState: 'minimized' } }); }
     finally { await cdp.detach(); }
   }
-  async capture() {
-    if (!this.isOpen() || this.capturing) return;
-    this.capturing = true;
-    try { await this.vault.capture(this.page!); }
+  async capture(strict = false) {
+    if (!this.capturing) {
+      if (!this.isOpen()) return;
+      this.capturing = this.vault.capture(this.page!).finally(() => { this.capturing = undefined; });
+    }
+    try { await this.capturing; }
     catch (error) {
       if (!this.cachedCipherError && error instanceof Error && error.message.includes('安全存储')) { this.cachedCipherError = true; this.report(error.message); }
-    } finally { this.capturing = false; }
+      if (strict) throw error;
+    }
   }
   async extendDeadline(deadline: number) {
     this.deadline = deadline;

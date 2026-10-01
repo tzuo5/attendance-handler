@@ -11,6 +11,7 @@ const api: AttendanceAPI = {
   extend: () => ipcRenderer.invoke('session:extend'),
   showClassroom: () => ipcRenderer.invoke('browser:show'),
   minimizeClassroom: () => ipcRenderer.invoke('browser:minimize'),
+  saveSettings: settings => ipcRenderer.invoke('settings:save', settings),
   testNotification: () => ipcRenderer.invoke('notification:test'),
   checkEnvironment: () => ipcRenderer.invoke('environment:check'),
   openHelp: target => ipcRenderer.invoke('help:open',target),

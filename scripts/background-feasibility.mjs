@@ -39,7 +39,8 @@ const cipher = {
   },
 };
 const logs = [], checks = [], processes = [], notifications = [];
-const browser = new ChromeClassroom(directory, mock.origin, cipher, () => {}, message => logs.push(message), helper);
+let preferredMode = 'visible';
+const browser = new ChromeClassroom(directory, mock.origin, cipher, () => {}, message => logs.push(message), helper, () => preferredMode);
 const watchdog = new Watchdog(browser, { changed: () => {}, log: (_level, message) => logs.push(message), notify: (...args) => notifications.push(args), clearNotifications: () => {}, keepAwake: () => {} });
 const course = { id: '11111111-1111-4111-8111-111111111111', remoteId: 'demo', name: 'Background prototype', url: `${mock.origin}/#/course/demo/overview`, latitude: 0, longitude: 0, accuracy: 10, durationMinutes: 5, mode: 'auto-a' };
 async function until(condition, message) {
@@ -55,6 +56,7 @@ const pidOf = async () => {
 };
 let runId, endsAt, version;
 async function switchTo(mode) {
+  preferredMode = mode;
   const previousPid = await pidOf();
   await browser.capture();
   await browser.dispose();

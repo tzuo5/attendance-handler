@@ -1,4 +1,6 @@
 export type AnswerMode = 'auto-a' | 'notify';
+export type BrowserMode = 'visible' | 'background';
+export interface AppSettings { browserMode: BrowserMode; }
 export interface RemoteCourse { remoteId: string; name: string; url: string; }
 export interface CourseConfig extends RemoteCourse {
   id: string;
@@ -88,6 +90,9 @@ export interface AppState {
   summaries: SessionSummary[];
   classroomOrigin: string;
   browserConnected: boolean;
+  browserMode?: BrowserMode;
+  browserTransitioning?: boolean;
+  settings?: AppSettings;
   demo: boolean;
   notificationError?: string;
   notificationCanConfirm?: boolean;
@@ -107,6 +112,7 @@ export interface AttendanceAPI {
   extend(): Promise<void>;
   showClassroom(): Promise<void>;
   minimizeClassroom(): Promise<void>;
+  saveSettings(settings: AppSettings): Promise<AppState>;
   testNotification(): Promise<void>;
   checkEnvironment(): Promise<EnvironmentReport>;
   openHelp(target: HelpTarget): Promise<void>;

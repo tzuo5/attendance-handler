@@ -54,16 +54,18 @@ async function main() {
       { id: '22222222-2222-4222-8222-222222222222', remoteId: 'demo', name: '模拟课堂 · 提醒作答', url: `${origin}/#/course/demo/overview`, latitude: 0, longitude: 0, accuracy: 10, durationMinutes: 50, mode: 'notify' },
     ]; store.data.setup = initialSetup(true); store.save();
   }
-  const snapshot = (): AppState => ({ courses: store.data.courses, session: watchdog?.session || store.data.session, logs: store.data.logs, summaries: store.data.summaries, classroomOrigin: origin, browserConnected: browser?.isOpen() || false, demo, notificationError, notificationCanConfirm: !!activeTestAttempt && activeTestAttempt === store.data.setup.notification?.attemptId && ['requested','pending'].includes(store.data.setup.notification.status), environment, loginReport, courseImport, setup: store.data.setup });
+  const snapshot = (): AppState => ({ courses: store.data.courses, session: watchdog?.session || store.data.session, logs: store.data.logs, summaries: store.data.summaries, classroomOrigin: origin, browserConnected: browser?.isOpen() || false, browserMode: browser?.mode || 'visible', browserTransitioning: browser?.isTransitioning() || false, settings: store.data.settings, demo, notificationError, notificationCanConfirm: !!activeTestAttempt && activeTestAttempt === store.data.setup.notification?.attemptId && ['requested','pending'].includes(store.data.setup.notification.status), environment, loginReport, courseImport, setup: store.data.setup });
   const emit = () => {
     if (window && !window.isDestroyed()) window.webContents.send('state:changed', snapshot());
     if (tray) {
       const run = watchdog?.session;
       const remaining = ACTIVE(run) ? Math.max(0, Math.ceil((run.endsAt - Date.now()) / 60000)) : null;
       if (process.platform === 'darwin') tray.setTitle(remaining !== null ? `${remaining}m` : '');
-      tray.setToolTip(ACTIVE(run) ? `${run.course.name} · ${sessionPresentation(run).label}` : 'Attendance Handler');
+      const modeLabel = browser?.mode === 'background' ? '后台模式' : '课堂窗口模式';
+      tray.setToolTip(ACTIVE(run) ? `${run.course.name} · ${sessionPresentation(run).label} · ${modeLabel}` : 'Attendance Handler');
       tray.setContextMenu(Menu.buildFromTemplate([
         { label: ACTIVE(run) ? `${run.course.name} · ${sessionPresentation(run).label} · ${remaining} 分钟` : '课堂助手', enabled: false },
+        { label: modeLabel, enabled: false },
         { label: '打开 App', click: () => { window.show(); window.focus(); } },
         { label: sessionPresentation(run).action, click: () => { void showClassroom().catch(reportError); } },
         { label: '结束上课', enabled: ACTIVE(run), click: () => { void watchdog.stop().catch(reportError); } },
@@ -74,7 +76,7 @@ async function main() {
   const log = (level: 'info' | 'success' | 'warning' | 'error', message: string, details?: LogDetails) => { store.log(level, message, details); emit(); };
   const reportError = (error: unknown) => log('error', error instanceof Error ? error.message : String(error));
   const nativeHelper = join(__dirname.replace(/app\.asar([/\\])/, 'app.asar.unpacked$1'), nativeHelperName);
-  const browser = new ChromeClassroom(app.getPath('userData'), origin, safeStorage, emit, message => log('warning', message), nativeHelper);
+  const browser = new ChromeClassroom(app.getPath('userData'), origin, safeStorage, emit, message => log('warning', message), nativeHelper, () => store.data.settings.browserMode);
   const clearNotifications = () => { for (const notification of notifications.values()) notification.close(); notifications.clear(); };
   const updateTestEvent = (attempt: string, event: 'show' | 'failed' | 'timeout') => {
     const current = store.data.setup.notification || unverifiedNotification();
@@ -108,7 +110,7 @@ async function main() {
       if (!enabled && blockId !== undefined) { powerSaveBlocker.stop(blockId); blockId = undefined; }
     },
   });
-  const showClassroom = async () => { await browser.show(); await watchdog.resumed(); };
+  const showClassroom = () => watchdog.transition(signal => browser.show(signal));
   window = new BrowserWindow({
     width: 1160, height: 800, minWidth: 900, minHeight: 640, title: 'Attendance Handler',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default', backgroundColor: '#f6f5f1',
@@ -125,6 +127,11 @@ async function main() {
     });
   };
   invoke('state:get', snapshot);
+  invoke('settings:save', input => {
+    store.data.settings = z.object({ browserMode: z.enum(['visible','background']) }).strict().parse(input);
+    store.save(); emit();
+    return snapshot();
+  });
   const checkLogin = () => {
     if (checkingLogin) return checkingLogin;
     checkingLogin = browser.checkLogin().then(report => { loginReport = report; emit(); return report; }).finally(() => { checkingLogin = undefined; });
@@ -179,7 +186,7 @@ async function main() {
     store.data.courses = store.data.courses.filter(c => c.id !== id); store.save(); emit(); return snapshot();
   });
   invoke('course:import', async () => { const report = await importCourses(); if (report.status !== 'courses') throw new Error(report.detail); return report.courses; });
-  invoke('browser:login', () => browser.login());
+  invoke('browser:login', () => watchdog.transition(signal => browser.login(signal)));
   invoke('browser:show', showClassroom);
   invoke('browser:minimize', () => browser.minimize());
   invoke('session:start', async input => {

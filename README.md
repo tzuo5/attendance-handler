@@ -26,7 +26,7 @@
 
 See the [phased development plan (中文)](dev-plans.md) for the MVP roadmap, dependencies, and acceptance checkpoints: classroom feedback and logs, first-run setup, background mode, scheduled starts, and calendar integration ideas. These are planned improvements; completed checkpoints and verification evidence are tracked in that document.
 
-The current source branch includes Phase 1: clearer monitoring and recovery states, question receipts, a full event log, a ten-minute session extension, saved end summaries, and simpler course configuration. All four Phase 2 MVPs are implemented: environment checks, a resumable first-run wizard, page-verified sign-in with course import, and explicit reminder confirmation with a readiness summary. Human walkthrough and platform limits are recorded in verification. The download links above still point to the earlier `v0.1.1` release.
+The current source branch includes Phase 1: clearer monitoring and recovery states, question receipts, a full event log, a ten-minute session extension, saved end summaries, and simpler course configuration. All four Phase 2 MVPs are implemented: environment checks, a resumable first-run wizard, page-verified sign-in with course import, and explicit reminder confirmation with a readiness summary. P3.2 adds a saved background-mode preference and monitoring without a visible Chrome window. Human walkthrough and platform limits are recorded in verification. The download links above still point to the earlier `v0.1.1` release.
 
 ## What it does
 
@@ -47,6 +47,10 @@ Attendance Handler turns a repetitive classroom setup into one visible, supervis
 ## First-run setup (current source)
 
 New users follow environment checks, sign-in, course import and configuration, a reminder test, and completion. Progress and saved courses survive interruptions. Reopen the wizard from connection settings; existing course users start on their courses. Complete school verification in visible Chrome; a verified page continues to course import, with empty accounts and read failures reported separately. Confirm seeing the test notification or defer and revisit it. Completion rechecks environment and sign-in and can start your first class.
+
+## Background mode (current source)
+
+In connection settings choose **Background mode** for your next session. The default keeps the classroom window visible. Changes apply to the next class; App and tray show the actual current mode and monitoring state. Headless Chrome uses the same dedicated profile and encrypted login. Closing the App window keeps monitoring in the tray. **View classroom** opens an operable window while retaining the original deadline and answer records. A dedicated return-to-background flow is planned in P3.3. See [implementation and verification](docs/background-mode.md).
 
 ## The classroom flow
 

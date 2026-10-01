@@ -7,6 +7,19 @@ import type { SessionState } from '../src/shared/types';
 import { Store, LOG_LIMIT } from '../src/main/store';
 
 describe('local event records', () => {
+  it('defaults old data to visible mode and persists a background preference', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'attendance-settings-test-'));
+    try {
+      const legacy = { version:1, courses:[], session:null, logs:[] };
+      writeFileSync(join(directory,'state.json'),JSON.stringify(legacy));
+      const store = new Store(directory);
+      expect(store.data.settings.browserMode).toBe('visible');
+      store.data.settings.browserMode = 'background'; store.save();
+      expect(new Store(directory).data.settings.browserMode).toBe('background');
+      writeFileSync(join(directory,'state.json'),JSON.stringify({...legacy,settings:{browserMode:'unknown'}}));
+      expect(new Store(directory).data.settings.browserMode).toBe('visible');
+    } finally { rmSync(directory,{recursive:true,force:true}); }
+  });
   it('reads legacy state and persists structured events without credentials', () => {
     const directory = mkdtempSync(join(tmpdir(), 'attendance-store-test-'));
     try {

@@ -82,6 +82,51 @@ try {
   assert.ok(completed.logs.some(entry=>entry.event==='session-extended'));
   await window.getByRole('button', { name: '连接与提醒', exact: true }).click();
   await window.screenshot({ path: '.test-artifacts/app-settings.png' });
+  await application.evaluate(({Tray})=>{
+    const menu=Tray.prototype.setContextMenu, tooltip=Tray.prototype.setToolTip;
+    Tray.prototype.setContextMenu=function(value){globalThis.__attendanceTrayLabels=value.items.map(item=>item.label);return menu.call(this,value);};
+    Tray.prototype.setToolTip=function(value){globalThis.__attendanceTrayTooltip=value;return tooltip.call(this,value);};
+  });
+  await window.getByRole('button',{name:'后台模式（无 Chrome 窗口）',exact:true}).click();
+  await window.getByText('已保存，下次上课使用后台模式',{exact:true}).waitFor();
+  assert.equal(JSON.parse(await readFile(join(data,'state.json'),'utf8')).settings.browserMode,'background');
+  await window.getByRole('button',{name:'我的课程',exact:false}).click();
+  await window.evaluate(id=>window.attendance.start(id),saved.courses[0].id);
+  await window.getByText('后台模式 · 无 Chrome 窗口',{exact:true}).waitFor();
+  const [backgroundPort]=(await readFile(join(data,'chrome-profile','DevToolsActivePort'),'utf8')).split('\n');
+  classroom=await chromium.connectOverCDP(`http://127.0.0.1:${backgroundPort.trim()}`);
+  const browserCDP=await classroom.newBrowserCDPSession();
+  const backgroundPid=(await browserCDP.send('SystemInfo.getProcessInfo')).processInfo.find(p=>p.type==='browser').id;
+  await browserCDP.detach();
+  const visible=await application.evaluate(({app},pid)=>{
+    const path=process.getBuiltinModule('node:path'), cp=process.getBuiltinModule('node:child_process');
+    const helper=path.join(app.getAppPath().replace(/app\.asar$/, 'app.asar.unpacked'),'dist-electron',process.platform==='win32'?'attendance-native.exe':'attendance-native');
+    return JSON.parse(cp.execFileSync(helper,['visible-windows',String(pid)],{windowsHide:true,encoding:'utf8'})).count;
+  },backgroundPid);
+  assert.equal(visible,0);
+  await application.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].close());
+  assert.equal(await application.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].isVisible()),false);
+  mock.control({newQuestion:'single'});
+  const until=async(condition,message)=>{const end=Date.now()+20000;while(Date.now()<end){if(await condition())return;await delay(150);}throw new Error(message);};
+  await until(async()=>{
+    const state=await window.evaluate(()=>window.attendance.getState());
+    return state.session.handled['demo-session:q1']==='confirmed';
+  },'hidden App background monitoring did not confirm the answer');
+  assert.equal(mock.state.submissions.length,1);
+  const trayState=await application.evaluate(()=>({labels:globalThis.__attendanceTrayLabels,tooltip:globalThis.__attendanceTrayTooltip}));
+  assert.ok(trayState.labels.includes('后台模式'));
+  assert.ok(trayState.labels.some(label=>label.includes('模拟课堂 · 自动 A')&&label.includes('监控正常')));
+  assert.ok(trayState.labels.includes('查看课堂')&&trayState.labels.includes('结束上课'));
+  assert.ok(trayState.tooltip.includes('后台模式'));
+  mock.control({newQuestion:'other'});
+  await until(async()=>(await window.evaluate(()=>window.attendance.getState())).session.status==='needs-answer','headless manual question did not produce an actionable state');
+  assert.equal(mock.state.submissions.length,1);
+  await application.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].show());
+  await window.getByText('有题目待作答',{exact:true}).first().waitFor();
+  await window.evaluate(()=>window.attendance.stop());
+  await window.getByRole('button',{name:'连接与提醒',exact:true}).click();
+  await window.getByRole('button',{name:'显示课堂窗口',exact:true}).click();
+  assert.equal((await window.evaluate(()=>window.attendance.getState())).settings.browserMode,'visible');
   const notification = await application.evaluate(async ({ Notification }) => {
     const n = new Notification({ title: 'Attendance Handler · 测试', body: '这是应用打包后的系统通知测试。', silent: false });
     globalThis.__attendanceTestNotification = n;
@@ -92,7 +137,7 @@ try {
   });
   const notifications = process.platform === 'darwin' ? await application.evaluate(async ({ Notification }) => (await Notification.getHistory()).map(n => ({ title: n.title, body: n.body }))) : [];
   assert.deepEqual(errors, []);
-  const checks = ['course list', 'course persistence and duplicate protection', 'extension and persisted summary', 'settings', 'packaged Chrome launch and native helper', 'mock attendance', syntheticCipher ? 'synthetic encrypted session round trip (OS storage not verified)' : 'OS-encrypted session round trip'];
+  const checks = ['course list', 'course persistence and duplicate protection', 'extension and persisted summary', 'settings', 'packaged Chrome launch and native helper', 'mock attendance', 'persisted background preference and no visible Chrome window', 'hidden App continues headless answer monitoring and manual-question state', 'actual tray menu labels and tooltip (method instrumentation)', syntheticCipher ? 'synthetic encrypted session round trip (OS storage not verified)' : 'OS-encrypted session round trip'];
   await writeFile('.test-artifacts/ui-report.json', JSON.stringify({ checks, errors, notification, delivered: notifications, data }, null, 2));
   console.log(JSON.stringify({ checks, errors, notification, deliveredCount: notifications.length }, null, 2));
 } finally {

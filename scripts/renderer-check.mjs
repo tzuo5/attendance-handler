@@ -29,6 +29,7 @@ try {
       saveCourse: async c => { state.courses.push(c); listener?.(structuredClone(state)); return structuredClone(state); },
       deleteCourse: async () => structuredClone(state), login: async () => {}, importCourses: async () => [{ remoteId:'new',name:'导入课程',url:'https://student.iclicker.com/#/course/new/overview' }],
       extend:async()=>{state.session.endsAt+=600000;listener?.(structuredClone(state));}, start: async () => {}, stop: async () => {}, showClassroom: async () => {}, minimizeClassroom: async () => {}, testNotification: async () => {},
+      saveSettings:async settings=>{state.settings=settings;listener?.(structuredClone(state));return structuredClone(state);},
     };
   });
   await page.goto(server.resolvedUrls.local[0]);
@@ -140,6 +141,15 @@ try {
   await page.getByRole('button',{name:'下载 Chrome',exact:true}).click();
   assert.equal(await page.evaluate(()=>window.__lastHelp),'chrome');
   await page.getByText('尚未验证',{exact:true}).waitFor();
+  await page.getByRole('button',{name:'后台模式（无 Chrome 窗口）',exact:true}).click();
+  assert.equal(await page.getByRole('button',{name:'后台模式（无 Chrome 窗口）',exact:true}).getAttribute('aria-pressed'),'true');
+  assert.equal((await page.evaluate(()=>window.attendance.getState())).settings.browserMode,'background');
+  await page.getByRole('button',{name:'我的课程',exact:false}).click();
+  await page.getByText('下次上课：后台模式',{exact:true}).waitFor();
+  await page.evaluate(async()=>{const state=await window.attendance.getState();window.__testState({browserMode:'background',session:{...state.session,status:'monitoring',endsAt:Date.now()+60000}});});
+  await page.getByText('后台模式 · 无 Chrome 窗口',{exact:true}).waitFor();
+  assert.equal(await page.getByRole('button',{name:'最小化课堂',exact:true}).count(),0);
+  assert.ok((await page.getByRole('button',{name:'结束上课',exact:true}).boundingBox()).y<640);
   await mkdir('.test-artifacts/phase1', { recursive:true });
   await page.screenshot({path:'.test-artifacts/phase1/courses.png'});
   assert.deepEqual(errors,[]);

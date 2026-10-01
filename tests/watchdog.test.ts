@@ -18,6 +18,35 @@ describe('classroom watchdog', () => {
     watchdog = new Watchdog(driver, hooks);
   });
   afterEach(async () => { await watchdog.stop(); vi.useRealTimers(); });
+  it('pauses checks during a transition and retains the session, deadline and handled answers', async () => {
+    snapshot.question=question({answered:true}); await watchdog.start(course);
+    const id=watchdog.session!.id, deadline=watchdog.session!.endsAt;
+    let release!:()=>void;
+    const switching=watchdog.transition(async()=>{await new Promise<void>(resolve=>{release=resolve;});});
+    await vi.waitFor(()=>expect(release).toBeTypeOf('function'));
+    const reads=vi.mocked(driver.read).mock.calls.length;
+    await vi.advanceTimersByTimeAsync(15000);await watchdog.tick();
+    expect(driver.read).toHaveBeenCalledTimes(reads);
+    await expect(watchdog.start(course)).rejects.toThrow('切换');
+    release();await switching;
+    expect(watchdog.session).toMatchObject({id,endsAt:deadline,status:'monitoring',handled:{[question().key]:'confirmed'}});
+    expect(driver.answerA).not.toHaveBeenCalled();
+  });
+  it('aborts an in-progress transition when stopped and does not restart checks', async () => {
+    await watchdog.start(course);
+    let release!:()=>void, signal:AbortSignal|undefined;
+    const switching=watchdog.transition(async input=>{signal=input;await new Promise<void>(resolve=>{release=resolve;});});
+    await vi.waitFor(()=>expect(release).toBeTypeOf('function'));
+    const reads=vi.mocked(driver.read).mock.calls.length;
+    await watchdog.stop();expect(signal?.aborted).toBe(true);
+    release();await switching;await vi.advanceTimersByTimeAsync(10000);
+    expect(driver.read).toHaveBeenCalledTimes(reads);expect(watchdog.session!.status).toBe('stopped');
+  });
+  it('still opens an explicit classroom action after a previous session ended', async () => {
+    await watchdog.start(course);await watchdog.stop();
+    const action=vi.fn(async()=>{});await watchdog.transition(action);
+    expect(action).toHaveBeenCalledOnce();expect(action).toHaveBeenCalledWith(undefined);
+  });
   it('submits A once and confirms only after a receipt, even across repeated snapshots', async () => {
     snapshot.question = question(); await watchdog.start(course);
     expect(driver.answerA).toHaveBeenCalledTimes(1);
