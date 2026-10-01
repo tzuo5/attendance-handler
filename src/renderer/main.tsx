@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { version } from '../../package.json';
 import { ACTIVE, sessionPresentation, type AppState, type CourseConfig, type RemoteCourse } from '../shared/types';
 import './styles.css';
+import { QuestionPanel } from './QuestionPanel';
 import { ActivityLog } from './ActivityLog';
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {
@@ -92,6 +93,7 @@ function App() {
           <button className="secondary full" disabled={!!busy} onClick={() => action('show', () => window.attendance.showClassroom())}><Icon name="browser" size={18}/>{busy === 'show' ? '正在连接…' : presentation.action}<Icon name="arrow" size={17}/></button>
           {running && <div className="session-controls"><button className="text-button" disabled={!!busy} onClick={() => action('minimize', () => window.attendance.minimizeClassroom())}>最小化课堂</button><button className="stop-button" disabled={busy === 'stop'} onClick={() => action('stop', () => window.attendance.stop())}>结束上课</button></div>}
           <div className="timer" style={{ '--progress': `${progress}%` } as React.CSSProperties}><div><strong>{running ? `${Math.floor(remaining / 60).toString().padStart(2, '0')}:${(remaining % 60).toString().padStart(2, '0')}` : '--:--'}</strong><span>{running ? '监控剩余时间' : '等待开始上课'}</span></div></div>
+          {running && <QuestionPanel session={session} busy={!!busy} onOpen={() => action('show', () => window.attendance.showClassroom())}/>}
           <div className="session-details"><div><span>本节签到</span><strong className={session?.attendance === 'confirmed' ? 'green-text' : ''}>{session?.attendance === 'confirmed' ? '已确认签到' : session?.attendance === 'pending' ? '等待确认' : '尚未确认'}</strong></div>
           {session?.attendanceConfirmedAt && <div><span>签到确认时间</span><strong>{new Date(session.attendanceConfirmedAt).toLocaleTimeString('zh-CN')}</strong></div>}
           <div><span>最后成功检查</span><strong>{session?.lastSuccessfulCheckAt ? `${Math.max(0, Math.floor((now - session.lastSuccessfulCheckAt) / 1000))} 秒前` : '尚未成功检查'}</strong></div></div>

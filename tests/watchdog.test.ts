@@ -160,4 +160,13 @@ describe('classroom watchdog', () => {
     expect(watchdog.session?.questions?.[question().key].confirmedAt).toBeDefined();
   });
 
+  it('keeps an observed question historical without inferring closure from an unknown page', async () => {
+    snapshot.question=question(); await watchdog.start({...course,mode:'notify'});
+    snapshot={state:'unknown',courseId:'course',attendance:'unknown'};
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(watchdog.session?.question).toBeUndefined();
+    expect(watchdog.session?.questions?.[question().key].closedAt).toBeUndefined();
+    expect(watchdog.session?.questions?.[question().key].title).toBe('Question');
+  });
+
 });

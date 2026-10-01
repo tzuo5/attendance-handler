@@ -144,7 +144,7 @@ export class Watchdog {
       if (page.attendance === 'confirmed' && run.attendance !== 'confirmed') { run.attendanceConfirmedAt = this.now(); this.event('success', '已确认课堂签到成功', 'attendance-confirmed', { confirmedAt: run.attendanceConfirmedAt, result: 'confirmed' }); }
       if (page.attendance !== 'unknown') run.attendance = page.attendance;
       const previousKey = run.question?.key;
-      this.observeQuestion(run, page.question);
+      if (page.state !== 'unknown') this.observeQuestion(run, page.question);
       run.question = page.question;
       if (previousKey && (previousKey !== page.question?.key || !page.question?.open || page.question.answered)) this.hooks.clearNotifications();
       if (page.state === 'joinable') {

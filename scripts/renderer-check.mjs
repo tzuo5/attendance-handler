@@ -45,6 +45,20 @@ try {
     assert.equal(await page.locator('.start-button').innerText(),label);
     assert.ok((await page.getByRole('button',{name:'结束上课',exact:true}).boundingBox()).y < 640);
   }
+  await page.evaluate(async () => {
+    const state = await window.attendance.getState();
+    window.__testState({session:{...state.session,status:'needs-answer',question:{key:'q-feedback',title:'示例待答题目',kind:'single',open:true,answered:false,selected:false},questions:{'q-feedback':{key:'q-feedback',title:'示例待答题目',kind:'single',firstSeenAt:Date.now(),lastSeenAt:Date.now()}}}});
+  });
+  await page.getByRole('heading',{name:'示例待答题目',exact:true}).waitFor();
+  await page.getByRole('button',{name:'前往作答',exact:true}).waitFor();
+  await page.evaluate(async () => {const state=await window.attendance.getState();state.session.handled['q-feedback']='attempted';state.session.questions['q-feedback'].attemptedAt=Date.now();window.__testState(state);});
+  await page.getByText('已尝试，等待确认',{exact:true}).waitFor();
+  await page.getByRole('button',{name:'查看提交结果',exact:true}).waitFor();
+  await page.evaluate(async () => {const state=await window.attendance.getState();state.session.questions['q-feedback'].confirmedAt=Date.now();state.session.handled['q-feedback']='confirmed';state.session.question.answered=true;window.__testState(state);});
+  await page.getByText('答案已确认收到',{exact:true}).waitFor();
+  assert.equal(await page.getByRole('button',{name:'查看提交结果',exact:true}).count(),0);
+  await page.evaluate(async () => {const state=await window.attendance.getState();state.session.status='offline';state.session.question=undefined;window.__testState(state);});
+  await page.getByText('历史题目 · 恢复后核实当前课堂',{exact:false}).waitFor();
   await page.evaluate(() => window.__testState({logs:Array.from({length:80},(_,i)=>({id:`event-${i}`,at:Date.now()-i*10000,level:i%2?'info':'success',event:i%2?'question-opened':'answer-confirmed',sessionId:'session',courseName:'示例课程',questionTitle:`题目 ${i}`,message:'示例事件',confirmedAt:i%2?undefined:Date.now()-i*10000}))}));
   await page.getByRole('button',{name:'课堂记录',exact:true}).click();
   assert.equal(await page.locator('.log-entry').count(),80);
@@ -63,5 +77,5 @@ try {
   await mkdir('.test-artifacts/phase1', { recursive:true });
   await page.screenshot({path:'.test-artifacts/phase1/logs.png'});
   assert.deepEqual(errors,[]);
-  console.log('Renderer acceptance passed: status, recovery actions, small window controls, full event log and reading position.');
+  console.log('Renderer acceptance passed: status, recovery actions, small window controls, full event log, reading position and question receipts.');
 } finally { await browser?.close(); await server.close(); }
