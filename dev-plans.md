@@ -140,7 +140,7 @@
   - 提供可见 / 后台模式设置，决定默认值及本次切换行为；后台运行时不显示 Chrome 窗口。
   - 托盘和 App 显示监控状态、当前课程及恢复入口，复用 Phase 1 的状态表达。
   - **验收：**无窗口情况下签到、题目识别、单次作答、提醒及到期结束可用；关闭主界面后状态仍可从托盘查看。
-  - **实绩：**默认有窗口；设置持久化并从下次上课生效。本节 App / 托盘显示实际模式与状态，点击查看课堂可切回有窗口并保留原截止时间和记录。macOS 六组运行检查及实际打包 App 通过，覆盖无窗口签到/确认作答、人工题状态、隐藏主界面继续作答、托盘菜单、受控时钟到期门禁；64 单测、双 renderer、25 原有集成和生命周期通过。Windows 新提交 CI 待推送后确认；完整返回后台交互仍属 P3.3。
+  - **实绩：**默认有窗口；设置持久化并从下次上课生效。本节 App / 托盘显示实际模式与状态，点击查看课堂可切回有窗口并保留原截止时间和记录。macOS 六组运行检查及实际打包 App 通过，覆盖无窗口签到/确认作答、人工题状态、隐藏主界面继续作答、托盘菜单、受控时钟到期门禁；64 单测、双 renderer、25 原有集成和生命周期通过。功能提交 `fe68166` 的 Windows CI 全部通过；`52813d5` 修正设置后返回课程的滚动位置，并严格检查结束按钮完整可见。完整返回后台交互仍属 P3.3。
 
 - [ ] **P3.3 — 人工处理与返回后台**（依赖 P3.2）
   - 登录过期、学校验证、手动作答及无法识别的页面发出明确提醒；点击后打开正确课堂。
@@ -239,4 +239,4 @@
 | P2.4 | 2026-10-01 | [`b387bae`](https://github.com/tzuo5/attendance-handler/commit/b387bae) · `feat: confirm reminder delivery and complete first-run readiness` | 60 项单元测试、两套 renderer、25 项 Chrome 集成、生命周期、macOS 实际打包全流程及各步重启；通知失败/系统接受事件注入、未收到/确认收到/稍后处理分开保存，完成后开始首节监控 | 注入事件及自动化确认点击不代表真人收到提醒；macOS 系统钥匙串、真实学校登录与新手走查仍待验证；[最终 Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36824918135) 全部通过（含真实 DPAPI），详情见验证记录 |
 | Phase 2 验证补充 | 2026-10-01 | [`b387bae`](https://github.com/tzuo5/attendance-handler/commit/b387bae) · 最终功能提交 | [验证记录](VERIFICATION.md)：60 项单测、25 项集成、双套 renderer、生命周期、macOS 打包首次配置及课堂回归、Windows 实际安装版首次配置与 DPAPI、源码及包隐私审核 | 四项 MVP 已完成；真人走查、macOS 钥匙串授权和真实学校登录仍待验收，阶段出口保留待验收；尚未发布新下载包 |
 | P3.1 | 2026-10-01 | [`334b2fb`](https://github.com/tzuo5/attendance-handler/commit/334b2fb) · `feat: validate dedicated Chrome background mode round trips` | [后台模式记录](docs/background-mode.md)：macOS / Windows 六组模式往返、无可见后台窗口、登录与 Cookie、答案回执、原截止时间、去重与四个进程退出；60 单测、25 原有集成、生命周期和构建；[Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36827376760) 第二次尝试全部通过 | 首次 Windows 原有关窗重开超时在 P3.4 复核；正式 App 设置、异常恢复和真实课堂在后续检查点验收 |
-| P3.2 | 2026-10-01 | `feat: add saved background mode and headless classroom monitoring` | 64 单测、双 renderer、六组后台运行、六组模式原型、25 原有集成、生命周期、macOS 实际打包 UI / 首次向导；[后台模式记录](docs/background-mode.md) | Windows 此次 CI 待确认；macOS 测试用明确标记的合成加密，真实课堂与系统钥匙串仍待验收；P3.3 完整人工返回与 P3.4 异常恢复尚未完成 |
+| P3.2 | 2026-10-01 | [`fe68166`](https://github.com/tzuo5/attendance-handler/commit/fe68166) · `feat: add saved background mode and headless classroom monitoring`；界面修正 [`52813d5`](https://github.com/tzuo5/attendance-handler/commit/52813d5) | 64 单测、双 renderer、六组后台运行、六组模式原型、25 原有集成、生命周期、macOS 实际打包 UI / 首次向导；[Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36830875240) 全部通过，含安装版与 DPAPI；[后台模式记录](docs/background-mode.md) | 界面修正的新 CI 待完成；macOS 测试用明确标记的合成加密，真实课堂与系统钥匙串仍待验收；P3.3 / P3.4 尚未完成 |
