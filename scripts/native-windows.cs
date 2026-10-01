@@ -20,6 +20,17 @@ internal static class AttendanceNative {
             return 0;
         }
         uint target;
+        if (args.Length == 2 && args[0] == "visible-windows" && uint.TryParse(args[1], out target) && target != 0) {
+            int count = 0;
+            EnumWindows(delegate(IntPtr window, IntPtr parameter) {
+                uint pid;
+                GetWindowThreadProcessId(window, out pid);
+                if (pid == target && IsWindowVisible(window)) count++;
+                return true;
+            }, IntPtr.Zero);
+            Console.WriteLine("{\"count\":" + count + "}");
+            return 0;
+        }
         if (args.Length != 2 || args[0] != "activate" || !uint.TryParse(args[1], out target) || target == 0) return 1;
         IntPtr found = IntPtr.Zero;
         EnumWindows(delegate(IntPtr window, IntPtr parameter) {

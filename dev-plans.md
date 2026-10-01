@@ -10,9 +10,13 @@
 | --- | --- | --- | --- |
 | Phase 1 | 状态与恢复、课堂反馈、详细日志、简化课程配置 | 当前版本作为基线 | 已完成（2026-09-30） |
 | Phase 2 | 首次配置向导与环境检查 | Phase 1 验收通过 | 4 项 MVP 已实现；真人走查待验收 |
-| Phase 3 | 无 Chrome 窗口的后台模式 | Phase 2 验收通过；模式切换验证通过 | 未开始 |
+| Phase 3 | 无 Chrome 窗口的后台模式 | Phase 2 验收通过；模式切换验证通过 | P3.1 模拟原型通过；继续分时实现 |
 | Phase 4 | 设置定时开启 | Phase 3 验收通过 | 未开始 |
 | Phase 5 | Google Calendar / Apple Calendar 与 `@tt` 互动设想 | 可提前调研；实现规划依赖 Phase 4 | 探索待开始 |
+
+本次 Phase 3–5 按用户要求分时推进，截止为 2026-10-01 08:00 America/Chicago，窗口与实绩见 [分时执行记录](docs/overnight-execution.md)。
+
+用户已追加授权自动继续 Phase 3–5。本轮可在模拟环境中推进后续实现；真实学校登录、课堂与真人走查仍独立保留待验收，阶段出口不据模拟结果虚报通过。
 
 ## 推进与验收方式
 
@@ -126,10 +130,11 @@
 
 ### 检查点
 
-- [ ] **P3.1 — 模式切换可行性验证**
+- [x] **P3.1 — 模式切换可行性验证**
   - 用隔离模拟课堂验证“可见登录 → 无窗口监控 → 打开课堂手动处理 → 回后台”。比较切换方案，记录登录和页面状态是否保留。
   - 验证专用浏览器资料的生命周期、题目去重和截止时间；确定用户主动关窗、浏览器崩溃及 App 退出各自的行为。
   - **验收：**完整往返成功，未重复提交，原结束时刻保留；可见与后台实例无资料锁冲突。若关键条件失败，记录阻碍并继续验证，后续检查点暂不勾选。
+  - **实绩：**macOS Chrome 154 的完整往返通过六组隔离检查，使用同一资料串行重启；登录、Cookie、已提交答案、处理记录及原截止时间保留，没有可见后台窗口或残留进程。方案取舍、生命周期约定及验证边界见 [后台模式记录](docs/background-mode.md)；Windows CI 已加入检查，结果待确认。
 
 - [ ] **P3.2 — 后台运行与模式设置**（依赖 P3.1）
   - 提供可见 / 后台模式设置，决定默认值及本次切换行为；后台运行时不显示 Chrome 窗口。
@@ -231,3 +236,4 @@
 | P2.3 | 2026-10-01 | [`10644ff`](https://github.com/tzuo5/attendance-handler/commit/10644ff) · `feat: verify sign-in and continue into current course import` | 54 项单元测试、类型检查、向导 renderer、25 项 Chrome 集成：学校验证等待、登录成功、过期、取消、空课程、读取失败及重试；macOS 打包首次向导及各步重启 | 真实学校登录尚待使用者验证；macOS 合成加密边界保持；Windows P2.3 安装版 CI 已通过；最终结果见验证记录 |
 | P2.4 | 2026-10-01 | [`b387bae`](https://github.com/tzuo5/attendance-handler/commit/b387bae) · `feat: confirm reminder delivery and complete first-run readiness` | 60 项单元测试、两套 renderer、25 项 Chrome 集成、生命周期、macOS 实际打包全流程及各步重启；通知失败/系统接受事件注入、未收到/确认收到/稍后处理分开保存，完成后开始首节监控 | 注入事件及自动化确认点击不代表真人收到提醒；macOS 系统钥匙串、真实学校登录与新手走查仍待验证；[最终 Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36824918135) 全部通过（含真实 DPAPI），详情见验证记录 |
 | Phase 2 验证补充 | 2026-10-01 | [`b387bae`](https://github.com/tzuo5/attendance-handler/commit/b387bae) · 最终功能提交 | [验证记录](VERIFICATION.md)：60 项单测、25 项集成、双套 renderer、生命周期、macOS 打包首次配置及课堂回归、Windows 实际安装版首次配置与 DPAPI、源码及包隐私审核 | 四项 MVP 已完成；真人走查、macOS 钥匙串授权和真实学校登录仍待验收，阶段出口保留待验收；尚未发布新下载包 |
+| P3.1 | 2026-10-01 | `feat: validate dedicated Chrome background mode round trips` | [后台模式记录](docs/background-mode.md)：macOS Chrome 154 六组模式往返、无可见后台窗口、登录与 Cookie、答案回执、原截止时间、去重与四个进程退出；60 单测、25 原有集成、生命周期和构建通过 | Windows CI 已加入检查，待运行确认；正式 App 设置、异常恢复和真实课堂在后续检查点验收 |
