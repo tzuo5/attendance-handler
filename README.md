@@ -22,6 +22,10 @@
 
 > **Preview release** — This project is designed for personal, local use. The simulated classroom flow is tested; final verification against a live iClicker class is still pending. Use it only where your course policy permits.
 
+## Development plan
+
+See the [phased development plan (中文)](dev-plans.md) for the MVP roadmap, dependencies, and acceptance checkpoints: classroom feedback and logs, first-run setup, background mode, scheduled starts, and calendar integration ideas. These are planned improvements; completed checkpoints and verification evidence are tracked in that document.
+
 ## What it does
 
 Attendance Handler turns a repetitive classroom setup into one visible, supervised session:
