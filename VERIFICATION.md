@@ -2,7 +2,7 @@
 
 ## Phase 4.3 调度与重复保护（2026-10-01）
 
-113 单测、类型检查、生产构建、双 renderer 和 25 原有 Chrome 集成通过。macOS 实际打包 `test:scheduler` 四组通过：自动后台启动保持原生焦点、真实模拟网站分别确认签到 / 作答、实际重开后同一开始窗口不重复、迟到沿用原结束并自动摘要 / 清除页面门禁、退出清理。领取记录先持久化再启动，磁盘失败不产生课堂副作用；并发 / 手动冲突、环境失败和启动失败分别记录。新增验收脚本的三次等待 / 模拟页面时序失败与修正保留在 [定时规则记录](docs/scheduled-starts.md)。Mac 为明确标记的隔离合成加密，真实学校 / 课堂、Keychain 和物理睡眠继续待验收；Windows 本次 CI 待推送后核实。
+113 单测、类型检查、生产构建、双 renderer 和 25 原有 Chrome 集成通过。macOS 实际打包 `test:scheduler` 四组通过：自动后台启动保持原生焦点、真实模拟网站分别确认签到 / 作答、实际重开后同一开始窗口不重复、迟到沿用原结束并自动摘要 / 清除页面门禁、退出清理。领取记录先持久化再启动，磁盘失败不产生课堂副作用；并发 / 手动冲突、环境失败和启动失败分别记录。新增验收脚本的三次等待 / 模拟页面时序失败与修正保留在 [定时规则记录](docs/scheduled-starts.md)。Mac 为明确标记的隔离合成加密，真实学校 / 课堂、Keychain 和物理睡眠继续待验收；功能提交 [`a352c1a`](https://github.com/tzuo5/attendance-handler/commit/a352c1a) 的 [Source checks](https://github.com/tzuo5/attendance-handler/actions/runs/36846875578) 首次通过；[Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36846875613) 正在实际安装版验收，最终结果待核实。
 
 ## Phase 4.2 定时配置（2026-10-01）
 
