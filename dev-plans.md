@@ -118,6 +118,8 @@
 - [ ] 在 macOS / Windows 全新用户数据目录中走通首次配置；配置中断后可恢复，环境问题处理后可重试。
 - [ ] 邀请不熟悉电脑操作的使用者试走完整流程，记录卡点并修复阻断步骤；无需终端或开发工具即可开始监控。
 
+自动化已走通两个平台的全新资料与中断恢复。阶段出口仍待 macOS 系统钥匙串授权、真实学校登录及新手真人走查；合成加密和模拟课堂的验证边界见 [验证记录](VERIFICATION.md)。
+
 ## Phase 3：无窗口后台模式
 
 目标：课堂页面在无可见 Chrome 窗口的模式下运行。产品界面称“后台模式”，开发中可称 daemon 模式；首次登录、学校验证及手动作答仍有可操作课堂入口。
@@ -226,5 +228,6 @@
 | Phase 1 阶段出口 | 2026-09-30 | [`a28135f`](https://github.com/tzuo5/attendance-handler/commit/a28135f) · 最终功能提交 | [验证记录](VERIFICATION.md)：44 项单元测试、17 项集成、生命周期、双平台 UI、生产构建、实际 Windows 安装版及隐私审计；[Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36813357714) 全部通过 | 本次 macOS 钥匙串授权、真实课堂及实体设备交互仍按验证记录单独标为待验证；此前 v0.1.1 下载包未更新 |
 | P2.1 | 2026-10-01 | [`81f7306`](https://github.com/tzuo5/attendance-handler/commit/81f7306) · `feat: add environment readiness checks and repair guidance` | 50 项单元测试、类型检查、renderer 验收、生产构建、18 项专用 Chrome 集成；检查探针不覆盖本机数据、不抢焦点 | 安全存储检查验证系统可用性，实际登录加密另行验证；Windows P2.1 CI 已通过，最终结果另记 |
 | P2.2 | 2026-10-01 | [`0fd6253`](https://github.com/tzuo5/attendance-handler/commit/0fd6253) · `feat: guide first-run setup with resumable progress` | 53 项单元测试、类型检查、两套 renderer 验收、macOS 实际打包 App：五步分别退出并重开、登录页面判断、导入及配置保存、完成后重开和设置回访 | macOS 加密使用隔离测试进程中的合成替代，系统钥匙串待授权验证；Windows 首次向导 CI 已通过（含真实 DPAPI）；新手真人走查待安排 |
-| P2.3 | 2026-10-01 | [`10644ff`](https://github.com/tzuo5/attendance-handler/commit/10644ff) · `feat: verify sign-in and continue into current course import` | 54 项单元测试、类型检查、向导 renderer、25 项 Chrome 集成：学校验证等待、登录成功、过期、取消、空课程、读取失败及重试；macOS 打包首次向导及各步重启 | 真实学校登录尚待使用者验证；macOS 合成加密边界保持；最终 Windows CI 另记 |
-| P2.4 | 2026-10-01 | 本检查点提交 · `feat: confirm reminder delivery and complete first-run readiness` | 60 项单元测试、两套 renderer、25 项 Chrome 集成、生命周期、macOS 实际打包全流程及各步重启；通知失败/系统接受事件注入、未收到/确认收到/稍后处理分开保存，完成后开始首节监控 | 注入事件及自动化确认点击不代表真人收到提醒；macOS 系统钥匙串、真实学校登录与新手走查仍待验证；Windows 最终结果见验证记录 |
+| P2.3 | 2026-10-01 | [`10644ff`](https://github.com/tzuo5/attendance-handler/commit/10644ff) · `feat: verify sign-in and continue into current course import` | 54 项单元测试、类型检查、向导 renderer、25 项 Chrome 集成：学校验证等待、登录成功、过期、取消、空课程、读取失败及重试；macOS 打包首次向导及各步重启 | 真实学校登录尚待使用者验证；macOS 合成加密边界保持；Windows P2.3 安装版 CI 已通过；最终结果见验证记录 |
+| P2.4 | 2026-10-01 | [`b387bae`](https://github.com/tzuo5/attendance-handler/commit/b387bae) · `feat: confirm reminder delivery and complete first-run readiness` | 60 项单元测试、两套 renderer、25 项 Chrome 集成、生命周期、macOS 实际打包全流程及各步重启；通知失败/系统接受事件注入、未收到/确认收到/稍后处理分开保存，完成后开始首节监控 | 注入事件及自动化确认点击不代表真人收到提醒；macOS 系统钥匙串、真实学校登录与新手走查仍待验证；[最终 Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36824918135) 全部通过（含真实 DPAPI），详情见验证记录 |
+| Phase 2 验证补充 | 2026-10-01 | [`b387bae`](https://github.com/tzuo5/attendance-handler/commit/b387bae) · 最终功能提交 | [验证记录](VERIFICATION.md)：60 项单测、25 项集成、双套 renderer、生命周期、macOS 打包首次配置及课堂回归、Windows 实际安装版首次配置与 DPAPI、源码及包隐私审核 | 四项 MVP 已完成；真人走查、macOS 钥匙串授权和真实学校登录仍待验收，阶段出口保留待验收；尚未发布新下载包 |

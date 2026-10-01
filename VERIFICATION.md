@@ -2,7 +2,7 @@
 
 ## Phase 2 源码验收（2026-10-01）
 
-对应 [开发计划](dev-plans.md) 的 P2.1–P2.4：环境检查、可恢复首次向导、实际页面登录确认与课程导入、提醒确认及完成摘要。此前 `v0.1.1` 下载包未更新；本节记录当前源码和本机重新打包结果。
+对应 [开发计划](dev-plans.md) 的 P2.1–P2.4，功能提交为 `81f7306`、`0fd6253`、`10644ff`、`b387bae`：环境检查、可恢复首次向导、实际页面登录确认与课程导入、提醒确认及完成摘要。此前 `v0.1.1` 下载包未更新；本节记录当前源码和本机重新打包结果。
 
 ### 自动化验证
 
@@ -10,12 +10,13 @@
 - TypeScript、生产构建、原有 renderer 回归和 `npm run test:setup-renderer` 通过。首次向导在 900×640 验证五步重载、学校登录未确认拦截、导入表单复用、空列表/读取失败、提醒修复入口、完成摘要及首节课入口。
 - 25 项专用 Chrome 集成通过，包括 Phase 1 回执、去重和焦点回归，以及学校验证等待、登录过期、取消登录、实际页面确认、空账号、读取失败、缓存清理及修复后重试。专用浏览器生命周期通过。
 - macOS Apple Silicon 打包 App 的 `npm run test:setup` 使用全新临时资料：在五个步骤分别退出并重开；保存课程和登录；通知发送失败、系统接受但用户未确认、未收到、稍后处理及确认收到分别保存；完成后直接开始首节模拟课；完成后重开进入课程页，设置页重新打开向导。
+- 本机最终打包 App 的原有课堂 UI 回归亦通过；原生测试通知返回 `show` 并出现在 macOS 通知历史中。
 - 通知失败与展示结果通过隔离测试进程的事件注入验证，确认按钮由自动化模拟用户点击。这验证状态和交互，不证明真人看到了系统通知。默认 `test:ui` 的原生通知结果单独记录。
 - 源码与最终 macOS App 公开数据审核通过；测试只用合成课堂、零值坐标和临时资料。
 
 ### Windows 与加密边界
 
-[P2.1 Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36822185956)、[P2.2 Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36822869748) 与 [P2.3 Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36823502721) 已通过。P2.2 起在实际安装版中验证全新资料和每步退出重开；默认使用真实 Windows DPAPI。最终 P2.4 CI 结果在完成后补记。
+[P2.1 Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36822185956)、[P2.2 Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36822869748) 与 [P2.3 Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36823502721) 已通过。P2.2 起在实际安装版中验证全新资料和每步退出重开；默认使用真实 Windows DPAPI。[最终 P2.4 Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36824918135) 与 [同一功能提交的源码检查](https://github.com/tzuo5/attendance-handler/actions/runs/36824918084) 亦全部通过：60 项单元测试、双套 renderer、25 项 Chrome 集成、生命周期、包审核、实际安装版的原有课堂回归及首次向导（包含通知失败注入和用户确认选择）、真实 DPAPI 会话重启恢复、ZIP 一致性及校验值。运行环境为 GitHub 托管 Windows Server 2022 x64。
 
 macOS 使用 `ATTENDANCE_UI_CIPHER=synthetic npm run test:setup` 与 `test:ui` 完成隔离 App 验收。原因是本机系统钥匙串调用等待授权；该替代只存在于测试脚本控制的演示进程，生产代码仍使用 `safeStorage`。环境检查确认加密服务可用性，不会把它显示为已验证保存真实登录。
 
