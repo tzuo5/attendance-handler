@@ -6,7 +6,7 @@
 
 900×640 实际页面与独立新开的 390×844 页面视觉核对通过；无脚本错误、除本地文件外的请求为零。首次同页改窄屏后全页截图出现重复拼接，新页面等待绘制后正常，DOM 只有一个 main，宽度无页面溢出；记录在方案结论中。页面全为合成数据，模拟开始只增计数，模拟重开只保留内存快照，没有真实 API、账号、磁盘事务或课堂副作用。原型不进入 App 打包；Google 完成离线模型，Apple 仍为官方研究 / 专项待验，不声称跨平台真实日历已支持。
 
-78 处本地引用、90 文件公开审核和 diff 格式检查通过。上一提交 `5d92052` 的 Source checks / Windows CI 已成功；本次提交的回归结果待补记。Phase 5 按 ideation 范围结束，后续 C1–C5 / A1 未开始，真实课堂、学校登录、Mac 钥匙串和实体睡眠保持独立待验。
+78 处本地引用、90 文件公开审核和 diff 格式检查通过。上一提交 `5d92052` 的 Source checks / Windows CI 已成功；本次 [`b24a6f2`](https://github.com/tzuo5/attendance-handler/commit/b24a6f2) 的 [Source checks](https://github.com/tzuo5/attendance-handler/actions/runs/36862290281) / [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36862290228) 于 07:39 首次全部通过，覆盖既有 135 单测、双 renderer、Chrome 回归、实际 Windows 安装版调度 / 配置 / UI / 恢复 / 向导、真实 DPAPI、源码 / 包审核及 ZIP 一致性；发布 job 跳过，未发布下载包。CI 验证 App 回归，页面模型证据来自上述本机 Chrome 演练。Phase 5 按 ideation 范围结束，后续 C1–C5 / A1 未开始，真实课堂、学校登录、Mac 钥匙串和实体睡眠保持独立待验。
 
 ## Phase 5.3 日历实例映射（2026-10-01）
 

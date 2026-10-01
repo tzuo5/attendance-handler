@@ -39,4 +39,14 @@ Phase 5 保持 [开发计划](../dev-plans.md) 中的 ideation 范围，交付�
 | P5.1 | 完成（05:50 提交；05:57 回归 CI 验收） | [`f09f389`](https://github.com/tzuo5/attendance-handler/commit/f09f389) · `docs: define calendar agent intents and synthetic acceptance scenarios`；[Source checks](https://github.com/tzuo5/attendance-handler/actions/runs/36851633544) / [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36851633562) 首次全部通过； `@tt` 独立文本、首次绑定确认、时间 / 时区、歧义、取消和原截止语义；16 场景分组、JSON 与引用 / 时长一致性通过；没有实际日历连接或执行 |
 | P5.2 | 完成（06:23 提交；06:31 回归 CI 验收） | [`8f9ddb6`](https://github.com/tzuo5/attendance-handler/commit/8f9ddb6) · `docs: compare official Google and Apple calendar access paths`；[Source checks](https://github.com/tzuo5/attendance-handler/actions/runs/36855068291) / [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36855068456) 首次全部通过；[官方接入调研](calendar-provider-research.md) 对比只读 Google / full access EventKit / 候选 iCloud CalDAV，授权 / 撤销、变更、重复例外、稳定身份、维护成本与推荐隔离路线；53 处本地引用和 86 文件公开审核通过；没有真实连接或授权 |
 | P5.3 | 完成（06:56 提交；07:04 回归 CI 验收） | [`7ff8107`](https://github.com/tzuo5/attendance-handler/commit/7ff8107) · `docs: specify calendar instance mapping and durable execution boundaries`；[Source checks](https://github.com/tzuo5/attendance-handler/actions/runs/36858482170) / [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36858482158) 首次全部通过；[映射契约](calendar-mapping.md) 与 11 组 / 36 步轨迹、33 个当前 Phase 4 校验通过的任务投影；稳定身份、UTC 回拨实例、原截止 / 用户选择保护；产品日历原子领取未实现 |
-| P5.4 | 离线样例与决策完成；本窗口提交与 CI 待补记 | `feat: add isolated calendar mapping prototype and feasibility decision`；[可运行样例](examples/calendar-prototype.html) 六组 / 35 次按钮点击，31 个 Phase 4 校验通过的投影；[方案决策](calendar-decision.md) 和后续实现门槛；无真实授权、持久保存或课堂调用 |
+| P5.4 | 完成（07:31 提交；07:39 回归 CI 验收） | [`b24a6f2`](https://github.com/tzuo5/attendance-handler/commit/b24a6f2) · `feat: add isolated calendar mapping prototype and feasibility decision`；[Source checks](https://github.com/tzuo5/attendance-handler/actions/runs/36862290281) / [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36862290228) 首次全部通过；[可运行样例](examples/calendar-prototype.html) 六组 / 35 次按钮点击，31 个 Phase 4 校验通过的投影；[方案决策](calendar-decision.md) 和后续实现门槛；无真实授权、持久保存或课堂调用 |
+
+## 最终验收（07:40 起）
+
+Phase 3、4、5 共 12 个 MVP 已逐项完成独立提交，并确认全部位于远端 main；提交时刻分布见上表。P3.4 和 P4.3 的平台验收延续到下一窗口，先完成前一检查点验证再推进，没有省略检查。最后功能提交 `b24a6f2` 于 07:39 完成源码与 Windows 首次 CI，12 项开发 / ideation 交付均在 07:40 前完成。
+
+本轮收尾只校正计划与中英文 README 的过时进度、补齐验证证据，不新增功能。最后 CI 覆盖既有 135 单测、双 renderer、25 项 Chrome 集成、生命周期、六组后台原型、九组后台运行，以及 Windows 实际安装版调度 / 配置 / UI / 恢复 / 首次向导、DPAPI、源码 / 包审核与 ZIP 一致性。日历页面另经本机实际 HTML 的 35 次按钮操作与 31 个投影核验；CI 不证明真实日历已接入。
+
+Phase 5 未修改生产源码、依赖、测试或工作流，HTML 不进入 App 打包。90 文件公开审核及本地文档引用检查通过。历史测试失败和修正仍保留在验证 / 各阶段记录，P3.1 的第二次通过未改写为首次成功。macOS 系统钥匙串、真实学校 / 课堂、新手真人走查、实体睡眠及日历实际授权继续待验；没有发布新下载包。后续真实日历开发仅列 C1–C5 / A1，尚未开始。
+
+记录补充提交推送后再核对该提交的 Source checks 与 Windows CI，确认工作区和远端一致；完成后移除临时自动任务，并在核对命令后结束仅用于本轮的防闲置睡眠进程。

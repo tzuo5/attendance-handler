@@ -1,6 +1,6 @@
 # 日历实例到定时任务的映射（P5.3）
 
-这是设计契约和合成演练，**尚未连接真实日历，也没有把日历导入产品调度器**。使用语义见 [@tt 约定](calendar-ideation.md)，来源能力及权限见 [官方接入调研](calendar-provider-research.md)。[合成状态轨迹](examples/calendar-mapping-traces.json) 是手写的预期，不是来源响应或已经运行的同步器；P5.4 再制作隔离可执行样例。
+这是设计契约和合成演练，**尚未连接真实日历，也没有把日历导入产品调度器**。使用语义见 [@tt 约定](calendar-ideation.md)，来源能力及权限见 [官方接入调研](calendar-provider-research.md)。[合成状态轨迹](examples/calendar-mapping-traces.json) 是手写的预期，不是来源响应或已经运行的同步器；P5.4 的隔离可执行样例见文末，仍仅为内存模型。
 
 ## 连接和读取契约
 
