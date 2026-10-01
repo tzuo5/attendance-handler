@@ -1,0 +1,1195 @@
+{
+  "format": "attendance-calendar-mapping-traces-v1",
+  "synthetic": true,
+  "purpose": "P5.3 handwritten design expectations; not provider payloads, a synchronizer, or a classroom execution test",
+  "coursesRef": "calendar-intents.json",
+  "planEffectiveFromFormat": "ISO UTC for documentation; convert to epoch milliseconds for Phase 4 validation",
+  "traces": [
+    {
+      "id": "new_confirm_repeat",
+      "instanceKeys": [
+        [
+          "demo-connection",
+          "demo-calendar",
+          "event",
+          "demo-event"
+        ]
+      ],
+      "steps": [
+        {
+          "action": "observe",
+          "input": {
+            "eventId": "demo-event",
+            "title": "@tt 示例课程 A",
+            "startInstant": "2026-10-05T14:00:00Z",
+            "endInstant": "2026-10-05T14:50:00Z",
+            "timeZone": "America/Chicago",
+            "allDay": false,
+            "endTimeUnspecified": false,
+            "identityVerified": true,
+            "textVisible": true
+          },
+          "expected": {
+            "state": "awaiting-confirmation",
+            "plans": []
+          }
+        },
+        {
+          "action": "confirm",
+          "input": {
+            "courseId": "11111111-1111-4111-8111-111111111111"
+          },
+          "expected": {
+            "state": "ready",
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": true,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "action": "observe-unchanged",
+          "input": {
+            "eventId": "demo-event",
+            "title": "@tt 示例课程 A",
+            "startInstant": "2026-10-05T14:00:00Z",
+            "endInstant": "2026-10-05T14:50:00Z",
+            "timeZone": "America/Chicago",
+            "allDay": false,
+            "endTimeUnspecified": false,
+            "identityVerified": true,
+            "textVisible": true
+          },
+          "expected": {
+            "state": "ready",
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": true,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "designNote": "首次确认才启用；重复同步不改计划 ID 和生效时间。"
+    },
+    {
+      "id": "retime_before_claim",
+      "instanceKeys": [
+        [
+          "demo-connection",
+          "demo-calendar",
+          "event",
+          "demo-event"
+        ]
+      ],
+      "steps": [
+        {
+          "action": "confirm-existing",
+          "input": {
+            "eventId": "demo-event",
+            "title": "@tt 示例课程 A",
+            "startInstant": "2026-10-05T14:00:00Z",
+            "endInstant": "2026-10-05T14:50:00Z",
+            "timeZone": "America/Chicago",
+            "allDay": false,
+            "endTimeUnspecified": false,
+            "identityVerified": true,
+            "textVisible": true
+          },
+          "expected": {
+            "state": "ready",
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": true,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "action": "observe-retimed",
+          "input": {
+            "eventId": "demo-event",
+            "title": "@tt 示例课程 A",
+            "startInstant": "2026-10-06T15:00:00Z",
+            "endInstant": "2026-10-06T15:50:00Z",
+            "timeZone": "America/Chicago",
+            "allDay": false,
+            "endTimeUnspecified": false,
+            "identityVerified": true,
+            "textVisible": true
+          },
+          "expected": {
+            "state": "ready",
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": true,
+                "localTime": "15:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:05:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-06"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "action": "observe-unchanged",
+          "input": {
+            "eventId": "demo-event",
+            "title": "@tt 示例课程 A",
+            "startInstant": "2026-10-06T15:00:00Z",
+            "endInstant": "2026-10-06T15:50:00Z",
+            "timeZone": "America/Chicago",
+            "allDay": false,
+            "endTimeUnspecified": false,
+            "identityVerified": true,
+            "textVisible": true
+          },
+          "expected": {
+            "state": "ready",
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": true,
+                "localTime": "15:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:05:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-06"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "designNote": "跨日改时仍使用原计划 ID；只有实际修改重置生效时间。"
+    },
+    {
+      "id": "id_only_cancel",
+      "instanceKeys": [
+        [
+          "demo-connection",
+          "demo-calendar",
+          "event",
+          "demo-event"
+        ]
+      ],
+      "steps": [
+        {
+          "action": "confirm-existing",
+          "input": {
+            "eventId": "demo-event",
+            "title": "@tt 示例课程 A",
+            "startInstant": "2026-10-05T14:00:00Z",
+            "endInstant": "2026-10-05T14:50:00Z",
+            "timeZone": "America/Chicago",
+            "allDay": false,
+            "endTimeUnspecified": false,
+            "identityVerified": true,
+            "textVisible": true
+          },
+          "expected": {
+            "state": "ready",
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": true,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "action": "observe-cancelled",
+          "input": {
+            "eventId": "demo-event",
+            "cancelled": true
+          },
+          "expected": {
+            "state": "cancel-future",
+            "bindingRetained": true,
+            "executionDecisions": 0,
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": false,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "designNote": "取消没有标题 / 时间也通过既有别名匹配，不要求仍有标记。"
+    },
+    {
+      "id": "recurring_exception_and_sibling",
+      "instanceKeys": [
+        [
+          "demo-connection",
+          "demo-calendar",
+          "series",
+          "demo-series",
+          "2026-10-05T14:00:00Z"
+        ],
+        [
+          "demo-connection",
+          "demo-calendar",
+          "series",
+          "demo-series",
+          "2026-10-12T14:00:00Z"
+        ]
+      ],
+      "steps": [
+        {
+          "action": "confirm-series-instances",
+          "input": {
+            "originalStartInstants": [
+              "2026-10-05T14:00:00Z",
+              "2026-10-12T14:00:00Z"
+            ]
+          },
+          "expected": {
+            "state": "ready",
+            "plans": [
+              {
+                "id": "66666666-6666-4666-8666-666666666666",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": true,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              },
+              {
+                "id": "77777777-7777-4777-8777-777777777777",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": true,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-12"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "action": "observe-exception-retimed",
+          "input": {
+            "eventId": "demo-exception-1",
+            "title": "@tt 示例课程 A",
+            "startInstant": "2026-10-06T15:00:00Z",
+            "endInstant": "2026-10-06T15:50:00Z",
+            "timeZone": "America/Chicago",
+            "allDay": false,
+            "endTimeUnspecified": false,
+            "identityVerified": true,
+            "textVisible": true,
+            "seriesId": "demo-series",
+            "originalStartInstant": "2026-10-05T14:00:00Z"
+          },
+          "expected": {
+            "state": "ready",
+            "plans": [
+              {
+                "id": "66666666-6666-4666-8666-666666666666",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": true,
+                "localTime": "15:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:05:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-06"
+                }
+              },
+              {
+                "id": "77777777-7777-4777-8777-777777777777",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": true,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-12"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "action": "observe-exception-cancelled",
+          "input": {
+            "seriesId": "demo-series",
+            "originalStartInstant": "2026-10-12T14:00:00Z",
+            "cancelled": true
+          },
+          "expected": {
+            "state": "cancel-future",
+            "plans": [
+              {
+                "id": "66666666-6666-4666-8666-666666666666",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": true,
+                "localTime": "15:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:05:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-06"
+                }
+              },
+              {
+                "id": "77777777-7777-4777-8777-777777777777",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": false,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-12"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "designNote": "原定时刻定义实例；改时不换键，取消一个例外不删除同系列另一节。"
+    },
+    {
+      "id": "claimed_retime_cancel_restart",
+      "instanceKeys": [
+        [
+          "demo-connection",
+          "demo-calendar",
+          "event",
+          "demo-event"
+        ]
+      ],
+      "steps": [
+        {
+          "action": "confirm-existing",
+          "input": {
+            "eventId": "demo-event",
+            "title": "@tt 示例课程 A",
+            "startInstant": "2026-10-05T14:00:00Z",
+            "endInstant": "2026-10-05T14:50:00Z",
+            "timeZone": "America/Chicago",
+            "allDay": false,
+            "endTimeUnspecified": false,
+            "identityVerified": true,
+            "textVisible": true
+          },
+          "expected": {
+            "state": "ready",
+            "executionDecisions": 0,
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": true,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "action": "durable-claim",
+          "input": {},
+          "expected": {
+            "state": "claimed",
+            "executionDecisions": 1,
+            "originalEndsAt": "2026-10-05T14:50:00Z",
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": false,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "action": "observe-retimed",
+          "input": {
+            "eventId": "demo-event",
+            "title": "@tt 示例课程 A",
+            "startInstant": "2026-10-06T15:00:00Z",
+            "endInstant": "2026-10-06T15:50:00Z",
+            "timeZone": "America/Chicago",
+            "allDay": false,
+            "endTimeUnspecified": false,
+            "identityVerified": true,
+            "textVisible": true
+          },
+          "expected": {
+            "state": "keep-current",
+            "executionDecisions": 1,
+            "originalEndsAt": "2026-10-05T14:50:00Z",
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": false,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "action": "observe-cancelled",
+          "input": {
+            "eventId": "demo-event",
+            "cancelled": true
+          },
+          "expected": {
+            "state": "keep-current",
+            "executionDecisions": 1,
+            "originalEndsAt": "2026-10-05T14:50:00Z",
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": false,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "action": "restart",
+          "input": {},
+          "expected": {
+            "state": "consumed",
+            "executionDecisions": 1,
+            "originalEndsAt": "2026-10-05T14:50:00Z",
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": false,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "designNote": "领取是持久事实；跨日、取消和重启不再执行，原截止不变。"
+    },
+    {
+      "id": "partial_token_reset_restore",
+      "instanceKeys": [
+        [
+          "demo-connection",
+          "demo-calendar",
+          "event",
+          "demo-event"
+        ]
+      ],
+      "steps": [
+        {
+          "action": "confirm-existing",
+          "input": {
+            "eventId": "demo-event",
+            "title": "@tt 示例课程 A",
+            "startInstant": "2026-10-05T14:00:00Z",
+            "endInstant": "2026-10-05T14:50:00Z",
+            "timeZone": "America/Chicago",
+            "allDay": false,
+            "endTimeUnspecified": false,
+            "identityVerified": true,
+            "textVisible": true
+          },
+          "expected": {
+            "state": "ready",
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": true,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "action": "read-incomplete",
+          "input": {
+            "complete": false,
+            "pageToken": "demo-next-page"
+          },
+          "expected": {
+            "state": "sync-unconfirmed",
+            "bindingRetained": true,
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": false,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "action": "reset-source-cache",
+          "input": {
+            "error": "token-expired-410"
+          },
+          "expected": {
+            "state": "sync-unconfirmed",
+            "bindingRetained": true,
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": false,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "action": "read-complete",
+          "input": {
+            "complete": true,
+            "event": {
+              "eventId": "demo-event",
+              "title": "@tt 示例课程 A",
+              "startInstant": "2026-10-05T14:00:00Z",
+              "endInstant": "2026-10-05T14:50:00Z",
+              "timeZone": "America/Chicago",
+              "allDay": false,
+              "endTimeUnspecified": false,
+              "identityVerified": true,
+              "textVisible": true
+            }
+          },
+          "expected": {
+            "state": "awaiting-reenable",
+            "bindingRetained": true,
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": false,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "action": "reenable",
+          "input": {
+            "at": "2026-10-01T12:06:00Z"
+          },
+          "expected": {
+            "state": "ready",
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": true,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:06:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "designNote": "部分分页及 410 不删除绑定；暂停过的计划恢复后需明确启用。"
+    },
+    {
+      "id": "local_pause_survives_sync",
+      "instanceKeys": [
+        [
+          "demo-connection",
+          "demo-calendar",
+          "event",
+          "demo-event"
+        ]
+      ],
+      "steps": [
+        {
+          "action": "confirm-existing",
+          "input": {
+            "eventId": "demo-event",
+            "title": "@tt 示例课程 A",
+            "startInstant": "2026-10-05T14:00:00Z",
+            "endInstant": "2026-10-05T14:50:00Z",
+            "timeZone": "America/Chicago",
+            "allDay": false,
+            "endTimeUnspecified": false,
+            "identityVerified": true,
+            "textVisible": true
+          },
+          "expected": {
+            "state": "ready",
+            "userEnabled": true,
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": true,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "action": "pause-local",
+          "input": {},
+          "expected": {
+            "state": "paused",
+            "userEnabled": false,
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": false,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "action": "read-unavailable",
+          "input": {
+            "error": "permission-revoked"
+          },
+          "expected": {
+            "state": "paused",
+            "userEnabled": false,
+            "bindingRetained": true,
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": false,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "action": "read-complete",
+          "input": {
+            "complete": true,
+            "event": {
+              "eventId": "demo-event",
+              "title": "@tt 示例课程 A",
+              "startInstant": "2026-10-05T14:00:00Z",
+              "endInstant": "2026-10-05T14:50:00Z",
+              "timeZone": "America/Chicago",
+              "allDay": false,
+              "endTimeUnspecified": false,
+              "identityVerified": true,
+              "textVisible": true
+            }
+          },
+          "expected": {
+            "state": "paused",
+            "userEnabled": false,
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": false,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "action": "reenable",
+          "input": {
+            "at": "2026-10-01T12:06:00Z"
+          },
+          "expected": {
+            "state": "ready",
+            "userEnabled": true,
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": true,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:06:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "designNote": "来源健康与用户选择分开；重新读取不能取消本机暂停。"
+    },
+    {
+      "id": "dst_fold_second_instant",
+      "instanceKeys": [
+        [
+          "demo-connection",
+          "demo-calendar",
+          "event",
+          "demo-fold"
+        ]
+      ],
+      "steps": [
+        {
+          "action": "observe",
+          "input": {
+            "eventId": "demo-fold",
+            "title": "@tt 示例课程 A",
+            "startInstant": "2026-11-01T07:30:00Z",
+            "endInstant": "2026-11-01T08:20:00Z",
+            "timeZone": "America/Chicago",
+            "allDay": false,
+            "endTimeUnspecified": false,
+            "identityVerified": true,
+            "textVisible": true,
+            "sourceLocalStart": "2026-11-01T01:30",
+            "sourceOffset": "-06:00"
+          },
+          "expected": {
+            "state": "awaiting-confirmation",
+            "plans": []
+          }
+        },
+        {
+          "action": "confirm",
+          "input": {
+            "courseId": "11111111-1111-4111-8111-111111111111"
+          },
+          "expected": {
+            "state": "ready",
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": true,
+                "localTime": "07:30",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-11-01"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "designNote": "明确 -06:00 的第二个 01:30 投影 UTC 07:30，不能变成较早一次。"
+    },
+    {
+      "id": "unsupported_time_precision",
+      "instanceKeys": [
+        [
+          "demo-connection",
+          "demo-calendar",
+          "event",
+          "demo-event"
+        ]
+      ],
+      "steps": [
+        {
+          "action": "observe",
+          "input": {
+            "eventId": "demo-event",
+            "title": "@tt 示例课程 A",
+            "startInstant": "2026-10-05T14:00:00Z",
+            "endInstant": "2026-10-05T14:50:00Z",
+            "timeZone": "America/Chicago",
+            "allDay": false,
+            "endTimeUnspecified": true,
+            "identityVerified": true,
+            "textVisible": true
+          },
+          "expected": {
+            "state": "needs-time",
+            "plans": []
+          }
+        },
+        {
+          "action": "observe",
+          "input": {
+            "eventId": "demo-event",
+            "title": "@tt 示例课程 A",
+            "startInstant": "2026-10-05T14:00:30Z",
+            "endInstant": "2026-10-05T14:50:30Z",
+            "timeZone": "America/Chicago",
+            "allDay": false,
+            "endTimeUnspecified": false,
+            "identityVerified": true,
+            "textVisible": true
+          },
+          "expected": {
+            "state": "needs-time",
+            "plans": []
+          }
+        },
+        {
+          "action": "observe",
+          "input": {
+            "eventId": "demo-event",
+            "title": "@tt 示例课程 A",
+            "startInstant": "2026-10-05T14:00:00Z",
+            "endInstant": "2026-10-05T14:50:30Z",
+            "timeZone": "America/Chicago",
+            "allDay": false,
+            "endTimeUnspecified": false,
+            "identityVerified": true,
+            "textVisible": true
+          },
+          "expected": {
+            "state": "needs-time",
+            "plans": []
+          }
+        }
+      ],
+      "designNote": "兼容结束不是明确结束；秒和非整数时长不自动取整。"
+    },
+    {
+      "id": "apple_identity_change",
+      "instanceKeys": [
+        [
+          "demo-apple-connection",
+          "demo-apple-calendar",
+          "event",
+          "demo-apple-local-id"
+        ]
+      ],
+      "steps": [
+        {
+          "action": "confirm-existing",
+          "input": {
+            "eventId": "demo-apple-local-id",
+            "title": "@tt 示例课程 A",
+            "startInstant": "2026-10-05T14:00:00Z",
+            "endInstant": "2026-10-05T14:50:00Z",
+            "timeZone": "America/Chicago",
+            "allDay": false,
+            "endTimeUnspecified": false,
+            "identityVerified": true,
+            "textVisible": true
+          },
+          "expected": {
+            "state": "ready",
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": true,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "action": "observe-new-identity",
+          "input": {
+            "eventId": "demo-apple-new-id",
+            "title": "@tt 示例课程 A",
+            "startInstant": "2026-10-05T14:00:00Z",
+            "endInstant": "2026-10-05T14:50:00Z",
+            "timeZone": "America/Chicago",
+            "allDay": false,
+            "endTimeUnspecified": false,
+            "identityVerified": false,
+            "textVisible": true,
+            "externalId": "demo-external-id",
+            "originalStartInstant": "2026-10-05T14:00:00Z"
+          },
+          "expected": {
+            "state": "needs-identity",
+            "bindingRetained": true,
+            "newPlans": 0,
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "11111111-1111-4111-8111-111111111111",
+                "enabled": false,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "designNote": "Apple 本机 ID 变化只进入核对，不自动把新 ID 当另一节课；路线尚未接入。"
+    },
+    {
+      "id": "ambiguous_course_choice",
+      "instanceKeys": [
+        [
+          "demo-connection",
+          "demo-calendar",
+          "event",
+          "demo-event"
+        ]
+      ],
+      "steps": [
+        {
+          "action": "observe",
+          "input": {
+            "eventId": "demo-event",
+            "title": "@tt 同名示例课程",
+            "startInstant": "2026-10-05T14:00:00Z",
+            "endInstant": "2026-10-05T14:50:00Z",
+            "timeZone": "America/Chicago",
+            "allDay": false,
+            "endTimeUnspecified": false,
+            "identityVerified": true,
+            "textVisible": true
+          },
+          "expected": {
+            "state": "needs-course",
+            "plans": []
+          }
+        },
+        {
+          "action": "choose-and-confirm",
+          "input": {
+            "courseId": "22222222-2222-4222-8222-222222222222"
+          },
+          "expected": {
+            "state": "ready",
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "22222222-2222-4222-8222-222222222222",
+                "enabled": true,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "action": "observe-course-changed",
+          "input": {
+            "eventId": "demo-event",
+            "title": "@tt 示例课程 A",
+            "startInstant": "2026-10-05T14:00:00Z",
+            "endInstant": "2026-10-05T14:50:00Z",
+            "timeZone": "America/Chicago",
+            "allDay": false,
+            "endTimeUnspecified": false,
+            "identityVerified": true,
+            "textVisible": true
+          },
+          "expected": {
+            "state": "needs-course",
+            "bindingRetained": true,
+            "plans": [
+              {
+                "id": "55555555-5555-4555-8555-555555555555",
+                "courseId": "22222222-2222-4222-8222-222222222222",
+                "enabled": false,
+                "localTime": "14:00",
+                "timeZone": "UTC",
+                "durationMinutes": 50,
+                "effectiveFrom": "2026-10-01T12:00:00Z",
+                "recurrence": {
+                  "kind": "once",
+                  "date": "2026-10-05"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "designNote": "同名需要选择；来源要求换另一门课时暂停，不静默重绑。"
+    }
+  ]
+}

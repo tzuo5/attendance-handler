@@ -215,10 +215,11 @@
   - **验收：**形成带来源的对比结论，明确 `@tt` 交互能否实现；未经验证的能力标记为待验证。
   - **实绩：**[官方接入调研](docs/calendar-provider-research.md) 对比 Google API、Apple EventKit 和 iCloud / CalDAV；核实文本读取、只读 / 完整权限、桌面 OAuth、macOS 13 / 14+ 分支、变更 / 分页 / 取消 / 身份、撤销及维护成本。建议先用 Google 合成响应验证，再独立评估 EventKit；App 选定日历不缩小实际授权，iCloud 第三方授权资格待验证。本轮只读公开资料，没有日历连接或账号授权。
 
-- [ ] **P5.3 — 日历事件与定时任务映射**（依赖 P5.1、P5.2；复用 Phase 4）
+- [x] **P5.3 — 日历事件与定时任务映射**（依赖 P5.1、P5.2；复用 Phase 4）
   - 定义事件与课程的匹配、时间与时区转换、重复事件例外、修改 / 删除同步及去重规则。
   - 明确连接范围、所需权限、本机记录和错误恢复；提供识别结果预览及撤销处理的设计。
   - **验收：**通过合成事件演练新增、改时、删除、重复例外和重复同步；一个事件实例只对应一次计划执行，歧义有明确处理入口。
+  - **实绩：**[映射契约](docs/calendar-mapping.md) 定义结构化实例键、固定计划 ID、UTC 单次投影、完整读取批次、课程确认 / 用户暂停、来源恢复和最少记录。识别当前 Phase 4 的日期键不足以保护跨日改时，明确未来需新增原子日历实例领取；未直接声称产品已支持。11 组 / 36 步手写轨迹、33 个任务投影通过当前 Phase 4 校验器与一致性检查；实际离线同步样例留给 P5.4。
 
 - [ ] **P5.4 — 可行性样例与下一步决策**（依赖 P5.3）
   - 对选定方案制作隔离样例，验证“事件被识别 → 生成计划 → 修改 / 取消同步”，不直接操作真实课堂。
@@ -256,3 +257,4 @@
 | P4.4 | 2026-10-01 | [`82b6546`](https://github.com/tzuo5/attendance-handler/commit/82b6546) · `feat: recover scheduled starts across clock changes and interrupted scans` | 135 单测、类型检查、构建、双 renderer、macOS 实际打包六组调度与四组配置 | Windows 安装版六组与 DPAPI 首次全部通过；实体睡眠、真实学校 / 课堂、Mac 钥匙串待验收；历史记录分批补齐 |
 | P5.1 | 2026-10-01 | [`f09f389`](https://github.com/tzuo5/attendance-handler/commit/f09f389) · `docs: define calendar agent intents and synthetic acceptance scenarios` | 设计语义检查、16 个合成 JSON 场景一致性验收；前一功能 Source / Windows CI 首次通过 | ideation 提案；尚无真实日历读取、授权、写入或产品解析器；本次 Source / Windows CI 首次全部通过，验证既有运行代码回归 |
 | P5.2 | 2026-10-01 | [`8f9ddb6`](https://github.com/tzuo5/attendance-handler/commit/8f9ddb6) · `docs: compare official Google and Apple calendar access paths` | Google / Apple / IETF 原始资料逐项引用与关键条件复核；53 处本地引用和 86 文件公开审核通过；Source / Windows CI 首次全部通过 | 接入研究完成；真实授权、原生桥接、iCloud 资格与服务行为未验证；CI 验证既有运行代码，未验证真实日历接入 |
+| P5.3 | 2026-10-01 | `docs: specify calendar instance mapping and durable execution boundaries` | 11 组 / 36 步合成设计轨迹，33 个 UTC 单次投影经现有 Phase 4 校验器核对；稳定计划 ID、原截止、重复例外和回拨第二次时刻通过一致性检查 | 手写状态预期，没有运行同步器或课堂；产品原子日历领取和来源桥接尚未实现；本次 CI 待补记 |

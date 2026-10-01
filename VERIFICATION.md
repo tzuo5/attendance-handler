@@ -1,10 +1,18 @@
 # 验证记录
 
+## Phase 5.3 日历实例映射（2026-10-01）
+
+新增 [映射契约](docs/calendar-mapping.md) 和 [11 组手写设计轨迹](docs/examples/calendar-mapping-traces.json)，共 36 步。一次性隔离检查将 33 个预期任务的 ISO 生效时刻转为 epoch，通过当前 `validateSchedule` / `occurrenceOnDate` 校验课程引用、UTC 单次日期、起止与 50 分钟时长；复核稳定计划 ID、无变化同步保留生效时刻、领取后原截止与至多一次决定、取消一个重复例外不影响另一节、Chicago 回拨第二个 01:30 的 UTC 07:30 投影。未指定结束 / 秒精度 / 非整数时长的预期均不生成任务；权限失败、410、本机暂停和 Apple 身份变化保留绑定并暂停。
+
+这些是设计数据一致性与现有任务模型兼容性检查，没有运行日历同步器、真实 API、产品日历领取或课堂。当前 Phase 4 的 `scheduleId / localDate` 不能独自保护日历实例跨日改时，契约明确未来需同一次原子保存日历领取与执行事实，产品没有被接入。上一提交 `8a4dc05` 的 Source checks / Windows CI 已成功，本次提交的回归结果待补记。P5.4 在下一窗口提供可执行隔离样例；真实授权、Apple 桥接和来源时序仍待验证。
+
+65 处本地文档引用、fixture 课程引用、88 文件公开审核和 diff 格式检查通过。首次引用检查的简单正则把相邻中文链接合并成错误路径，修正后通过；随后使用平衡括号解析复核，同时把 P5.2 的来源链接统计由 37 更正为 39（原统计漏分邻接链接，官方来源内容没有改变）。
+
 ## Phase 5.2 官方接入调研（2026-10-01）
 
 新增 [Google / Apple 接入比较](docs/calendar-provider-research.md)，只使用 Google、Apple 和 IETF 的公开原始资料，关键条件经独立复核。核实 Google 只读 scopes 与 Desktop loopback / PKCE、同步分页与 410 / 删除、重复原定实例及 push 的 HTTPS / 续期限制；核实 EventKit 无只读授权、macOS 13 / 14+ 分支、变化通知和身份限制；iCloud CalDAV 与受支持第三方授权独立评估，当前 App 接入资格仍未核实。README、设计和隐私文档明确 App 日历选择不缩小账号 / 系统权限，读取未标记文本与只读使用的边界。
 
-没有调用真实日历 API、申请授权或创建真实任务。Apple 部分网页工具仅返回 JS 提示或拒绝 Markdown 类型，改为正常证书校验的 `curl` 读取官方 Markdown 正文；这属于资料读取，不是功能验收。未来路线和错误处理建议标为工程判断。53 处本地文档引用全部存在，调研中的 37 个不同来源链接均来自官方域名；逐项资料复核独立于域名检查。公开数据审核 86 文件和 `git diff --check` 通过。本窗口没有修改运行代码；上一提交 `4ab37c2` 的 Source checks / Windows CI 首次全部通过。
+没有调用真实日历 API、申请授权或创建真实任务。Apple 部分网页工具仅返回 JS 提示或拒绝 Markdown 类型，改为正常证书校验的 `curl` 读取官方 Markdown 正文；这属于资料读取，不是功能验收。未来路线和错误处理建议标为工程判断。53 处本地文档引用全部存在，调研中的 39 个不同来源链接均来自官方域名（数量在 P5.3 用平衡括号解析复核）；逐项资料复核独立于域名检查。公开数据审核 86 文件和 `git diff --check` 通过。本窗口没有修改运行代码；上一提交 `4ab37c2` 的 Source checks / Windows CI 首次全部通过。
 
 调研提交 [`8f9ddb6`](https://github.com/tzuo5/attendance-handler/commit/8f9ddb6) 的 [Source checks](https://github.com/tzuo5/attendance-handler/actions/runs/36855068291) 与 [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36855068456) 首次全部通过：既有单测、双 renderer、全部 Chrome 集成 / 生命周期 / 后台检查、实际 Windows 安装版调度 / 配置 / UI / 恢复 / 向导、真实 DPAPI、源码及包审计、ZIP 一致性。CI 验证既有运行代码回归，不代表真实日历连接或授权已验证；事件映射及隔离样例仍待 P5.3 / P5.4。
 
