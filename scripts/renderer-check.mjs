@@ -75,9 +75,12 @@ try {
   assert.equal(await page.locator('.log-entry').count(),1);
   await page.getByLabel('搜索记录',{exact:true}).fill('');
   await page.locator('.log-list').evaluate(element => {element.scrollTop=600;});
-  await page.evaluate(async () => {const state=await window.attendance.getState();window.__testState({logs:[{id:'new-event',at:Date.now(),level:'warning',message:'新事件'},...state.logs]});});
+  const anchorBefore=await page.locator('.log-entry').nth(5).evaluate(element=>({id:element.querySelector('.log-question').textContent,top:element.getBoundingClientRect().top}));
+  await page.evaluate(async () => {const state=await window.attendance.getState();window.__testState({logs:[{id:'new-event',at:Date.now(),level:'warning',message:'新事件'},...state.logs.slice(0,-1)]});});
   await page.getByRole('button',{name:'查看 1 条新事件',exact:true}).waitFor();
   assert.ok(await page.locator('.log-list').evaluate(element=>element.scrollTop)>600);
+  const anchorAfter=await page.getByRole('heading',{name:anchorBefore.id,exact:true}).evaluate(element=>element.closest('.log-entry').getBoundingClientRect().top);
+  assert.ok(Math.abs(anchorAfter-anchorBefore.top)<1,'reading position stays fixed when retention removes an older event');
   await page.getByRole('button',{name:'查看 1 条新事件',exact:true}).click();
   assert.equal(await page.locator('.log-list').evaluate(element=>element.scrollTop),0);
   await page.evaluate(async () => {

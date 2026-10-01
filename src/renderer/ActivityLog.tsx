@@ -14,7 +14,7 @@ export function ActivityLog({ logs, sessionId, scope, onScopeChange }: { logs: L
   const [search, setSearch] = useState('');
   const [newCount, setNewCount] = useState(0);
   const list = useRef<HTMLDivElement>(null);
-  const previous = useRef({ height:0, first:'', filter:'' });
+  const previous = useRef({ first:'', filter:'' });
   const sessions = useMemo(() => [...new Map(logs.filter(e => e.sessionId).map(e => [e.sessionId!, { name:e.courseName || '课堂',at:e.at }])).entries()], [logs]);
   const entries = useMemo(() => logs.filter(e => (scope === 'all' || e.sessionId === (scope === 'current' ? sessionId : scope))
     && (level === 'all' || e.level === level) && (!search.trim() || `${e.courseName || ''} ${e.questionTitle || ''} ${e.message}`.toLowerCase().includes(search.trim().toLowerCase()))), [logs,scope,level,search,sessionId]);
@@ -25,10 +25,13 @@ export function ActivityLog({ logs, sessionId, scope, onScopeChange }: { logs: L
     const added = entries.findIndex(e => e.id === previous.current.first);
     if (previous.current.filter !== filter) { element.scrollTop = 0; setNewCount(0); }
     else if (added > 0 && element.scrollTop > 16) {
-      element.scrollTop += element.scrollHeight - previous.current.height;
+      // The retention limit can remove old rows while new ones are prepended.
+      // Measure the inserted rows instead of the net change in list height.
+      const first=element.children[0],anchor=element.children[added];
+      if(first && anchor)element.scrollTop += anchor.getBoundingClientRect().top-first.getBoundingClientRect().top;
       setNewCount(count => count + added);
     } else if (added > 0) { element.scrollTop = 0; }
-    previous.current = {height:element.scrollHeight,first:entries[0]?.id || '',filter};
+    previous.current = {first:entries[0]?.id || '',filter};
   }, [entries,filter]);
   return <section className="panel log-panel">
     <div className="section-heading"><h2>课堂事件记录</h2><span className="small-label">本机保留最近 2000 条事件</span></div>

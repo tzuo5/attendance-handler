@@ -222,3 +222,4 @@
 | P1.6 | 2026-09-30 | `feat: persist classroom end summaries and history` | 36 项单元测试、类型检查、模拟 UI、17 项专用 Chrome 集成检查 | 最近 100 节摘要；更早详细日志受 2000 条保留上限约束 |
 | P1.7 | 2026-09-30 | `feat: simplify course setup and reuse saved classrooms` | 41 项单元测试、生产构建、macOS 900×640 模拟 UI；导入、手动配置、位置复用、字段错误、编辑及焦点验证；打包 App 保存与重复拦截通过 | Windows 完整界面流程待本次 CI；macOS 打包加密流程等待系统钥匙串授权 |
 | Phase 1 回归补充 | 2026-09-30 | `fix: preserve classroom receipts and wait for confirmed smoke results` | 44 项单元测试、类型检查、模拟 UI、macOS 打包模拟课堂；补充签到历史、关题后的回执及延长后的唤醒边界 | macOS 打包测试使用明确标记的合成加密；系统钥匙串仍待授权验证，Windows 使用真实 DPAPI |
+| P1.3 保留上限边界 | 2026-09-30 | `fix: keep log reading position when older events expire` | 类型检查与模拟 UI：同时插入新事件、清理旧事件后，同一条可见记录的位置保持不变 | 已被清理的详细事件无法恢复，摘要仍按独立上限保留 |
