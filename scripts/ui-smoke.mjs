@@ -82,10 +82,12 @@ try {
   assert.ok(completed.logs.some(entry=>entry.event==='session-extended'));
   await window.getByRole('button', { name: '连接与提醒', exact: true }).click();
   await window.screenshot({ path: '.test-artifacts/app-settings.png' });
-  await application.evaluate(({Tray})=>{
+  await application.evaluate(({Tray,Notification})=>{
     const menu=Tray.prototype.setContextMenu, tooltip=Tray.prototype.setToolTip;
-    Tray.prototype.setContextMenu=function(value){globalThis.__attendanceTrayLabels=value.items.map(item=>item.label);return menu.call(this,value);};
+    Tray.prototype.setContextMenu=function(value){globalThis.__attendanceTrayLabels=value.items.filter(item=>item.visible).map(item=>item.label);globalThis.__attendanceReturnBackground=value.items.find(item=>item.visible&&item.label==='返回后台');return menu.call(this,value);};
     Tray.prototype.setToolTip=function(value){globalThis.__attendanceTrayTooltip=value;return tooltip.call(this,value);};
+    const show=Notification.prototype.show;
+    Notification.prototype.show=function(){if(this.title.includes('需要作答'))globalThis.__attendanceManualReminder=this;if(this.title==='暂时无法返回后台')globalThis.__attendanceBlockedReturnReminder=this;return show.call(this);};
   });
   await window.getByRole('button',{name:'后台模式（无 Chrome 窗口）',exact:true}).click();
   await window.getByText('已保存，下次上课使用后台模式',{exact:true}).waitFor();
@@ -121,8 +123,38 @@ try {
   mock.control({newQuestion:'other'});
   await until(async()=>(await window.evaluate(()=>window.attendance.getState())).session.status==='needs-answer','headless manual question did not produce an actionable state');
   assert.equal(mock.state.submissions.length,1);
+  const beforeHuman=await window.evaluate(()=>window.attendance.getState());
+  // Inject the click on the real classroom Notification instance. This checks
+  // its handler and route; it does not claim that a human saw/clicked a toast.
+  await application.evaluate(()=>{if(!globalThis.__attendanceManualReminder)throw new Error('manual reminder missing');globalThis.__attendanceManualReminder.emit('click');});
+  await until(async()=>{const state=await window.evaluate(()=>window.attendance.getState());return state.browserMode==='visible'&&state.browserConnected&&state.session.status==='needs-answer';},'notification did not open the correct visible classroom');
+  const [manualPort]=(await readFile(join(data,'chrome-profile','DevToolsActivePort'),'utf8')).split('\n');
+  classroom=await chromium.connectOverCDP(`http://127.0.0.1:${manualPort.trim()}`);
+  const manualPage=classroom.contexts()[0].pages().find(page=>page.url().startsWith(mock.origin));
+  assert.ok(manualPage.url().includes('/class/demo'));
+  await manualPage.locator('#short-answer').fill('synthetic manual answer');
+  const blocked=await window.evaluate(async()=>{try{await window.attendance.returnToBackground();return '';}catch(error){return error.message;}});
+  assert.match(blocked,/尚未收到答案确认/);
+  assert.equal(await manualPage.locator('#short-answer').inputValue(),'synthetic manual answer');
+  const visibleTray=await application.evaluate(()=>globalThis.__attendanceTrayLabels);
+  assert.ok(visibleTray.includes('返回后台'));
+  await application.evaluate(()=>globalThis.__attendanceReturnBackground.click());
+  await until(async()=>await application.evaluate(()=>!!globalThis.__attendanceBlockedReturnReminder),'tray return failure did not give an actionable reminder');
+  assert.match(await application.evaluate(()=>globalThis.__attendanceBlockedReturnReminder.body),/尚未收到答案确认/);
+  assert.equal(await application.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].isVisible()),false);
+  assert.equal(await manualPage.locator('#short-answer').inputValue(),'synthetic manual answer');
+  await manualPage.getByRole('button',{name:'Send',exact:true}).click();
+  await until(async()=>(await window.evaluate(()=>window.attendance.getState())).session.handled['demo-session:q2']==='confirmed','manual receipt not recorded');
   await application.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].show());
-  await window.getByText('有题目待作答',{exact:true}).first().waitFor();
+  await window.getByRole('button',{name:'返回后台',exact:true}).click();
+  await until(async()=>{const state=await window.evaluate(()=>window.attendance.getState());return state.browserMode==='background'&&state.browserConnected&&state.session.status==='monitoring';},'return to background did not resume monitoring');
+  const afterHuman=await window.evaluate(()=>window.attendance.getState());
+  assert.equal(afterHuman.session.id,beforeHuman.session.id);assert.equal(afterHuman.session.endsAt,beforeHuman.session.endsAt);
+  assert.equal(afterHuman.session.handled['demo-session:q1'],'confirmed');assert.equal(afterHuman.session.handled['demo-session:q2'],'confirmed');
+  assert.equal(mock.state.submissions.length,2);
+  const [returnedPort]=(await readFile(join(data,'chrome-profile','DevToolsActivePort'),'utf8')).split('\n');
+  classroom=await chromium.connectOverCDP(`http://127.0.0.1:${returnedPort.trim()}`);
+  assert.ok(!(await application.evaluate(()=>globalThis.__attendanceTrayLabels)).includes('返回后台'));
   await window.evaluate(()=>window.attendance.stop());
   await window.getByRole('button',{name:'连接与提醒',exact:true}).click();
   await window.getByRole('button',{name:'显示课堂窗口',exact:true}).click();
@@ -137,7 +169,7 @@ try {
   });
   const notifications = process.platform === 'darwin' ? await application.evaluate(async ({ Notification }) => (await Notification.getHistory()).map(n => ({ title: n.title, body: n.body }))) : [];
   assert.deepEqual(errors, []);
-  const checks = ['course list', 'course persistence and duplicate protection', 'extension and persisted summary', 'settings', 'packaged Chrome launch and native helper', 'mock attendance', 'persisted background preference and no visible Chrome window', 'hidden App continues headless answer monitoring and manual-question state', 'actual tray menu labels and tooltip (method instrumentation)', syntheticCipher ? 'synthetic encrypted session round trip (OS storage not verified)' : 'OS-encrypted session round trip'];
+  const checks = ['course list', 'course persistence and duplicate protection', 'extension and persisted summary', 'settings', 'packaged Chrome launch and native helper', 'mock attendance', 'persisted background preference and no visible Chrome window', 'hidden App continues headless answer monitoring and manual-question state', 'classroom Notification click handler (injected event) opens correct visible course', 'manual draft protection and receipt-confirmed return to background retain session and deadline without duplicate answers', 'actual tray menu labels and tooltip (method instrumentation)', syntheticCipher ? 'synthetic encrypted session round trip (OS storage not verified)' : 'OS-encrypted session round trip'];
   await writeFile('.test-artifacts/ui-report.json', JSON.stringify({ checks, errors, notification, delivered: notifications, data }, null, 2));
   console.log(JSON.stringify({ checks, errors, notification, deliveredCount: notifications.length }, null, 2));
 } finally {

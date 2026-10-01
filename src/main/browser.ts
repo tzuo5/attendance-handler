@@ -6,6 +6,7 @@ import type { BrowserMode, CourseConfig, PageSnapshot, QuestionSnapshot, LoginRe
 import { IClickerAdapter } from './iclicker';
 import type { ClassroomDriver } from './watchdog';
 import { activateChrome, launchChrome } from './platform';
+import { backgroundReturnIssue } from '../shared/background-return';
 
 export interface Cipher { isEncryptionAvailable(): boolean; encryptString(text: string): Buffer; decryptString(data: Buffer): string; }
 export class SessionVault {
@@ -305,6 +306,31 @@ export class ChromeClassroom implements ClassroomDriver {
     const cdp = await this.context!.newCDPSession(this.page!);
     try { const { windowId } = await cdp.send('Browser.getWindowForTarget'); await cdp.send('Browser.setWindowBounds', { windowId, bounds: { windowState: 'minimized' } }); }
     finally { await cdp.detach(); }
+  }
+  async returnToBackground(signal?: AbortSignal) {
+    const course = this.activeCourse, deadline = this.deadline;
+    const checkActive = () => {
+      signal?.throwIfAborted();
+      if (!course || this.activeCourse !== course || this.deadline !== deadline || deadline <= Date.now()) throw new Error('本节监控已结束或结束时间已改变，请查看当前状态后重试。');
+    };
+    checkActive();
+    if (this.mode === 'background') return;
+    if (!this.isOpen()) throw new Error('请先恢复课堂窗口，再返回后台。');
+    if (this.context!.pages().some(page => page !== this.page && !page.isClosed())) throw new Error('专用 Chrome 中还有其他标签页。请先保存并关闭这些标签页，再返回后台。');
+    const issue = backgroundReturnIssue(await this.read(), course!.remoteId);
+    if (issue) throw new Error(issue);
+    checkActive();
+    await this.setMode('background', signal);
+    checkActive();
+    const page = await this.ensurePage();
+    await this.context!.grantPermissions(['geolocation'], { origin: this.origin });
+    await this.context!.setGeolocation({ latitude: course!.latitude, longitude: course!.longitude, accuracy: course!.accuracy });
+    checkActive();
+    await page.goto(course!.url, { waitUntil: 'domcontentloaded', timeout: 25000 });
+    checkActive();
+    await this.armPage(); await this.capture(); this.changed();
+    // Watchdog.transition rechecks the fresh page and records only actual site
+    // receipts. Neither the session nor its handled records are recreated here.
   }
   async capture(strict = false) {
     if (!this.capturing) {

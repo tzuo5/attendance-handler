@@ -28,7 +28,7 @@ try {
       openHelp:async target=>{window.__lastHelp=target;},
       saveCourse: async c => { state.courses.push(c); listener?.(structuredClone(state)); return structuredClone(state); },
       deleteCourse: async () => structuredClone(state), login: async () => {}, importCourses: async () => [{ remoteId:'new',name:'导入课程',url:'https://student.iclicker.com/#/course/new/overview' }],
-      extend:async()=>{state.session.endsAt+=600000;listener?.(structuredClone(state));}, start: async () => {}, stop: async () => {}, showClassroom: async () => {}, minimizeClassroom: async () => {}, testNotification: async () => {},
+      extend:async()=>{state.session.endsAt+=600000;listener?.(structuredClone(state));}, start: async () => {}, stop: async () => {}, showClassroom: async () => {}, minimizeClassroom: async () => {}, returnToBackground:async()=>{state.browserMode='background';listener?.(structuredClone(state));}, testNotification: async () => {},
       saveSettings:async settings=>{state.settings=settings;listener?.(structuredClone(state));return structuredClone(state);},
     };
   });
@@ -151,6 +151,16 @@ try {
   assert.equal(await page.getByRole('button',{name:'最小化课堂',exact:true}).count(),0);
   const stopBounds=await page.getByRole('button',{name:'结束上课',exact:true}).boundingBox();
   assert.ok(stopBounds.y>=0&&stopBounds.y+stopBounds.height<=640,'the complete stop button must remain in the viewport after settings navigation');
+  assert.equal(await page.getByRole('button',{name:'返回后台',exact:true}).count(),0);
+  await page.evaluate(()=>window.__testState({browserMode:'visible'}));
+  await page.getByRole('button',{name:'返回后台',exact:true}).waitFor();
+  const beforeReturn=await page.evaluate(()=>window.attendance.getState());
+  const visibleStop=await page.getByRole('button',{name:'结束上课',exact:true}).boundingBox();
+  assert.ok(visibleStop.y>=0&&visibleStop.y+visibleStop.height<=640,'return control must not hide the stop button');
+  await page.getByRole('button',{name:'返回后台',exact:true}).click();
+  await page.getByText('后台模式 · 无 Chrome 窗口',{exact:true}).waitFor();
+  const afterReturn=await page.evaluate(()=>window.attendance.getState());
+  assert.equal(afterReturn.session.id,beforeReturn.session.id);assert.equal(afterReturn.session.endsAt,beforeReturn.session.endsAt);
   await mkdir('.test-artifacts/phase1', { recursive:true });
   await page.screenshot({path:'.test-artifacts/phase1/courses.png'});
   assert.deepEqual(errors,[]);

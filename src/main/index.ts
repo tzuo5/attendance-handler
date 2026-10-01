@@ -68,6 +68,7 @@ async function main() {
         { label: modeLabel, enabled: false },
         { label: '打开 App', click: () => { window.show(); window.focus(); } },
         { label: sessionPresentation(run).action, click: () => { void showClassroom().catch(reportError); } },
+        { label: '返回后台', visible: ACTIVE(run) && browser?.mode === 'visible', enabled: !browser?.isTransitioning(), click: () => { void returnToBackground().catch(error => { reportError(error); sendNotification('background-return', '暂时无法返回后台', error instanceof Error ? error.message : '请打开 App 查看课堂状态后重试。'); }); } },
         { label: '结束上课', enabled: ACTIVE(run), click: () => { void watchdog.stop().catch(reportError); } },
         { type: 'separator' }, { label: '退出', click: () => app.quit() },
       ]));
@@ -111,6 +112,12 @@ async function main() {
     },
   });
   const showClassroom = () => watchdog.transition(signal => browser.show(signal));
+  const returnToBackground = async () => {
+    if (!ACTIVE(watchdog.session)) throw new Error('请先开始本节监控。');
+    const run = watchdog.session;
+    await watchdog.transition(signal => browser.returnToBackground(signal));
+    if (ACTIVE(watchdog.session) && watchdog.session === run && browser.mode === 'background') log('success', '本节已返回后台，继续原结束时间和作答记录', { sessionId: run.id, courseId: run.course.id, courseName: run.course.name, endsAt: run.endsAt });
+  };
   window = new BrowserWindow({
     width: 1160, height: 800, minWidth: 900, minHeight: 640, title: 'Attendance Handler',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default', backgroundColor: '#f6f5f1',
@@ -189,6 +196,7 @@ async function main() {
   invoke('browser:login', () => watchdog.transition(signal => browser.login(signal)));
   invoke('browser:show', showClassroom);
   invoke('browser:minimize', () => browser.minimize());
+  invoke('browser:background', returnToBackground);
   invoke('session:start', async input => {
     const id = z.string().uuid().parse(input);
     const course = store.data.courses.find(c => c.id === id);

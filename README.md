@@ -50,7 +50,7 @@ New users follow environment checks, sign-in, course import and configuration, a
 
 ## Background mode (current source)
 
-In connection settings choose **Background mode** for your next session. The default keeps the classroom window visible. Changes apply to the next class; App and tray show the actual current mode and monitoring state. Headless Chrome uses the same dedicated profile and encrypted login. Closing the App window keeps monitoring in the tray. **View classroom** opens an operable window while retaining the original deadline and answer records. A dedicated return-to-background flow is planned in P3.3. See [implementation and verification](docs/background-mode.md).
+In connection settings choose **Background mode** for your next session. The default keeps the classroom window visible. Changes apply to the next class; App and tray show the actual current mode and monitoring state. Headless Chrome uses the same dedicated profile and encrypted login. Closing the App window keeps monitoring in the tray. **View classroom** opens an operable window while retaining the original deadline and answer records. **Return to background** rechecks the current course and website receipts before closing the window. Pending answers, unfinished sign-in, unknown pages, dialogs, or additional tabs keep the window open with repair guidance; the current session, original deadline, and handled answers remain in place. See [implementation and verification](docs/background-mode.md).
 
 ## The classroom flow
 

@@ -81,7 +81,7 @@ export class IClickerAdapter {
       if (!navigator.onLine || [...document.querySelectorAll('.connection-error')].some(visible)) return { state: 'offline', attendance: 'unknown' };
       const route = `${location.pathname}${location.hash.replace(/^#/, '')}`;
       const courseId = route.match(/\/(?:course|class)\/([^/?#]+)/)?.[1];
-      if (location.origin !== origin || /\/login(?:[/?#]|$)/.test(route) || visible(document.querySelector('#sign-in-button'))) return { state: 'login', attendance: 'unknown' };
+      if (location.origin !== origin || /\/login(?:[/?#]|$)/.test(route) || visible(document.querySelector('#sign-in-button,[data-school-verification]'))) return { state: 'login', attendance: 'unknown' };
       const confirmed = /you[’']?re checked in|you are checked in|check.in successful/i.test(text) || visible(document.querySelector('[data-attendance="confirmed"]')) || !!(courseId && attendanceEvidence[courseId]);
       const attendance = confirmed ? 'confirmed' as const : 'unknown' as const;
       if (visible(document.querySelector('.modal.show, .modal-dialog, [role="dialog"]'))) return { state: confirmed ? 'classroom' : 'unknown', courseId, attendance, detail: '页面有弹窗，请查看课堂并处理后继续。' };

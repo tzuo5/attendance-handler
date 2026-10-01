@@ -112,6 +112,7 @@ export interface AttendanceAPI {
   extend(): Promise<void>;
   showClassroom(): Promise<void>;
   minimizeClassroom(): Promise<void>;
+  returnToBackground(): Promise<void>;
   saveSettings(settings: AppSettings): Promise<AppState>;
   testNotification(): Promise<void>;
   checkEnvironment(): Promise<EnvironmentReport>;
