@@ -1,4 +1,4 @@
-import { ACTIVE, type CourseConfig, type PageSnapshot, type QuestionSnapshot, type SessionState } from '../shared/types';
+import { ACTIVE, type CourseConfig, type LogDetails, type LogEvent, type PageSnapshot, type QuestionSnapshot, type SessionState } from '../shared/types';
 export interface ClassroomDriver {
   isOpen(): boolean;
   prepare(course: CourseConfig, deadline: number, signal: AbortSignal): Promise<void>;
@@ -9,7 +9,7 @@ export interface ClassroomDriver {
 }
 export interface WatchdogHooks {
   changed(session: SessionState): void;
-  log(level: 'info' | 'success' | 'warning' | 'error', message: string): void;
+  log(level: 'info' | 'success' | 'warning' | 'error', message: string, details?: LogDetails): void;
   notify(key: string, title: string, body: string): void;
   clearNotifications(): void;
   keepAwake(enabled: boolean): void;
@@ -33,10 +33,10 @@ export class Watchdog {
     if (this.stopping) await this.stopping;
     this.controller = new AbortController();
     this.lastReminders.clear(); this.failures = 0; this.joins = 0; this.lastJoin = -Infinity;
-    this.session = { id: crypto.randomUUID(), course: structuredClone(course), startedAt: this.now(), endsAt: this.now() + course.durationMinutes * 60000, status: 'starting', attendance: 'unknown', handled: {}, detail: '正在打开专用 Chrome 课堂窗口' };
+    this.session = { id: crypto.randomUUID(), course: structuredClone(course), startedAt: this.now(), endsAt: this.now() + course.durationMinutes * 60000, status: 'starting', attendance: 'unknown', questions: {}, handled: {}, detail: '正在打开专用 Chrome 课堂窗口' };
     const run = this.session;
     this.hooks.keepAwake(true); this.hooks.clearNotifications(); this.emit();
-    this.hooks.log('info', `开始 ${course.name} · ${course.durationMinutes} 分钟`);
+    this.event('info', `开始 ${course.name} · ${course.durationMinutes} 分钟`, 'session-started', { endsAt: run.endsAt });
     this.deadlineTimer = setTimeout(() => { void this.stop(true); }, run.endsAt - this.now());
     const signal = this.controller.signal;
     this.preparation = this.driver.prepare(course, run.endsAt, signal);
@@ -48,7 +48,7 @@ export class Watchdog {
     } catch (error) {
       if (!this.live(run)) return;
       this.change('attention', error instanceof Error ? error.message : '浏览器连接失败', 'browser');
-      this.hooks.log('error', this.session!.detail);
+      this.event('error', this.session!.detail, 'system', { result: 'failed' });
       this.remind('browser-error', '课堂连接需要处理', this.session!.detail, Infinity);
       this.schedule(5000);
     }
@@ -58,7 +58,35 @@ export class Watchdog {
     return this.session === run && ACTIVE(run) && !this.controller?.signal.aborted && this.now() < run.endsAt;
   }
   private emit() { if (this.session) this.hooks.changed(structuredClone(this.session)); }
-  private change(status: SessionState['status'], detail: string, issue?: SessionState['issue']) { if (this.session) { this.session.status = status; this.session.detail = detail; this.session.issue = issue; this.emit(); } }
+  private change(status: SessionState['status'], detail: string, issue?: SessionState['issue']) {
+    if (!this.session) return;
+    const changed = this.session.status !== status || this.session.detail !== detail || this.session.issue !== issue;
+    this.session.status = status; this.session.detail = detail; this.session.issue = issue;
+    if (changed) this.event(issue || ['offline', 'window-closed', 'needs-login', 'attention'].includes(status) ? 'warning' : 'info', detail, 'status-changed', { status });
+    this.emit();
+  }
+  private event(level: 'info' | 'success' | 'warning' | 'error', message: string, event: LogEvent, details: LogDetails = {}) {
+    const run = this.session;
+    this.hooks.log(level, message, { event, sessionId: run?.id, courseId: run?.course.id, courseName: run?.course.name, mode: run?.course.mode,
+      questionKey: run?.question?.key, questionTitle: run?.question?.title, ...details });
+  }
+  private observeQuestion(run: SessionState, question?: QuestionSnapshot) {
+    run.questions ||= {};
+    const previous = run.question && run.questions[run.question.key];
+    if (previous && !previous.closedAt && (question?.key !== previous.key || !question.open)) {
+      previous.closedAt = this.now();
+      this.event('info', '题目已关闭或课堂已切换到新题', 'question-closed', { questionKey: previous.key, questionTitle: previous.title, result: 'closed' });
+    }
+    if (!question) return;
+    let record = run.questions[question.key];
+    if (!record) {
+      record = { key: question.key, title: question.title, kind: question.kind, mode: run.course.mode, firstSeenAt: this.now(), lastSeenAt: this.now() };
+      run.questions[question.key] = record;
+      this.event('info', `发现题目：${question.title}`, 'question-opened', { questionKey: question.key, questionTitle: question.title });
+    }
+    record.lastSeenAt = this.now(); record.title = question.title;
+    if (!question.open) record.closedAt ||= this.now();
+  }
   private remind(key: string, title: string, body: string, interval = 30000) {
     const last = this.lastReminders.get(key);
     if (last === undefined || this.now() - last >= interval) {
@@ -113,9 +141,10 @@ export class Watchdog {
       }
       if (this.lastReminders.delete('wrong-course')) this.hooks.clearNotifications();
       if (page.state !== 'unknown') run.lastSuccessfulCheckAt = this.now();
-      if (page.attendance === 'confirmed' && run.attendance !== 'confirmed') { run.attendanceConfirmedAt = this.now(); this.hooks.log('success', '已确认课堂签到成功'); }
+      if (page.attendance === 'confirmed' && run.attendance !== 'confirmed') { run.attendanceConfirmedAt = this.now(); this.event('success', '已确认课堂签到成功', 'attendance-confirmed', { confirmedAt: run.attendanceConfirmedAt, result: 'confirmed' }); }
       if (page.attendance !== 'unknown') run.attendance = page.attendance;
       const previousKey = run.question?.key;
+      this.observeQuestion(run, page.question);
       run.question = page.question;
       if (previousKey && (previousKey !== page.question?.key || !page.question?.open || page.question.answered)) this.hooks.clearNotifications();
       if (page.state === 'joinable') {
@@ -128,7 +157,7 @@ export class Watchdog {
           this.lastJoin = this.now(); this.joins++;
           operation = 'join';
           await this.driver.join(this.controller!.signal);
-          if (this.live(run)) this.hooks.log('info', '已点击加入课堂，正在核实结果');
+          if (this.live(run)) this.event('info', '已点击加入课堂，正在核实结果', 'attendance-attempted', { attemptedAt: this.now(), result: 'pending' });
         }
         return;
       }
@@ -144,16 +173,21 @@ export class Watchdog {
       const q = page.question;
       if (!q || !q.open) { this.change('monitoring', '已进入课堂，等待新题目'); return; }
       if (q.answered) {
-        if (run.handled[q.key] !== 'confirmed') this.hooks.log('success', '已确认题目答案被接收');
+        if (run.handled[q.key] !== 'confirmed') {
+          const record = run.questions![q.key]; record.confirmedAt = this.now();
+          this.event('success', '已确认题目答案被接收', 'answer-confirmed', { attemptedAt: record.attemptedAt, confirmedAt: record.confirmedAt, result: 'confirmed' });
+        }
         run.handled[q.key] = 'confirmed'; this.change('monitoring', '当前题目已作答'); return;
       }
       if (run.handled[q.key] === 'confirmed') { this.change('monitoring', '当前题目已处理'); return; }
       if (run.course.mode === 'auto-a' && q.kind === 'single' && q.hasA && q.stable && !q.selected && !run.handled[q.key]) {
         // Persist intent BEFORE the side effect. An uncertain result never causes a second automatic submission.
-        run.handled[q.key] = 'attempted'; this.change('monitoring', '正在选择 A，等待答案回执');
+        run.handled[q.key] = 'attempted'; run.questions![q.key].attemptedAt = this.now();
+        this.event('info', '开始尝试选择 A，等待网站确认', 'answer-attempted', { attemptedAt: this.now(), result: 'pending' });
+        this.change('monitoring', '正在选择 A，等待答案回执');
         operation = 'answer';
         await this.driver.answerA(q, this.controller!.signal);
-        if (this.live(run)) this.hooks.log('info', '已尝试选择 A，下一次检查确认提交结果');
+        if (this.live(run)) this.event('info', '已尝试选择 A，下一次检查确认提交结果', 'system', { result: 'pending' });
         return;
       }
       const reason = run.handled[q.key] === 'attempted' ? '自动作答尚未收到确认，请检查原页面。' : q.selected ? '页面已有选择，请检查答案是否提交。' : '出现新题目，请在 iClicker 中作答。';
@@ -167,7 +201,7 @@ export class Watchdog {
       const network = /网络连接|net::ERR_|ERR_INTERNET|ERR_CONNECTION|ERR_NETWORK/i.test(detail);
       const status = !this.driver.isOpen() ? 'window-closed' : operation === 'page' && network ? 'offline' : 'attention';
       this.change(status, detail, status === 'offline' ? 'network' : status === 'window-closed' ? 'browser' : operation);
-      if (this.failures === 1) this.hooks.log('warning', detail);
+      if (this.failures === 1) this.event('warning', detail, 'system', { result: 'failed' });
       this.remind('connection', '课堂监控暂时中断', detail, 60000);
     }
   }
@@ -184,14 +218,14 @@ export class Watchdog {
     this.session.question = undefined;
     this.change(expired ? 'completed' : 'stopped', expired ? '课程时间已到，监控已停止' : '已手动结束监控');
     this.hooks.clearNotifications(); this.hooks.keepAwake(false);
-    this.hooks.log('info', this.session.detail);
+    this.event('info', this.session.detail, 'session-ended', { endsAt: this.session.endsAt });
     this.stopping = (async () => {
       try {
         await this.driver.disarm();
         await this.preparation?.catch(() => {});
         await this.inFlight?.catch(() => {});
         await this.driver.disarm();
-      } catch { this.hooks.log('warning', '浏览器已断开；下次连接时将清除残留定位设置。'); }
+      } catch { this.event('warning', '浏览器已断开；下次连接时将清除残留定位设置。', 'system', { result: 'failed' }); }
       finally { this.stopping = null; }
     })();
     return this.stopping;

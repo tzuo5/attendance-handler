@@ -26,6 +26,10 @@ export interface PageSnapshot {
   question?: QuestionSnapshot;
   detail?: string;
 }
+export interface SessionQuestion {
+  key: string; title: string; kind: QuestionSnapshot['kind']; mode: AnswerMode;
+  firstSeenAt: number; lastSeenAt: number; closedAt?: number; attemptedAt?: number; confirmedAt?: number;
+}
 export interface SessionState {
   id: string;
   course: CourseConfig;
@@ -38,10 +42,18 @@ export interface SessionState {
   issue?: 'browser' | 'network' | 'page' | 'course' | 'join' | 'answer';
   attendance: PageSnapshot['attendance'];
   question?: QuestionSnapshot;
+  questions?: Record<string, SessionQuestion>;
   handled: Record<string, 'attempted' | 'confirmed'>;
   detail: string;
 }
-export interface LogEntry { id: string; at: number; level: 'info' | 'success' | 'warning' | 'error'; message: string; }
+export type LogEvent = 'system' | 'session-started' | 'status-changed' | 'attendance-attempted' | 'attendance-confirmed' | 'question-opened' | 'question-closed' | 'answer-attempted' | 'answer-confirmed' | 'session-extended' | 'session-ended';
+export interface LogDetails {
+  event?: LogEvent; sessionId?: string; courseId?: string; courseName?: string;
+  questionKey?: string; questionTitle?: string; mode?: AnswerMode; status?: SessionStatus;
+  result?: 'pending' | 'confirmed' | 'failed' | 'closed'; attemptedAt?: number; confirmedAt?: number;
+  previousEndsAt?: number; endsAt?: number;
+}
+export interface LogEntry extends LogDetails { id: string; at: number; level: 'info' | 'success' | 'warning' | 'error'; message: string; }
 export interface AppState {
   courses: CourseConfig[];
   session: SessionState | null;

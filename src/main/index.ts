@@ -6,7 +6,7 @@ import { nativeHelperName } from './platform';
 import { Store } from './store';
 import { Watchdog } from './watchdog';
 import { validateCourse } from '../shared/validation';
-import { ACTIVE, sessionPresentation, type AppState } from '../shared/types';
+import { ACTIVE, sessionPresentation, type AppState, type LogDetails } from '../shared/types';
 
 const demo = process.env.ATTENDANCE_DEMO === '1';
 const origin = demo ? process.env.ATTENDANCE_ORIGIN || 'http://127.0.0.1:43891' : 'https://student.iclicker.com';
@@ -56,7 +56,7 @@ async function main() {
       ]));
     }
   };
-  const log = (level: 'info' | 'success' | 'warning' | 'error', message: string) => { store.log(level, message); emit(); };
+  const log = (level: 'info' | 'success' | 'warning' | 'error', message: string, details?: LogDetails) => { store.log(level, message, details); emit(); };
   const reportError = (error: unknown) => log('error', error instanceof Error ? error.message : String(error));
   const nativeHelper = join(__dirname.replace(/app\.asar([/\\])/, 'app.asar.unpacked$1'), nativeHelperName);
   const browser = new ChromeClassroom(app.getPath('userData'), origin, safeStorage, emit, message => log('warning', message), nativeHelper);

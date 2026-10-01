@@ -146,4 +146,18 @@ describe('classroom watchdog', () => {
     expect(watchdog.session?.lastSuccessfulCheckAt).toBeUndefined();
   });
 
+  it('links discovery, attempt and confirmation events with their question and timestamps', async () => {
+    snapshot.question = question(); await watchdog.start(course);
+    const initial = vi.mocked(hooks.log).mock.calls;
+    expect(initial.find(call => call[2]?.event === 'question-opened')?.[2]).toMatchObject({questionKey:question().key,questionTitle:'Question',courseName:'Testing'});
+    expect(initial.find(call => call[2]?.event === 'answer-attempted')?.[2]?.attemptedAt).toBe(Date.now());
+    snapshot.question.answered = true; await vi.advanceTimersByTimeAsync(5000);
+    const confirmed = vi.mocked(hooks.log).mock.calls.find(call => call[2]?.event === 'answer-confirmed');
+    expect(confirmed?.[2]).toMatchObject({questionKey:question().key,result:'confirmed',confirmedAt:Date.now()});
+    const count = vi.mocked(hooks.log).mock.calls.length;
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(vi.mocked(hooks.log).mock.calls.length).toBe(count);
+    expect(watchdog.session?.questions?.[question().key].confirmedAt).toBeDefined();
+  });
+
 });

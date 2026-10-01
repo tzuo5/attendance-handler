@@ -11,7 +11,7 @@
 
 macOS 数据位于用户 Library 下的 `Application Support/Attendance Handler/`；Windows 数据位于 `%APPDATA%/Attendance Handler/`：
 
-- `state.json`：课程、用户输入的坐标和最近运行记录。不加密；macOS 使用本机文件权限限制访问，Windows 使用当前用户资料目录的访问权限。
+- `state.json`：课程、用户输入的坐标和最近运行记录（最多 2000 条事件，包含题目标题与作答确认时间；较早事件自动清理）。不加密；macOS 使用本机文件权限限制访问，Windows 使用当前用户资料目录的访问权限。
 - `chrome-profile/`：专用 Chrome 会话资料。与日常 Chrome 分开。
 - `session.enc`：必要的会话存储，通过 Electron safeStorage 加密（macOS 钥匙串 / Windows DPAPI）。App 不保存密码。
 
