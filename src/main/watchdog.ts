@@ -62,14 +62,17 @@ export class Watchdog {
     catch (error) { if (this.live(run)) { this.change('window-closed', error instanceof Error ? error.message : '课堂恢复失败', 'browser'); this.schedule(5000); } }
   }
 
-  async start(course: CourseConfig) {
+  async start(course: CourseConfig, scheduled?: { endsAt: number; scheduleKey: string; sessionId: string }) {
     if (this.transitioning) throw new Error('课堂正在切换，请稍候再开始。');
     if (ACTIVE(this.session)) throw new Error('已有课程正在监控，请先结束当前课程。');
     if (this.stopping) await this.stopping;
+    if (ACTIVE(this.session)) throw new Error('已有课程正在监控，请先结束当前课程。');
+    const startedAt = this.now();
+    if (scheduled && (!Number.isFinite(scheduled.endsAt) || scheduled.endsAt <= startedAt || scheduled.endsAt > startedAt + course.durationMinutes * 60000)) throw new Error('本次计划已结束或结束时间无效，不会开启课堂。');
     if (this.session?.status === 'interrupted') { this.session.summary = summarizeSession(this.session, this.now(), 'interrupted'); this.emit(); }
     this.controller = new AbortController();
     this.lastReminders.clear(); this.failures = 0; this.joins = 0; this.lastJoin = -Infinity; this.reconnects = 0;
-    this.session = { id: crypto.randomUUID(), course: structuredClone(course), startedAt: this.now(), endsAt: this.now() + course.durationMinutes * 60000, status: 'starting', attendance: 'unknown', questions: {}, handled: {}, detail: '正在连接专用 Chrome 课堂' };
+    this.session = { id: scheduled?.sessionId || crypto.randomUUID(), scheduleKey: scheduled?.scheduleKey, course: structuredClone(course), startedAt, endsAt: scheduled?.endsAt ?? startedAt + course.durationMinutes * 60000, status: 'starting', attendance: 'unknown', questions: {}, handled: {}, detail: '正在连接专用 Chrome 课堂' };
     const run = this.session;
     this.hooks.keepAwake(true); this.hooks.clearNotifications(); this.emit();
     this.event('info', `开始 ${course.name} · ${course.durationMinutes} 分钟`, 'session-started', { endsAt: run.endsAt });

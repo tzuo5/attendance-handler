@@ -1,4 +1,4 @@
-import type { ScheduleConfig } from './schedule';
+import type { ScheduleConfig, ScheduledRun } from './schedule';
 export type AnswerMode = 'auto-a' | 'notify';
 export type BrowserMode = 'visible' | 'background';
 export interface AppSettings { browserMode: BrowserMode; }
@@ -44,6 +44,7 @@ export interface SessionState {
   id: string;
   course: CourseConfig;
   browserMode?: BrowserMode;
+  scheduleKey?: string;
   startedAt: number;
   endsAt: number;
   status: SessionStatus;
@@ -59,12 +60,12 @@ export interface SessionState {
   handled: Record<string, 'attempted' | 'confirmed'>;
   detail: string;
 }
-export type LogEvent = 'system' | 'session-started' | 'status-changed' | 'attendance-attempted' | 'attendance-confirmed' | 'question-opened' | 'question-closed' | 'answer-attempted' | 'answer-confirmed' | 'session-extended' | 'session-ended';
+export type LogEvent = 'system' | 'session-started' | 'status-changed' | 'attendance-attempted' | 'attendance-confirmed' | 'question-opened' | 'question-closed' | 'answer-attempted' | 'answer-confirmed' | 'session-extended' | 'session-ended' | 'scheduled-started' | 'scheduled-skipped' | 'scheduled-failed';
 export interface LogDetails {
   event?: LogEvent; sessionId?: string; courseId?: string; courseName?: string;
   questionKey?: string; questionTitle?: string; mode?: AnswerMode; status?: SessionStatus;
   result?: 'pending' | 'confirmed' | 'failed' | 'closed'; attemptedAt?: number; confirmedAt?: number;
-  previousEndsAt?: number; endsAt?: number;
+  previousEndsAt?: number; endsAt?: number; scheduleKey?: string; scheduledStart?: number;
 }
 export interface LogEntry extends LogDetails { id: string; at: number; level: 'info' | 'success' | 'warning' | 'error'; message: string; }
 export type HelpTarget = 'chrome' | 'data' | 'notifications';
@@ -88,6 +89,7 @@ export interface CourseImportReport { status: 'courses' | 'empty' | 'login' | 'e
 export interface AppState {
   courses: CourseConfig[];
   schedules: ScheduleConfig[];
+  scheduledRuns: ScheduledRun[];
   session: SessionState | null;
   logs: LogEntry[];
   summaries: SessionSummary[];

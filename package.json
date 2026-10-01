@@ -29,6 +29,7 @@
     "package:win": "npm run build && electron-builder --win dir --x64 --publish never",
     "dist:win": "npm run build && electron-builder --win nsis zip --x64 --config.directories.output=release-public --publish never",
     "test:ui": "node scripts/ui-smoke.mjs",
+    "test:scheduler": "node scripts/scheduler-smoke.mjs",
     "test:schedule-config": "node scripts/schedule-config-smoke.mjs",
     "test:recovery": "node scripts/recovery-smoke.mjs",
     "test:setup-renderer": "node scripts/setup-renderer-check.mjs",

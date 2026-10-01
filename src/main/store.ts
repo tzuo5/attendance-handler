@@ -2,12 +2,12 @@ import { mkdirSync, existsSync, readFileSync, writeFileSync, renameSync } from '
 import { join } from 'node:path';
 import type { AppSettings, CourseConfig, LogDetails, LogEntry, SessionState, SessionSummary, SetupState } from '../shared/types';
 import { initialSetup, restoreSetup } from '../shared/setup';
-import { validateSchedule, type ScheduleConfig } from '../shared/schedule';
+import { validateSchedule, scheduledRunSchema, type ScheduleConfig, type ScheduledRun } from '../shared/schedule';
 export const LOG_LIMIT = 2000;
-export interface StoredData { version: 1; courses: CourseConfig[]; schedules: ScheduleConfig[]; logs: LogEntry[]; session: SessionState | null; summaries: SessionSummary[]; setup: SetupState; settings: AppSettings; }
+export interface StoredData { version: 1; courses: CourseConfig[]; schedules: ScheduleConfig[]; scheduledRuns: ScheduledRun[]; logs: LogEntry[]; session: SessionState | null; summaries: SessionSummary[]; setup: SetupState; settings: AppSettings; }
 export class Store {
   readonly path: string;
-  data: StoredData = { version: 1, courses: [], schedules: [], logs: [], session: null, summaries: [], setup: initialSetup(), settings: { browserMode: 'visible' } };
+  data: StoredData = { version: 1, courses: [], schedules: [], scheduledRuns: [], logs: [], session: null, summaries: [], setup: initialSetup(), settings: { browserMode: 'visible' } };
   constructor(readonly directory: string) {
     mkdirSync(directory, { recursive: true, mode: 0o700 });
     this.path = join(directory, 'state.json');
@@ -19,7 +19,9 @@ export class Store {
         if (!Array.isArray(schedules) || schedules.length > 100) throw new Error('Invalid schedules');
         const restored = schedules.map(item => validateSchedule(item, data.courses.map((course: CourseConfig) => course.id)));
         if (new Set(restored.map(item => item.id)).size !== restored.length) throw new Error('Duplicate schedules');
-        this.data = { ...data, schedules: restored, settings: { browserMode: data.settings?.browserMode === 'background' ? 'background' : 'visible' }, setup: restoreSetup(data.setup, data.courses.length > 0), logs: data.logs.slice(0, LOG_LIMIT), summaries: Array.isArray(data.summaries) ? data.summaries.slice(0, 100) : [] };
+        const scheduledRuns = data.scheduledRuns === undefined ? [] : scheduledRunSchema.array().parse(data.scheduledRuns);
+        if (new Set(scheduledRuns.map((run: ScheduledRun) => run.key)).size !== scheduledRuns.length) throw new Error('Duplicate executions');
+        this.data = { ...data, schedules: restored, scheduledRuns, settings: { browserMode: data.settings?.browserMode === 'background' ? 'background' : 'visible' }, setup: restoreSetup(data.setup, data.courses.length > 0), logs: data.logs.slice(0, LOG_LIMIT), summaries: Array.isArray(data.summaries) ? data.summaries.slice(0, 100) : [] };
       } catch { throw new Error('本地课程数据无法读取。原文件已保留，请先备份后检查 state.json。'); }
     }
   }
@@ -46,6 +48,18 @@ export class Store {
     const previous = this.data.schedules;
     this.data.schedules = schedules;
     try { this.save(); } catch (error) { this.data.schedules = previous; throw error; }
+  }
+  claimScheduledRun(run: ScheduledRun) {
+    if (this.data.scheduledRuns.some(item => item.key === run.key)) return false;
+    const previous = this.data.scheduledRuns;
+    this.data.scheduledRuns = [scheduledRunSchema.parse(run), ...previous];
+    try { this.save(); } catch (error) { this.data.scheduledRuns = previous; throw error; }
+    return true;
+  }
+  updateScheduledRun(key: string, patch: Pick<ScheduledRun, 'status' | 'detail' | 'updatedAt'>) {
+    const previous = this.data.scheduledRuns;
+    this.data.scheduledRuns = previous.map(run => run.key === key ? scheduledRunSchema.parse({ ...run, ...patch }) : run);
+    try { this.save(); } catch (error) { this.data.scheduledRuns = previous; throw error; }
   }
   setSession(session: SessionState) {
     this.data.session = session;

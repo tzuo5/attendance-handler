@@ -157,3 +157,14 @@ export function nextOccurrences(schedule: ScheduleConfig, now: number, count = 3
 export function formatScheduleTime(millis: number, zone: string) {
   return new Intl.DateTimeFormat('zh-CN', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(millis);
 }
+
+export interface ScheduledRun {
+  key: string; scheduleId: string; courseId: string; courseName: string; localDate: string; timeZone: string;
+  scheduledStart: number | null; endsAt: number | null; at: number; updatedAt: number;
+  status: 'claimed' | 'started' | 'skipped' | 'failed'; detail: string; sessionId?: string;
+}
+export const scheduledRunSchema = z.object({
+  key:z.string().min(1).max(250),scheduleId:z.string().uuid(),courseId:z.string().uuid(),courseName:z.string().max(160),
+  localDate:localDateSchema,timeZone:z.string().min(1).max(100),scheduledStart:z.number().finite().nullable(),endsAt:z.number().finite().nullable(),
+  at:z.number().finite(),updatedAt:z.number().finite(),status:z.enum(['claimed','started','skipped','failed']),detail:z.string().max(1000),sessionId:z.string().uuid().optional(),
+});

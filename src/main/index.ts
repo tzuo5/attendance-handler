@@ -7,6 +7,7 @@ import { nativeHelperName, findChrome } from './platform';
 import { checkEnvironment, checkDataWritable } from './environment';
 import { Store } from './store';
 import { Watchdog } from './watchdog';
+import { Scheduler, type ScheduledStart } from './scheduler';
 import { validateCourse } from '../shared/validation';
 import { validateSchedule } from '../shared/schedule';
 import { ACTIVE, environmentReady, sessionPresentation, type AppState, type LogDetails, type EnvironmentReport, type LoginReport, type CourseImportReport } from '../shared/types';
@@ -48,7 +49,7 @@ async function main() {
       { id: '22222222-2222-4222-8222-222222222222', remoteId: 'demo', name: '模拟课堂 · 提醒作答', url: `${origin}/#/course/demo/overview`, latitude: 0, longitude: 0, accuracy: 10, durationMinutes: 50, mode: 'notify' },
     ]; store.data.setup = initialSetup(true); store.save();
   }
-  const snapshot = (): AppState => ({ courses: store.data.courses, schedules: store.data.schedules, session: watchdog?.session || store.data.session, logs: store.data.logs, summaries: store.data.summaries, classroomOrigin: origin, browserConnected: browser?.isOpen() || false, browserMode: browser?.mode || 'visible', browserTransitioning: browser?.isTransitioning() || false, settings: store.data.settings, demo, notificationError, notificationCanConfirm: !!activeTestAttempt && activeTestAttempt === store.data.setup.notification?.attemptId && ['requested','pending'].includes(store.data.setup.notification.status), environment, loginReport, courseImport, setup: store.data.setup });
+  const snapshot = (): AppState => ({ courses: store.data.courses, schedules: store.data.schedules, scheduledRuns: store.data.scheduledRuns.slice(0,100), session: watchdog?.session || store.data.session, logs: store.data.logs, summaries: store.data.summaries, classroomOrigin: origin, browserConnected: browser?.isOpen() || false, browserMode: browser?.mode || 'visible', browserTransitioning: browser?.isTransitioning() || false, settings: store.data.settings, demo, notificationError, notificationCanConfirm: !!activeTestAttempt && activeTestAttempt === store.data.setup.notification?.attemptId && ['requested','pending'].includes(store.data.setup.notification.status), environment, loginReport, courseImport, setup: store.data.setup });
   const emit = () => {
     if (window && !window.isDestroyed()) window.webContents.send('state:changed', snapshot());
     if (tray) {
@@ -170,6 +171,29 @@ async function main() {
     }).then(report=>{environment=report;emit();return report;}).finally(()=>{checkingEnvironment=undefined;});
     return checkingEnvironment;
   };
+  let startingCourse = false;
+  const startCourse = async (id: string, timing?: ScheduledStart) => {
+    if (quitting || startingCourse) throw new Error('App 正在退出或课堂正在启动，请稍候。');
+    startingCourse = true;
+    try {
+      const saved = store.data.courses.find(course => course.id === id);
+      if (!saved) throw new Error('课程已不存在，请重新配置。');
+      const course = validateCourse(timing ? { ...saved, durationMinutes: timing.durationMinutes } : saved, origin);
+      if (timing && watchdog.session?.status === 'interrupted') throw new Error('上次课堂等待恢复，本次任务已跳过。');
+      await watchdog.start(course, timing);
+    } finally { startingCourse = false; }
+  };
+  const scheduler = new Scheduler(store, {
+    session: () => watchdog.session,
+    ready: async () => {
+      try {
+        const supported = process.platform === 'darwin' ? Number(release().split('.')[0]) >= 22 : process.platform === 'win32' && Number(release().split('.')[0]) >= 10 && process.arch === 'x64';
+        if (!supported || !await findChrome() || !safeStorage.isEncryptionAvailable()) return false;
+        await checkDataWritable(store.directory); return !quitting;
+      } catch { return false; }
+    },
+    start: startCourse, changed: emit, log, notify: (title, body) => sendNotification('schedule-error', title, body),
+  });
   invoke('environment:check',runEnvironmentCheck);
   invoke('help:open',async input=>{
     const target=z.enum(['chrome','data','notifications']).parse(input);
@@ -209,13 +233,7 @@ async function main() {
   invoke('browser:show', showClassroom);
   invoke('browser:minimize', () => browser.minimize());
   invoke('browser:background', returnToBackground);
-  invoke('session:start', async input => {
-    const id = z.string().uuid().parse(input);
-    const course = store.data.courses.find(c => c.id === id);
-    if (!course) throw new Error('未找到课程');
-    validateCourse(course, origin);
-    await watchdog.start(course);
-  });
+  invoke('session:start', input => startCourse(z.string().uuid().parse(input)));
   invoke('session:stop', () => watchdog.stop());
   invoke('session:extend', () => watchdog.extend());
   invoke('session:resume', resumeInterrupted);
@@ -255,11 +273,12 @@ async function main() {
   const menuTimer = setInterval(emit, 15000);
   app.on('before-quit', event => {
     if (quitting) return;
-    event.preventDefault(); quitting = true; clearInterval(menuTimer); clearTimeout(notificationTimer);
+    event.preventDefault(); quitting = true; scheduler.stop(); clearInterval(menuTimer); clearTimeout(notificationTimer);
     void (async () => {
       await watchdog.stop().catch(reportError);
       await browser.dispose().catch(reportError);
       clearNotifications(); tray.destroy(); app.exit(0);
     })();
   });
+  scheduler.start();
 }

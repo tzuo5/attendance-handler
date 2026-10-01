@@ -135,7 +135,7 @@ try {
   await page.getByRole('heading',{name:'导入课程',exact:true}).waitFor();
   await page.getByRole('button',{name:'连接与提醒',exact:true}).click();
   const schedulePolicy = page.getByRole('article',{name:'定时开启的运行条件',exact:true});
-  await schedulePolicy.getByText('定时任务可以配置和保存，自动开启暂未开放。',{exact:true}).waitFor();
+  await schedulePolicy.getByText('定时任务到点后会自动开始。请提前登录并保持 App 在托盘运行。',{exact:true}).waitFor();
   assert.match(await schedulePolicy.innerText(),/退出 App、关机或睡眠期间无法开始/);
   assert.match(await schedulePolicy.innerText(),/结束时间|原定结束时间/);
   await page.getByRole('button',{name:'开始检查',exact:true}).click();

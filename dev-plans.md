@@ -11,7 +11,7 @@
 | Phase 1 | 状态与恢复、课堂反馈、详细日志、简化课程配置 | 当前版本作为基线 | 已完成（2026-09-30） |
 | Phase 2 | 首次配置向导与环境检查 | Phase 1 验收通过 | 4 项 MVP 已实现；真人走查待验收 |
 | Phase 3 | 无 Chrome 窗口的后台模式 | Phase 2 验收通过；模式切换验证通过 | 四项 MVP 已实现；真实课堂仍待验证 |
-| Phase 4 | 设置定时开启 | Phase 3 验收通过 | 未开始 |
+| Phase 4 | 设置定时开启 | Phase 3 验收通过 | P4.1–P4.3 已实现；时间变化与恢复待 P4.4 |
 | Phase 5 | Google Calendar / Apple Calendar 与 `@tt` 互动设想 | 可提前调研；实现规划依赖 Phase 4 | 探索待开始 |
 
 本次 Phase 3–5 按用户要求分时推进，截止为 2026-10-01 08:00 America/Chicago，窗口与实绩见 [分时执行记录](docs/overnight-execution.md)。
@@ -178,10 +178,11 @@
   - **验收：**重开 App 后设置一致，下一次执行时间准确；无有效课程或完整配置的任务不能进入可执行状态。
   - **实绩：**新增独立定时页面及单次 / 每周表单、三次预览、编辑 / 暂停 / 启用 / 取消、本机持久化、关联课程删除提示与原子取消；101 单测、双 renderer、构建及 macOS 实际打包四组配置 / 重启检查通过。主进程复核课程、生效时刻和完整配置；自动调度仍待 P4.3，详见 [定时开启规则](docs/scheduled-starts.md)。
 
-- [ ] **P4.3 — 调度执行与重复触发保护**（依赖 P4.1、P4.2）
+- [x] **P4.3 — 调度执行与重复触发保护**（依赖 P4.1、P4.2）
   - 由应用主进程维护调度，按每次计划执行生成唯一记录；手动与定时开始共用课堂启动能力。
   - 执行前检查环境、配置和当前课堂；异常进入恢复路径，并将开始、跳过或失败写入日志。
   - **验收：**同一次计划重复检查或重启仅启动一次；已有课堂时按既定冲突策略处理，不并行开启第二门监控。
+  - **实绩：**主进程五秒检查、手动与定时共用启动、原子持久领取记录、环境 / 配置 / 当前课堂复核、启动 / 跳过 / 失败日志和人工提示；113 单测、双 renderer、原有 25 项 Chrome 集成、打包 App 四组定时启动 / 实际重启去重 / 原截止自动结束 / 焦点与清理检查通过。macOS 使用隔离合成加密；Windows 新 CI 待本次推送后核实。
 
 - [ ] **P4.4 — 时间变化与中断恢复**（依赖 P4.3）
   - 按 P4.1 的规则处理时区变化、夏令时、系统时间调整、睡眠唤醒及 App 重启；到点已取消的任务保持取消。
@@ -248,3 +249,5 @@
 | P3.4 | 2026-10-01 | [`60c6730`](https://github.com/tzuo5/attendance-handler/commit/60c6730) · `feat: recover interrupted classrooms and wait for Chrome process exit` | 73 单测、双 renderer、25 原有集成、九组后台运行、立即重开及四轮生命周期、macOS 实际打包五组 App / Chrome 崩溃恢复与退出；[后台模式记录](docs/background-mode.md) | [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36837581087) 首次尝试全部通过（含实际安装版、DPAPI 与恢复）；真实学校、Mac 钥匙串和物理睡眠仍待验收 |
 | P4.1 | 2026-10-01 | [`ccb0d80`](https://github.com/tzuo5/attendance-handler/commit/ccb0d80) · `feat: define timezone-aware scheduled start rules and runtime guidance` | 94 单测、类型检查、生产构建、双 renderer；21 项定时规则测试与设置运行条件说明，见 [定时开启规则](docs/scheduled-starts.md) | 配置和自动调度分别在 P4.2 / P4.3 完成；[Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36839642451) 首次尝试全部通过（含原有 Chrome 与实际安装版回归）；真实课堂与系统边界仍待真人验收 |
 | P4.2 | 2026-10-01 | [`c79ca5b`](https://github.com/tzuo5/attendance-handler/commit/c79ca5b) · `feat: configure and persist single and weekly classroom schedules`；测试时序修正 [`4459814`](https://github.com/tzuo5/attendance-handler/commit/4459814) | 101 单测、类型检查、构建、双 renderer、macOS 实际打包四组配置与多次重开验证；[定时开启规则](docs/scheduled-starts.md) | [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36843239858) 首次尝试全部通过（含安装版配置与真实 DPAPI）；自动调度待 P4.3，真实课堂 / Mac 钥匙串仍待验收 |
+
+| P4.3 | 2026-10-01 | `feat: dispatch scheduled classrooms with durable execution claims` | 113 单测、类型检查、生产构建、双 renderer、25 原有 Chrome 集成、macOS 实际打包四组调度验收 | Windows 本次 CI 待核实；真实学校 / 课堂、Mac 钥匙串与物理睡眠待验收；P4.4 补全时间变化 |

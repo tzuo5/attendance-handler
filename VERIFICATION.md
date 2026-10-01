@@ -1,5 +1,9 @@
 # 验证记录
 
+## Phase 4.3 调度与重复保护（2026-10-01）
+
+113 单测、类型检查、生产构建、双 renderer 和 25 原有 Chrome 集成通过。macOS 实际打包 `test:scheduler` 四组通过：自动后台启动保持原生焦点、真实模拟网站分别确认签到 / 作答、实际重开后同一开始窗口不重复、迟到沿用原结束并自动摘要 / 清除页面门禁、退出清理。领取记录先持久化再启动，磁盘失败不产生课堂副作用；并发 / 手动冲突、环境失败和启动失败分别记录。新增验收脚本的三次等待 / 模拟页面时序失败与修正保留在 [定时规则记录](docs/scheduled-starts.md)。Mac 为明确标记的隔离合成加密，真实学校 / 课堂、Keychain 和物理睡眠继续待验收；Windows 本次 CI 待推送后核实。
+
 ## Phase 4.2 定时配置（2026-10-01）
 
 101 单测、类型检查、生产构建、双 renderer 通过；macOS 实际打包新增四组 `test:schedule-config`：单次 / 每周预览、时区和 DST 拦截、900×640 保存入口、多次真实 App 重开、编辑 / 暂停 / 启用持久化、取消确认、课程关联取消及无课程禁用。新增检查的下拉框命名、稳定定位及课程删除后渲染时序失败与修正见 [定时开启规则](docs/scheduled-starts.md)。此配置检查未打开课堂或调用加密。功能提交 [`c79ca5b`](https://github.com/tzuo5/attendance-handler/commit/c79ca5b) 及修正 [`4459814`](https://github.com/tzuo5/attendance-handler/commit/4459814) 的源码 / Windows CI 均首次尝试通过；修正的 [Source checks](https://github.com/tzuo5/attendance-handler/actions/runs/36843239848) 与 [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36843239858) 包含 101 单测、双 renderer、全部原有 Chrome 检查、实际安装版四组配置重开 / UI / 恢复 / 首次向导、真实 DPAPI、包审计和 ZIP 一致性。自动调度尚未开放。
@@ -138,3 +142,5 @@ Windows 10/11 实体设备、系统通知显示和声音、点击通知后的焦
 macOS 原有实际打包课堂 UI 回归通过，包含后台监控、通知处理器、草稿保护、回执确认返回后台、原截止与去重及退出清理；该课堂回归仍使用明确标记的隔离合成加密，未验证 Mac 钥匙串。源码审计 80 文件、包审计 16 文件通过。
 
 P4.2 最终复核曾因课程删除 IPC 返回早于 React 渲染而过早读取按钮失败；当次检查顺序未阻止提交。后续单独修正测试为等待空课程界面，再核实禁用；最新打包四组通过。见定时规则记录，原失败未删除。
+
+P4.3 最新打包配置回归 `test:schedule-config` 四组及多次真实 App 重开通过，未来任务在配置流程中未误触发课堂；源码公开审核 83 文件、包审核 16 文件通过。

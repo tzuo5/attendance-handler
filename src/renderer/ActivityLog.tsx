@@ -2,6 +2,7 @@ import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { LogEntry, LogEvent } from '../shared/types';
 
 const EVENT_LABELS: Record<LogEvent, string> = {
+  'scheduled-started':'定时监控已启动', 'scheduled-skipped':'定时任务已跳过', 'scheduled-failed':'定时启动失败',
   system:'运行信息', 'session-started':'开始监控', 'status-changed':'状态变化',
   'attendance-attempted':'尝试签到', 'attendance-confirmed':'签到已确认', 'question-opened':'发现题目', 'question-closed':'题目关闭',
   'answer-attempted':'尝试作答', 'answer-confirmed':'答案已确认', 'session-extended':'延长监控', 'session-ended':'结束监控',

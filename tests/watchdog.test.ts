@@ -18,6 +18,17 @@ describe('classroom watchdog', () => {
     watchdog = new Watchdog(driver, hooks);
   });
   afterEach(async () => { await watchdog.stop(); vi.useRealTimers(); });
+  it('uses the original scheduled deadline and execution identity, ending only the remaining time', async () => {
+    const endsAt=Date.now()+20000;
+    await watchdog.start(course,{endsAt,scheduleKey:'schedule/date',sessionId:'33333333-3333-4333-8333-333333333333'});
+    expect(driver.prepare).toHaveBeenCalledWith(course,endsAt,expect.any(AbortSignal));
+    expect(watchdog.session).toMatchObject({id:'33333333-3333-4333-8333-333333333333',scheduleKey:'schedule/date',endsAt});
+    await vi.advanceTimersByTimeAsync(20000);expect(watchdog.session?.status).toBe('completed');
+  });
+  it('refuses an expired scheduled start without opening Chrome', async () => {
+    await expect(watchdog.start(course,{endsAt:Date.now(),scheduleKey:'schedule/date',sessionId:'33333333-3333-4333-8333-333333333333'})).rejects.toThrow('已结束');
+    expect(driver.prepare).not.toHaveBeenCalled();
+  });
   it('offers interrupted recovery without starting Chrome, preserving deadline and uncertain answers', async () => {
     snapshot.question=question();await watchdog.start(course);
     const saved=structuredClone(watchdog.session!);await watchdog.stop();

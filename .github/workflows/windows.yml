@@ -51,6 +51,8 @@ jobs:
           $expected = (Get-FileHash 'release-public/win-unpacked/resources/app.asar' -Algorithm SHA256).Hash
           $installed = (Get-FileHash (Join-Path $installDirectory 'resources/app.asar') -Algorithm SHA256).Hash
           if ($expected -ne $installed) { throw 'Installed application differs from the audited build' }
+          npm run test:scheduler
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run test:schedule-config
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run test:ui
