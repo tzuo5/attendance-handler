@@ -11,6 +11,7 @@ import { Watchdog } from './watchdog';
 import { validateCourse } from '../shared/validation';
 import { ACTIVE, environmentReady, sessionPresentation, type AppState, type LogDetails, type EnvironmentReport, type LoginReport, type CourseImportReport } from '../shared/types';
 import { advanceSetup, initialSetup } from '../shared/setup';
+import { beginNotificationTest, notificationEvent, notificationResolved, recordNotificationChoice, unverifiedNotification } from '../shared/notification-check';
 
 const demo = process.env.ATTENDANCE_DEMO === '1';
 const origin = demo ? process.env.ATTENDANCE_ORIGIN || 'http://127.0.0.1:43891' : 'https://student.iclicker.com';
@@ -34,6 +35,8 @@ async function main() {
   let checkingLogin:Promise<LoginReport>|undefined;
   let importingCourses:Promise<CourseImportReport>|undefined;
   let updatingSetup = false;
+  let activeTestAttempt: string | undefined;
+  let notificationTimer: ReturnType<typeof setTimeout> | undefined;
   let checkingEnvironment:Promise<EnvironmentReport>|undefined;
   const notifications = new Map<string, Notification>();
   let store: Store;
@@ -51,7 +54,7 @@ async function main() {
       { id: '22222222-2222-4222-8222-222222222222', remoteId: 'demo', name: '模拟课堂 · 提醒作答', url: `${origin}/#/course/demo/overview`, latitude: 0, longitude: 0, accuracy: 10, durationMinutes: 50, mode: 'notify' },
     ]; store.data.setup = initialSetup(true); store.save();
   }
-  const snapshot = (): AppState => ({ courses: store.data.courses, session: watchdog?.session || store.data.session, logs: store.data.logs, summaries: store.data.summaries, classroomOrigin: origin, browserConnected: browser?.isOpen() || false, demo, notificationError, environment, loginReport, courseImport, setup: store.data.setup });
+  const snapshot = (): AppState => ({ courses: store.data.courses, session: watchdog?.session || store.data.session, logs: store.data.logs, summaries: store.data.summaries, classroomOrigin: origin, browserConnected: browser?.isOpen() || false, demo, notificationError, notificationCanConfirm: !!activeTestAttempt && activeTestAttempt === store.data.setup.notification?.attemptId && ['requested','pending'].includes(store.data.setup.notification.status), environment, loginReport, courseImport, setup: store.data.setup });
   const emit = () => {
     if (window && !window.isDestroyed()) window.webContents.send('state:changed', snapshot());
     if (tray) {
@@ -73,7 +76,12 @@ async function main() {
   const nativeHelper = join(__dirname.replace(/app\.asar([/\\])/, 'app.asar.unpacked$1'), nativeHelperName);
   const browser = new ChromeClassroom(app.getPath('userData'), origin, safeStorage, emit, message => log('warning', message), nativeHelper);
   const clearNotifications = () => { for (const notification of notifications.values()) notification.close(); notifications.clear(); };
-  const sendNotification = (key: string, title: string, body: string) => {
+  const updateTestEvent = (attempt: string, event: 'show' | 'failed' | 'timeout') => {
+    const current = store.data.setup.notification || unverifiedNotification();
+    const next = notificationEvent(current, attempt, event);
+    if (next !== current) { store.data.setup.notification = next; store.save(); emit(); }
+  };
+  const sendNotification = (key: string, title: string, body: string, testAttempt?: string) => {
     notifications.get(key)?.close();
     const notification = new Notification({ title, body, silent: false });
     notifications.set(key, notification);
@@ -83,10 +91,13 @@ async function main() {
       else { window.show(); window.focus(); }
     });
     notification.on('failed', (_event, error) => {
+      if (notifications.get(key) !== notification) return;
+      if (testAttempt && testAttempt !== activeTestAttempt) return;
+      if (testAttempt) { clearTimeout(notificationTimer); updateTestEvent(testAttempt,'failed'); }
       notificationError = `系统通知未能送达：${error}。请检查系统通知设置。`;
       log('error', notificationError);
     });
-    notification.on('show', () => { notificationError = undefined; emit(); });
+    notification.on('show', () => { if (notifications.get(key) !== notification) return; if (testAttempt) { clearTimeout(notificationTimer); updateTestEvent(testAttempt,'show'); } notificationError = undefined; emit(); });
     notification.show();
   };
   const watchdog = new Watchdog(browser, {
@@ -131,19 +142,21 @@ async function main() {
     if (updatingSetup) throw new Error('配置正在保存，请稍候重试。');
     updatingSetup = true;
     try {
+    if (action === 'finish') await runEnvironmentCheck();
     if ((action === 'next' && store.data.setup.step === 'login') || action === 'finish') await checkLogin();
-    const setup = advanceSetup(store.data.setup, action, { environment: environmentReady(environment), login: loginReport?.status === 'verified', courses: store.data.courses.length });
+    const setup = advanceSetup(store.data.setup, action, { environment: environmentReady(environment), login: loginReport?.status === 'verified', courses: store.data.courses.length, notification: notificationResolved(store.data.setup.notification) });
     store.data.setup = setup; store.save(); emit(); return snapshot();
     } finally { updatingSetup = false; }
   });
-  invoke('environment:check',()=>{
+  const runEnvironmentCheck = () => {
     if(checkingEnvironment)return checkingEnvironment;
     checkingEnvironment=checkEnvironment({
       supported:()=>process.platform==='darwin'?Number(release().split('.')[0])>=22:process.platform==='win32'&&Number(release().split('.')[0])>=10&&process.arch==='x64',
       chrome:findChrome,writable:()=>checkDataWritable(store.directory),encryption:()=>safeStorage.isEncryptionAvailable(),connect:()=>browser.checkConnection(),
     }).then(report=>{environment=report;emit();return report;}).finally(()=>{checkingEnvironment=undefined;});
     return checkingEnvironment;
-  });
+  };
+  invoke('environment:check',runEnvironmentCheck);
   invoke('help:open',async input=>{
     const target=z.enum(['chrome','data','notifications']).parse(input);
     if(target==='chrome')await shell.openExternal('https://www.google.com/chrome/');
@@ -178,7 +191,19 @@ async function main() {
   });
   invoke('session:stop', () => watchdog.stop());
   invoke('session:extend', () => watchdog.extend());
-  invoke('notification:test', () => sendNotification('test', '课堂提醒已准备好', '有新题目时，你会在这里收到提醒。点击可返回 App。'));
+  invoke('notification:test', () => {
+    clearTimeout(notificationTimer);
+    const check = beginNotificationTest(); activeTestAttempt = check.attemptId;
+    store.data.setup.notification = check; notificationError = undefined; store.save(); emit();
+    notificationTimer = setTimeout(() => updateTestEvent(check.attemptId!,'timeout'),10000);
+    try { sendNotification('test', 'Attendance Handler · 测试提醒', '这是一条测试提醒。看到后请回到 App 点击“我收到了”。', check.attemptId); }
+    catch { clearTimeout(notificationTimer); updateTestEvent(check.attemptId!,'failed'); }
+  });
+  invoke('notification:choice', input => {
+    const choice = z.enum(['received','not-received','later']).parse(input);
+    store.data.setup.notification = recordNotificationChoice(store.data.setup.notification || unverifiedNotification(),choice,activeTestAttempt);
+    clearTimeout(notificationTimer); store.save(); emit(); return snapshot();
+  });
   const icon = nativeImage.createFromPath(join(__dirname, 'tray.png')).resize({ width: 18, height: 18 });
   if (process.platform === 'darwin') icon.setTemplateImage(true);
   tray = new Tray(icon); emit();
@@ -197,7 +222,7 @@ async function main() {
   const menuTimer = setInterval(emit, 15000);
   app.on('before-quit', event => {
     if (quitting) return;
-    event.preventDefault(); quitting = true; clearInterval(menuTimer);
+    event.preventDefault(); quitting = true; clearInterval(menuTimer); clearTimeout(notificationTimer);
     void (async () => {
       await watchdog.stop().catch(reportError);
       await browser.dispose().catch(reportError);

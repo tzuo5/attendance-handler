@@ -22,10 +22,11 @@ try{
    login:async()=>{},checkLogin:async()=>{state.loginReport=state.loginReport?.status==='verified'?state.loginReport:{status:'waiting',detail:'等待学校验证',checkedAt:Date.now()};emit();return state.loginReport;},
    checkCourseImport:async()=>{state.courseImport={status:'courses',courses:[{remoteId:'demo',name:'向导示例课程',url:'https://student.iclicker.com/#/course/demo/overview'}],checkedAt:Date.now(),detail:'已读取 1 门课程'};emit();return state.courseImport;},
    importCourses:async()=>[{remoteId:'demo',name:'向导示例课程',url:'https://student.iclicker.com/#/course/demo/overview'}],saveCourse:async c=>{state.courses.push(c);emit();return structuredClone(state);},
-   openHelp:async()=>{},testNotification:async()=>{},showClassroom:async()=>{},
+   openHelp:async()=>{},testNotification:async()=>{state.setup.notification={status:'requested',attemptId:'fixture-test',requestedAt:Date.now(),detail:'系统已接受测试提醒，仍需要你确认是否收到。'};state.notificationCanConfirm=true;emit();},notificationChoice:async choice=>{state.setup.notification={...state.setup.notification,status:choice==='received'?'confirmed':'pending',confirmedAt:choice==='received'?Date.now():undefined,deferred:choice==='later',detail:choice==='received'?'你已确认收到测试提醒。':'提醒尚未确认，已选择稍后处理。'};state.notificationCanConfirm=choice==='not-received';emit();return structuredClone(state);},start:async id=>{window.__startedId=id;},openHelp:async target=>{window.__lastHelp=target;},showClassroom:async()=>{},
   };
  });
  await page.goto(server.resolvedUrls.local[0]);
+ await mkdir('.test-artifacts/phase2',{recursive:true});
  const wizard=page.getByRole('region',{name:'首次配置向导',exact:true});await wizard.waitFor();
  assert.equal(await wizard.getByRole('button',{name:'下一步',exact:true}).isDisabled(),true);
  await wizard.getByRole('button',{name:'开始检查',exact:true}).click();
@@ -45,8 +46,20 @@ try{
  await page.evaluate(()=>window.__setupState({courseImport:{status:'error',courses:[],checkedAt:Date.now(),detail:'课程列表读取失败，请重试'}}));
  await wizard.getByText('课程列表读取失败，请重试',{exact:true}).waitFor();await wizard.getByRole('button',{name:'重新读取课程',exact:true}).click();await wizard.getByRole('button',{name:'配置导入课程',exact:true}).waitFor();
  await wizard.getByRole('button',{name:'下一步',exact:true}).click();await page.reload();await wizard.getByRole('heading',{name:'试一下题目提醒',exact:true}).waitFor();
- await wizard.getByRole('button',{name:'稍后确认提醒，继续',exact:true}).click();await page.reload();await wizard.getByRole('heading',{name:'课程配置已保存',exact:true}).waitFor();
- await wizard.getByRole('button',{name:'完成配置',exact:true}).click();await page.reload();await page.getByRole('heading',{name:'我的课程',exact:true}).waitFor();
+ assert.equal(await wizard.getByRole('button',{name:'下一步',exact:true}).isDisabled(),true);
+ await wizard.getByRole('button',{name:'发送测试通知',exact:true}).click();
+ await wizard.getByText('系统已接受测试提醒，仍需要你确认是否收到。',{exact:true}).waitFor();
+ assert.equal(await wizard.getByRole('button',{name:'下一步',exact:true}).isDisabled(),true);
+ await wizard.getByRole('button',{name:'没收到',exact:true}).click();
+ await wizard.getByRole('button',{name:'打开系统通知设置',exact:true}).click();assert.equal(await page.evaluate(()=>window.__lastHelp),'notifications');
+ await wizard.getByRole('button',{name:'稍后处理提醒',exact:true}).click();await wizard.getByRole('button',{name:'下一步',exact:true}).click();await page.reload();await wizard.getByRole('heading',{name:'课程配置已保存',exact:true}).waitFor();
+ await wizard.getByText('提醒尚未确认，已选择稍后处理。',{exact:true}).waitFor();
+ await wizard.getByRole('button',{name:'上一步',exact:true}).click();
+ await wizard.getByRole('button',{name:'重新发送测试通知',exact:true}).click();await wizard.getByRole('button',{name:'我收到了',exact:true}).click();
+ await wizard.getByRole('button',{name:'下一步',exact:true}).click();await wizard.getByText('你已确认收到测试提醒。',{exact:true}).waitFor();
+ await page.screenshot({path:'.test-artifacts/phase2/completion.png'});
+ await wizard.getByRole('button',{name:'完成配置并开始上课',exact:true}).click();await page.waitForFunction(()=>!!window.__startedId);
+ assert.equal(await page.evaluate(()=>window.__startedId),(await page.evaluate(()=>window.attendance.getState())).courses[0].id);await page.reload();await page.getByRole('heading',{name:'我的课程',exact:true}).waitFor();
  assert.equal(await wizard.count(),0);await page.getByRole('button',{name:'连接与提醒',exact:true}).click();await page.getByRole('button',{name:'重新打开配置向导',exact:true}).click();await wizard.waitFor();
  await wizard.getByRole('button',{name:'稍后继续',exact:true}).click();await page.reload();await page.getByRole('heading',{name:'我的课程',exact:true}).waitFor();
  await mkdir('.test-artifacts/phase2',{recursive:true});await page.screenshot({path:'.test-artifacts/phase2/setup.png'});assert.deepEqual(errors,[]);

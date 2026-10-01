@@ -26,7 +26,7 @@
 
 See the [phased development plan (中文)](dev-plans.md) for the MVP roadmap, dependencies, and acceptance checkpoints: classroom feedback and logs, first-run setup, background mode, scheduled starts, and calendar integration ideas. These are planned improvements; completed checkpoints and verification evidence are tracked in that document.
 
-The current source branch includes Phase 1: clearer monitoring and recovery states, question receipts, a full event log, a ten-minute session extension, saved end summaries, and simpler course configuration. Phase 2 now includes environment checks and a resumable first-run wizard; see the plan for remaining checkpoints. The download links above still point to the earlier `v0.1.1` release.
+The current source branch includes Phase 1: clearer monitoring and recovery states, question receipts, a full event log, a ten-minute session extension, saved end summaries, and simpler course configuration. All four Phase 2 MVPs are implemented: environment checks, a resumable first-run wizard, page-verified sign-in with course import, and explicit reminder confirmation with a readiness summary. Human walkthrough and platform limits are recorded in verification. The download links above still point to the earlier `v0.1.1` release.
 
 ## What it does
 
@@ -46,7 +46,7 @@ Attendance Handler turns a repetitive classroom setup into one visible, supervis
 
 ## First-run setup (current source)
 
-New users follow environment checks, sign-in, course import and configuration, a reminder test, and completion. Progress and saved courses survive interruptions. Reopen the wizard from connection settings; existing course users start on their courses.
+New users follow environment checks, sign-in, course import and configuration, a reminder test, and completion. Progress and saved courses survive interruptions. Reopen the wizard from connection settings; existing course users start on their courses. Complete school verification in visible Chrome; a verified page continues to course import, with empty accounts and read failures reported separately. Confirm seeing the test notification or defer and revisit it. Completion rechecks environment and sign-in and can start your first class.
 
 ## The classroom flow
 

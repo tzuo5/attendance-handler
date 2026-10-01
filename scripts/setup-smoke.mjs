@@ -62,13 +62,38 @@ try{
  await window.getByRole('radio',{name:'提醒我手动作答',exact:true}).check();await window.getByRole('button',{name:'保存课程',exact:true}).click();
  await wizard().getByText('模拟课堂 · 已保存 · 50 分钟',{exact:true}).waitFor();
  await wizard().getByRole('button',{name:'下一步',exact:true}).click();await restart('notification');
- await wizard().getByRole('button',{name:'稍后确认提醒，继续',exact:true}).click();await restart('complete');
+ assert.equal(await wizard().getByRole('button',{name:'下一步',exact:true}).isDisabled(),true);
+ // Fault injection tests the application's result model; human receipt is not
+ // established by this automated click or a simulated operating-system event.
+ await application.evaluate(({Notification})=>{Notification.prototype.show=function(){this.emit('failed',{},'模拟发送失败');};});
+ await wizard().getByRole('button',{name:'发送测试通知',exact:true}).click();
+ await window.waitForFunction(async()=>(await window.attendance.getState()).setup.notification?.status==='failed');
+ assert.equal(await window.evaluate(async()=>{try{await window.attendance.notificationChoice('received');return false;}catch{return true;}}),true);
+ await wizard().getByRole('button',{name:'稍后处理提醒',exact:true}).click();
+ await wizard().getByRole('button',{name:'下一步',exact:true}).click();await restart('complete');
+ assert.equal((await state()).setup.notification.status,'failed');assert.equal((await state()).setup.notification.deferred,true);
+ await wizard().getByRole('button',{name:'上一步',exact:true}).click();
+ await application.evaluate(({Notification})=>{Notification.prototype.show=function(){this.emit('show');};});
+ await wizard().getByRole('button',{name:'重新发送测试通知',exact:true}).click();
+ await window.waitForFunction(async()=>(await window.attendance.getState()).setup.notification?.status==='requested');
+ assert.equal((await state()).setup.notification.confirmedAt,undefined);
+ assert.equal(await wizard().getByRole('button',{name:'下一步',exact:true}).isDisabled(),true);
+ await wizard().getByRole('button',{name:'没收到',exact:true}).click();
+ await window.waitForFunction(async()=>(await window.attendance.getState()).setup.notification?.status==='pending');
+ await wizard().getByRole('button',{name:'重新发送测试通知',exact:true}).click();
+ await wizard().getByRole('button',{name:'我收到了',exact:true}).click();
+ await wizard().getByRole('button',{name:'下一步',exact:true}).click();await restart('complete');
+ assert.equal((await state()).setup.notification.status,'confirmed');
+
  await window.evaluate(()=>window.attendance.checkEnvironment());await window.evaluate(()=>window.attendance.login());
  await window.waitForFunction(async()=>(await window.attendance.checkLogin()).status==='verified');
- await wizard().getByRole('button',{name:'完成配置',exact:true}).click();await window.getByRole('heading',{name:'我的课程',exact:true}).waitFor();
+ await mkdir('.test-artifacts/phase2',{recursive:true});await window.screenshot({path:'.test-artifacts/phase2/packaged-completion.png'});
+ mock.control({open:true});
+ await wizard().getByRole('button',{name:'完成配置并开始上课',exact:true}).click();await window.getByRole('heading',{name:'我的课程',exact:true}).waitFor();
+ await window.waitForFunction(async()=>(await window.attendance.getState()).session?.status==='monitoring');
  await stop();await start();await window.getByRole('heading',{name:'我的课程',exact:true}).waitFor();assert.equal(await wizard().count(),0);
  await window.getByRole('button',{name:'连接与提醒',exact:true}).click();await window.getByRole('button',{name:'重新打开配置向导',exact:true}).click();await wizard().waitFor();
  assert.equal((await state()).courses.length,1);assert.deepEqual(errors,[]);
  await mkdir('.test-artifacts/phase2',{recursive:true});await window.screenshot({path:'.test-artifacts/phase2/first-run.png'});
- console.log(`Packaged first-run passed: five interrupted steps, verified page login, imported course, saved configuration, completed restart and reopening (${synthetic?'synthetic encrypted storage; OS storage unverified':'OS-encrypted storage'}).`);
+ console.log(`Packaged first-run passed: five interrupted steps, verified page login, imported course, saved configuration, notification failure and unconfirmed/confirmed choices, completion starts first class, completed restart and reopening (${synthetic?'synthetic encrypted storage; OS storage unverified':'OS-encrypted storage'}).`);
 }finally{await stop();await mock.close();}

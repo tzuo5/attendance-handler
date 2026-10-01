@@ -6,7 +6,7 @@ import { advanceSetup, initialSetup, restoreSetup } from '../src/shared/setup';
 import { SETUP_STEPS } from '../src/shared/types';
 import { Store } from '../src/main/store';
 
-const facts = { environment: true, login: true, courses: 1 };
+const facts = { environment: true, login: true, courses: 1, notification: true };
 describe('first-run progress', () => {
   it('restores each interrupted step, leaves completed users on their courses and preserves progress when dismissed', () => {
     const directory = mkdtempSync(join(tmpdir(), 'attendance-setup-'));

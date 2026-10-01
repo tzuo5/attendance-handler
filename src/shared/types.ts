@@ -73,7 +73,12 @@ export const environmentReady = (report?:EnvironmentReport) => !!report && repor
 export const SETUP_STEPS = ['environment', 'login', 'course', 'notification', 'complete'] as const;
 export type SetupStep = typeof SETUP_STEPS[number];
 export type SetupAction = 'next' | 'back' | 'dismiss' | 'reopen' | 'finish';
-export interface SetupState { step: SetupStep; completedSteps: SetupStep[]; dismissed: boolean; completedAt?: number; }
+export interface NotificationCheck {
+  status: 'unverified' | 'requested' | 'confirmed' | 'pending' | 'failed';
+  detail: string; attemptId?: string; requestedAt?: number; confirmedAt?: number; failedAt?: number; deferred?: boolean;
+}
+export type NotificationChoice = 'received' | 'not-received' | 'later';
+export interface SetupState { step: SetupStep; completedSteps: SetupStep[]; dismissed: boolean; completedAt?: number; notification?: NotificationCheck; }
 export interface LoginReport { status: 'waiting' | 'verified' | 'closed' | 'error'; checkedAt: number; detail: string; }
 export interface CourseImportReport { status: 'courses' | 'empty' | 'login' | 'error'; courses: RemoteCourse[]; checkedAt: number; detail: string; }
 export interface AppState {
@@ -85,6 +90,7 @@ export interface AppState {
   browserConnected: boolean;
   demo: boolean;
   notificationError?: string;
+  notificationCanConfirm?: boolean;
   environment?: EnvironmentReport;
   setup?: SetupState;
   loginReport?: LoginReport;
@@ -107,6 +113,7 @@ export interface AttendanceAPI {
   setupAction(action: SetupAction): Promise<AppState>;
   checkLogin(): Promise<LoginReport>;
   checkCourseImport(): Promise<CourseImportReport>;
+  notificationChoice(choice: NotificationChoice): Promise<AppState>;
   onState(listener: (state: AppState) => void): () => void;
 }
 export const ACTIVE = (session: SessionState | null): session is SessionState => !!session && !['stopped', 'completed'].includes(session.status);

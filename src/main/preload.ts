@@ -17,6 +17,7 @@ const api: AttendanceAPI = {
   setupAction: action => ipcRenderer.invoke('setup:action', action),
   checkLogin: () => ipcRenderer.invoke('setup:login-check'),
   checkCourseImport: () => ipcRenderer.invoke('setup:course-import'),
+  notificationChoice: choice => ipcRenderer.invoke('notification:choice', choice),
   onState: listener => {
     const handler = (_event: Electron.IpcRendererEvent, state: AppState) => listener(state);
     ipcRenderer.on('state:changed', handler);
