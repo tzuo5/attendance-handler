@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile, rename } from 'node:fs/promises';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright-core';
-import type { CourseConfig, PageSnapshot, QuestionSnapshot } from '../shared/types';
+import type { CourseConfig, PageSnapshot, QuestionSnapshot, LoginReport } from '../shared/types';
 import { IClickerAdapter } from './iclicker';
 import type { ClassroomDriver } from './watchdog';
 import { activateChrome, launchChrome } from './platform';
@@ -167,6 +167,20 @@ export class ChromeClassroom implements ClassroomDriver {
     const page = await this.ensurePage();
     if (!page.url().startsWith(this.origin)) await page.goto(`${this.origin}/#/courses`, { waitUntil: 'domcontentloaded', timeout: 25000 });
     await this.show();
+  }
+  async checkLogin(): Promise<LoginReport> {
+    const checkedAt = Date.now();
+    if (!this.isOpen()) return { status: 'closed', checkedAt, detail: '登录窗口已关闭，请重新打开。' };
+    try {
+      const snapshot = await this.adapter!.read();
+      if (snapshot.state === 'login') return { status: 'waiting', checkedAt, detail: '请在 Chrome 中登录并完成学校验证，然后返回这里检查。' };
+      const links = await this.page!.locator('a[href*="/course/"]').count();
+      if (new URL(this.page!.url()).origin === this.origin && ((snapshot.state === 'waiting' && (snapshot.courseId || links)) || ['classroom','joinable'].includes(snapshot.state))) {
+        await this.capture();
+        return { status: 'verified', checkedAt, detail: '已从实际 iClicker 页面确认登录。' };
+      }
+      return { status: 'waiting', checkedAt, detail: '等待登录后的课程页面加载；打开窗口还不代表登录成功。' };
+    } catch { return { status: 'error', checkedAt, detail: '暂时无法检查登录，请检查网络和登录窗口后重试。' }; }
   }
   async importCourses() {
     if (this.deadline > Date.now()) throw new Error('上课期间不能刷新课程列表，请先结束当前监控。');

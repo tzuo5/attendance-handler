@@ -26,6 +26,8 @@ jobs:
       - run: npm run dist:win
       - run: npm run test:renderer
         timeout-minutes: 3
+      - run: npm run test:setup-renderer
+        timeout-minutes: 3
       - run: npm run test:integration
         timeout-minutes: 3
       - run: npm run test:chrome-lifecycle
@@ -46,6 +48,8 @@ jobs:
           $installed = (Get-FileHash (Join-Path $installDirectory 'resources/app.asar') -Algorithm SHA256).Hash
           if ($expected -ne $installed) { throw 'Installed application differs from the audited build' }
           npm run test:ui
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run test:setup
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - name: Check ZIP and write checksums
         shell: pwsh
@@ -78,6 +82,7 @@ jobs:
           path: |
             .test-artifacts/app-*.png
             .test-artifacts/phase1/*.png
+            .test-artifacts/phase2/*.png
 
   release:
     if: startsWith(github.ref, 'refs/tags/v')

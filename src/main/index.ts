@@ -9,7 +9,8 @@ import { summarizeSession } from '../shared/session-summary';
 import { Store } from './store';
 import { Watchdog } from './watchdog';
 import { validateCourse } from '../shared/validation';
-import { ACTIVE, sessionPresentation, type AppState, type LogDetails, type EnvironmentReport } from '../shared/types';
+import { ACTIVE, environmentReady, sessionPresentation, type AppState, type LogDetails, type EnvironmentReport, type LoginReport } from '../shared/types';
+import { advanceSetup, initialSetup } from '../shared/setup';
 
 const demo = process.env.ATTENDANCE_DEMO === '1';
 const origin = demo ? process.env.ATTENDANCE_ORIGIN || 'http://127.0.0.1:43891' : 'https://student.iclicker.com';
@@ -28,6 +29,7 @@ async function main() {
   let blockId: number | undefined;
   let notificationError: string | undefined;
   let environment:EnvironmentReport|undefined;
+  let loginReport:LoginReport|undefined;
   let checkingEnvironment:Promise<EnvironmentReport>|undefined;
   const notifications = new Map<string, Notification>();
   let store: Store;
@@ -39,13 +41,13 @@ async function main() {
     store.data.session.detail = '上次运行已中断，请重新开始上课';
     store.setSession(store.data.session);
   }
-  if (demo && !store.data.courses.length) {
+  if (demo && process.env.ATTENDANCE_DEMO_EMPTY !== '1' && !store.data.courses.length) {
     store.data.courses = [
       { id: '11111111-1111-4111-8111-111111111111', remoteId: 'demo', name: '模拟课堂 · 自动 A', url: `${origin}/#/course/demo/overview`, latitude: 0, longitude: 0, accuracy: 10, durationMinutes: 50, mode: 'auto-a' },
       { id: '22222222-2222-4222-8222-222222222222', remoteId: 'demo', name: '模拟课堂 · 提醒作答', url: `${origin}/#/course/demo/overview`, latitude: 0, longitude: 0, accuracy: 10, durationMinutes: 50, mode: 'notify' },
-    ]; store.save();
+    ]; store.data.setup = initialSetup(true); store.save();
   }
-  const snapshot = (): AppState => ({ courses: store.data.courses, session: watchdog?.session || store.data.session, logs: store.data.logs, summaries: store.data.summaries, classroomOrigin: origin, browserConnected: browser?.isOpen() || false, demo, notificationError, environment });
+  const snapshot = (): AppState => ({ courses: store.data.courses, session: watchdog?.session || store.data.session, logs: store.data.logs, summaries: store.data.summaries, classroomOrigin: origin, browserConnected: browser?.isOpen() || false, demo, notificationError, environment, loginReport, setup: store.data.setup });
   const emit = () => {
     if (window && !window.isDestroyed()) window.webContents.send('state:changed', snapshot());
     if (tray) {
@@ -108,6 +110,14 @@ async function main() {
     });
   };
   invoke('state:get', snapshot);
+  const checkLogin = async () => { loginReport = await browser.checkLogin(); emit(); return loginReport; };
+  invoke('setup:login-check', checkLogin);
+  invoke('setup:action', async input => {
+    const action = z.enum(['next','back','dismiss','reopen','finish']).parse(input);
+    if (action === 'next' && store.data.setup.step === 'login' || action === 'finish') await checkLogin();
+    const setup = advanceSetup(store.data.setup, action, { environment: environmentReady(environment), login: loginReport?.status === 'verified', courses: store.data.courses.length });
+    store.data.setup = setup; store.save(); emit(); return snapshot();
+  });
   invoke('environment:check',()=>{
     if(checkingEnvironment)return checkingEnvironment;
     checkingEnvironment=checkEnvironment({

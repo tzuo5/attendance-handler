@@ -70,6 +70,11 @@ export interface EnvironmentItem {
 }
 export interface EnvironmentReport { checkedAt: number; items: EnvironmentItem[]; }
 export const environmentReady = (report?:EnvironmentReport) => !!report && report.items.length===5 && report.items.every(item=>item.status==='passed');
+export const SETUP_STEPS = ['environment', 'login', 'course', 'notification', 'complete'] as const;
+export type SetupStep = typeof SETUP_STEPS[number];
+export type SetupAction = 'next' | 'back' | 'dismiss' | 'reopen' | 'finish';
+export interface SetupState { step: SetupStep; completedSteps: SetupStep[]; dismissed: boolean; completedAt?: number; }
+export interface LoginReport { status: 'waiting' | 'verified' | 'closed' | 'error'; checkedAt: number; detail: string; }
 export interface AppState {
   courses: CourseConfig[];
   session: SessionState | null;
@@ -80,6 +85,8 @@ export interface AppState {
   demo: boolean;
   notificationError?: string;
   environment?: EnvironmentReport;
+  setup?: SetupState;
+  loginReport?: LoginReport;
 }
 export interface AttendanceAPI {
   getState(): Promise<AppState>;
@@ -95,6 +102,8 @@ export interface AttendanceAPI {
   testNotification(): Promise<void>;
   checkEnvironment(): Promise<EnvironmentReport>;
   openHelp(target: HelpTarget): Promise<void>;
+  setupAction(action: SetupAction): Promise<AppState>;
+  checkLogin(): Promise<LoginReport>;
   onState(listener: (state: AppState) => void): () => void;
 }
 export const ACTIVE = (session: SessionState | null): session is SessionState => !!session && !['stopped', 'completed'].includes(session.status);

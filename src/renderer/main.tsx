@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { version } from '../../package.json';
-import { ACTIVE, sessionPresentation, type AppState, type CourseConfig, type RemoteCourse } from '../shared/types';
+import { ACTIVE, sessionPresentation, type AppState, type CourseConfig, type RemoteCourse, type SetupAction } from '../shared/types';
 import './styles.css';
 import { Icon } from './Icon';
 import { CourseForm } from './CourseForm';
@@ -9,6 +9,7 @@ import { SessionSummaryPanel, SummaryHistory } from './SessionSummaryPanel';
 import { QuestionPanel } from './QuestionPanel';
 import { ActivityLog } from './ActivityLog';
 import { EnvironmentPanel } from './EnvironmentPanel';
+import { SetupWizard } from './SetupWizard';
 
 function App() {
   const [state, setState] = useState<AppState>();
@@ -18,13 +19,13 @@ function App() {
   const [now, setNow] = useState(Date.now());
   const [form, setForm] = useState<Partial<CourseConfig> | null>(null);
   const [imported, setImported] = useState<RemoteCourse[]>([]);
-  const [view, setView] = useState<'courses' | 'settings' | 'logs'>('courses');
+  const [view, setView] = useState<'courses' | 'settings' | 'logs' | 'setup'>('courses');
   const settings = view === 'settings';
   const logsOpen = view === 'logs';
   const [logScope, setLogScope] = useState('all');
   const [deleting, setDeleting] = useState<string>();
   useEffect(() => {
-    window.attendance.getState().then(setState).catch(e => setError(String(e)));
+    window.attendance.getState().then(state => { setState(state); if (state.setup && !state.setup.completedAt && !state.setup.dismissed) setView('setup'); }).catch(e => setError(String(e)));
     const unsubscribe = window.attendance.onState(setState);
     const timer = setInterval(() => setNow(Date.now()), 1000);
     return () => { unsubscribe(); clearInterval(timer); };
@@ -35,6 +36,7 @@ function App() {
     finally { setBusy(''); }
   };
   if (!state) return <div className="loading">正在准备课堂助手…{error && <p>{error}</p>}</div>;
+  const setupAction = (choice: SetupAction) => action('setup', async () => { const updated = await window.attendance.setupAction(choice); setState(updated); if (choice === 'finish' || choice === 'dismiss') setView('courses'); else if (choice === 'reopen') setView('setup'); });
   const session = state.session;
   const idleDetail = session?.detail;
   const latestSummary = session?.summary || state.summaries?.[0];
@@ -60,12 +62,14 @@ function App() {
       </div>
     </aside>
     <main>
-      <header className="page-header"><div><div className="eyebrow">YOUR CLASSROOM, WITHIN REACH</div><h1>{settings ? '连接与提醒' : logsOpen ? '课堂记录' : '我的课程'}</h1><p>{settings ? '准备好浏览器和通知，就可以开始上课。' : logsOpen ? '查看题目、签到和连接变化的完整过程。' : '课堂窗口随时可见，提醒在需要时到来。'}</p></div><div className="header-actions"><button className="secondary" onClick={() => action('login', () => window.attendance.login())} disabled={!!busy}><Icon name="browser"/>{busy === 'login' ? '正在连接…' : '登录 iClicker'}</button>{!settings && !logsOpen && <button className="primary" onClick={() => { setImported([]); setForm({}); }}><Icon name="plus"/>添加课程</button>}</div></header>
+      <header className="page-header"><div><div className="eyebrow">YOUR CLASSROOM, WITHIN REACH</div><h1>{view === 'setup' ? '首次配置' : settings ? '连接与提醒' : logsOpen ? '课堂记录' : '我的课程'}</h1><p>{settings ? '准备好浏览器和通知，就可以开始上课。' : logsOpen ? '查看题目、签到和连接变化的完整过程。' : '课堂窗口随时可见，提醒在需要时到来。'}</p></div><div className="header-actions"><button className="secondary" onClick={() => action('login', () => window.attendance.login())} disabled={!!busy}><Icon name="browser"/>{busy === 'login' ? '正在连接…' : '登录 iClicker'}</button>{view === 'courses' && <button className="primary" onClick={() => { setImported([]); setForm({}); }}><Icon name="plus"/>添加课程</button>}</div></header>
       {state.demo && <div className="demo-banner">模拟课堂 · 操作仅作用于本机演示页面，不会提交真实签到或答案。</div>}
       {error && <div className="banner error" role="alert"><span>{error}</span><button aria-label="关闭错误" onClick={() => setError('')}><Icon name="close" size={16}/></button></div>}
       {toast && <div className="banner success" role="status">{toast}</div>}
       {state.notificationError && <div className="banner error" role="alert">{state.notificationError}</div>}
-      {settings ? <section className="settings-grid">
+      {view !== 'setup' && state.setup && !state.setup.completedAt && <div className="banner">首次配置尚未完成。<button className="text-button" disabled={!!busy} onClick={() => setupAction('reopen')}>继续首次配置</button></div>}
+      {view === 'setup' ? <SetupWizard state={state} busy={busy} onAction={setupAction} onCheck={() => action('environment', () => window.attendance.checkEnvironment())} onHelp={target => action('help', () => window.attendance.openHelp(target))} onLogin={() => action('login', () => window.attendance.login())} onCheckLogin={() => action('login-check', () => window.attendance.checkLogin())} onImport={importCourses} onManual={() => { setImported([]); setForm({}); }} onTest={() => action('notification', async () => { await window.attendance.testNotification(); setToast('已请求发送测试通知，请在系统通知中确认。'); })}/> : settings ? <section className="settings-grid">
+        <article className="panel setting-card wide"><h2>首次配置向导</h2><p>重新检查环境、登录、课程和提醒。已保存的课程会保留。</p><button className="secondary" disabled={!!busy} onClick={() => setupAction('reopen')}>重新打开配置向导</button></article>
         <EnvironmentPanel report={state.environment} busy={busy==='environment'} onCheck={()=>action('environment',()=>window.attendance.checkEnvironment())} onHelp={target=>action('help',()=>window.attendance.openHelp(target))}/>
         <article className="panel setting-card"><div className="tile-icon"><Icon name="browser" size={26}/></div><h2>专用 Chrome 窗口</h2><p>首次登录时完成学校验证。后续会保留登录状态，你可以随时查看或手动操作课堂页面。</p><button className="primary" disabled={!!busy} onClick={() => action('login', () => window.attendance.login())}>打开登录窗口<Icon name="arrow" size={17}/></button><div className="hint">切换应用、遮挡或最小化窗口，都不影响监控。</div></article>
         <article className="panel setting-card"><div className="tile-icon amber"><Icon name="bell" size={26}/></div><h2>系统题目提醒</h2><p>需要手动答题时立即提醒。题目未作答且仍开放时，每 30 秒再次提醒；点击通知返回课堂。</p><button className="secondary" onClick={() => action('notification', async () => { await window.attendance.testNotification(); setToast('已请求发送测试通知，请在系统通知中确认。'); })}>发送测试通知<Icon name="arrow" size={17}/></button><div className="hint">请在 系统通知设置中允许 Attendance Handler 通知和声音。</div></article>

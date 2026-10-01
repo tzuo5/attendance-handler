@@ -98,7 +98,7 @@
   - 显示“通过 / 需要处理 / 尚未验证”及对应修复入口，支持修复后重新检查。
   - **验收：**模拟 Chrome 缺失、连接失败、数据目录不可写和加密不可用，每项都有可执行提示；检查不会修改日常 Chrome 资料。
 
-- [ ] **P2.2 — 首次向导及进度保存**（依赖 P2.1）
+- [x] **P2.2 — 首次向导及进度保存**（依赖 P2.1）
   - 首次启动提供“环境检查 → 登录 → 导入与配置课程 → 测试提醒 → 完成”流程，复用 Phase 1 的配置能力。
   - 保存已完成步骤；中途退出后继续，设置页可再次打开向导。
   - **验收：**分别在每一步退出并重开，已保存配置和进度可恢复；完成后正常启动直接进入课程页。
@@ -225,3 +225,5 @@
 | P1.3 保留上限边界 | 2026-09-30 | `fix: keep log reading position when older events expire` | 类型检查与模拟 UI：同时插入新事件、清理旧事件后，同一条可见记录的位置保持不变 | 已被清理的详细事件无法恢复，摘要仍按独立上限保留 |
 | Phase 1 阶段出口 | 2026-09-30 | [`a28135f`](https://github.com/tzuo5/attendance-handler/commit/a28135f) · 最终功能提交 | [验证记录](VERIFICATION.md)：44 项单元测试、17 项集成、生命周期、双平台 UI、生产构建、实际 Windows 安装版及隐私审计；[Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36813357714) 全部通过 | 本次 macOS 钥匙串授权、真实课堂及实体设备交互仍按验证记录单独标为待验证；此前 v0.1.1 下载包未更新 |
 | P2.1 | 2026-10-01 | `feat: add environment readiness checks and repair guidance` | 50 项单元测试、类型检查、renderer 验收、生产构建、18 项专用 Chrome 集成；检查探针不覆盖本机数据、不抢焦点 | 安全存储检查验证系统可用性，实际登录加密另行验证；Windows 待本阶段最终 CI |
+
+| P2.2 | 2026-10-01 | 本检查点提交 · `feat: guide first-run setup with resumable progress` | 53 项单元测试、类型检查、两套 renderer 验收、macOS 实际打包 App：五步分别退出并重开、登录页面判断、导入及配置保存、完成后重开和设置回访 | macOS 加密使用隔离测试进程中的合成替代，系统钥匙串待授权验证；Windows 首次向导 CI 待结果；新手真人走查待安排 |

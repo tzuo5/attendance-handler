@@ -1,11 +1,12 @@
 import { mkdirSync, existsSync, readFileSync, writeFileSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
-import type { CourseConfig, LogDetails, LogEntry, SessionState, SessionSummary } from '../shared/types';
+import type { CourseConfig, LogDetails, LogEntry, SessionState, SessionSummary, SetupState } from '../shared/types';
+import { initialSetup, restoreSetup } from '../shared/setup';
 export const LOG_LIMIT = 2000;
-export interface StoredData { version: 1; courses: CourseConfig[]; logs: LogEntry[]; session: SessionState | null; summaries: SessionSummary[]; }
+export interface StoredData { version: 1; courses: CourseConfig[]; logs: LogEntry[]; session: SessionState | null; summaries: SessionSummary[]; setup: SetupState; }
 export class Store {
   readonly path: string;
-  data: StoredData = { version: 1, courses: [], logs: [], session: null, summaries: [] };
+  data: StoredData = { version: 1, courses: [], logs: [], session: null, summaries: [], setup: initialSetup() };
   constructor(readonly directory: string) {
     mkdirSync(directory, { recursive: true, mode: 0o700 });
     this.path = join(directory, 'state.json');
@@ -13,7 +14,7 @@ export class Store {
       try {
         const data = JSON.parse(readFileSync(this.path, 'utf8'));
         if (data.version !== 1 || !Array.isArray(data.courses) || !Array.isArray(data.logs)) throw new Error('Unsupported data');
-        this.data = { ...data, logs: data.logs.slice(0, LOG_LIMIT), summaries: Array.isArray(data.summaries) ? data.summaries.slice(0, 100) : [] };
+        this.data = { ...data, setup: restoreSetup(data.setup, data.courses.length > 0), logs: data.logs.slice(0, LOG_LIMIT), summaries: Array.isArray(data.summaries) ? data.summaries.slice(0, 100) : [] };
       } catch { throw new Error('本地课程数据无法读取。原文件已保留，请先备份后检查 state.json。'); }
     }
   }
