@@ -47,3 +47,5 @@ P4.1 已实现共享规则、时间换算与执行决策，并在“连接与提
 94 项单测、类型检查、生产构建、课程与首次向导两套 renderer 通过。新增 21 项规则测试覆盖单次 / 每周、完整配置、课程引用、城市时区、夏令时缺口 / 回拨、半小时变化、整日跳过、跨夏令时时长、闰日、迟到边界、结束边界、当前课堂冲突、缺失课程、环境问题、固定排序、生效时间与旧预览保护。设置页以 900×640 验证运行条件与未开放调度的明确说明。
 
 第一次新增 renderer 检查使用 `region` 定位实际 `article` 卡片，超时；修正语义定位后两套检查通过。P4.1 不改课堂运行和操作能力，本轮不把已有 Chrome 检查重跑作为定时调度验收。真实定时启动和平台完整验收留在 P4.3 / P4.4。
+
+功能提交 [`ccb0d80`](https://github.com/tzuo5/attendance-handler/commit/ccb0d80) 的 [Source checks](https://github.com/tzuo5/attendance-handler/actions/runs/36839642506) 与 [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36839642451) 首次尝试全部通过：94 单测、双 renderer、全部原有 Chrome 检查、实际 Windows 安装版 UI / 恢复 / 首次向导、真实 DPAPI、包审计和 ZIP 一致性。此平台回归覆盖新规则兼容性和已有课堂行为，不等同于尚未实现的自动调度验收。

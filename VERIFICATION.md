@@ -2,7 +2,7 @@
 
 ## Phase 4.1 定时规则（2026-10-01）
 
-94 单测（新增 21 项规则检查）、类型检查、生产构建、双 renderer 通过；覆盖单次 / 每周、城市时区、夏令时缺口 / 回拨、闰日、跨 DST 时长、迟到 / 结束边界、课堂冲突、生效时间和旧预览保护。设置页明确托盘、退出、睡眠、开机启动决策及尚未开放自动调度。详情与实际 renderer 定位失败修正见 [定时开启规则](docs/scheduled-starts.md)。本提交 Source checks / Windows CI 随推送验证；实际调度和重启去重尚属 P4.3 / P4.4。
+94 单测（新增 21 项规则检查）、类型检查、生产构建、双 renderer 通过；覆盖单次 / 每周、城市时区、夏令时缺口 / 回拨、闰日、跨 DST 时长、迟到 / 结束边界、课堂冲突、生效时间和旧预览保护。设置页明确托盘、退出、睡眠、开机启动决策及尚未开放自动调度。详情与实际 renderer 定位失败修正见 [定时开启规则](docs/scheduled-starts.md)。功能提交 [`ccb0d80`](https://github.com/tzuo5/attendance-handler/commit/ccb0d80) 的 [Source checks](https://github.com/tzuo5/attendance-handler/actions/runs/36839642506) 与 [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36839642451) 首次尝试全部通过，含 94 单测、双 renderer、全部原有 Chrome 检查、实际安装版恢复 / UI / 向导、真实 DPAPI、包审计和 ZIP 一致性；实际调度和重启去重尚属 P4.3 / P4.4。
 
 ## Phase 3.4 中断恢复与进程生命周期（2026-10-01）
 
