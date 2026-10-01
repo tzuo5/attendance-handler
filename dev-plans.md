@@ -11,7 +11,7 @@
 | Phase 1 | 状态与恢复、课堂反馈、详细日志、简化课程配置 | 当前版本作为基线 | 已完成（2026-09-30） |
 | Phase 2 | 首次配置向导与环境检查 | Phase 1 验收通过 | 4 项 MVP 已实现；真人走查待验收 |
 | Phase 3 | 无 Chrome 窗口的后台模式 | Phase 2 验收通过；模式切换验证通过 | 四项 MVP 已实现；真实课堂仍待验证 |
-| Phase 4 | 设置定时开启 | Phase 3 验收通过 | P4.1–P4.3 已实现；时间变化与恢复待 P4.4 |
+| Phase 4 | 设置定时开启 | Phase 3 验收通过 | 四项 MVP 已实现；实体睡眠与真实课堂待验收 |
 | Phase 5 | Google Calendar / Apple Calendar 与 `@tt` 互动设想 | 可提前调研；实现规划依赖 Phase 4 | 探索待开始 |
 
 本次 Phase 3–5 按用户要求分时推进，截止为 2026-10-01 08:00 America/Chicago，窗口与实绩见 [分时执行记录](docs/overnight-execution.md)。
@@ -182,17 +182,18 @@
   - 由应用主进程维护调度，按每次计划执行生成唯一记录；手动与定时开始共用课堂启动能力。
   - 执行前检查环境、配置和当前课堂；异常进入恢复路径，并将开始、跳过或失败写入日志。
   - **验收：**同一次计划重复检查或重启仅启动一次；已有课堂时按既定冲突策略处理，不并行开启第二门监控。
-  - **实绩：**主进程五秒检查、手动与定时共用启动、原子持久领取记录、环境 / 配置 / 当前课堂复核、启动 / 跳过 / 失败日志和人工提示；113 单测、双 renderer、原有 25 项 Chrome 集成、打包 App 四组定时启动 / 实际重启去重 / 原截止自动结束 / 焦点与清理检查通过。macOS 使用隔离合成加密；Windows 新 CI 待本次推送后核实。
+  - **实绩：**主进程五秒检查、手动与定时共用启动、原子持久领取记录、环境 / 配置 / 当前课堂复核、启动 / 跳过 / 失败日志和人工提示；113 单测、双 renderer、原有 25 项 Chrome 集成、打包 App 四组定时启动 / 实际重启去重 / 原截止自动结束 / 焦点与清理检查通过。macOS 使用隔离合成加密；Windows 功能提交 `a352c1a` 的源码 / 安装版 CI 首次全部通过，含真实 DPAPI。
 
-- [ ] **P4.4 — 时间变化与中断恢复**（依赖 P4.3）
+- [x] **P4.4 — 时间变化与中断恢复**（依赖 P4.3）
   - 按 P4.1 的规则处理时区变化、夏令时、系统时间调整、睡眠唤醒及 App 重启；到点已取消的任务保持取消。
   - 错过开始时间时给出实际处理结果，过期任务避免在恢复后意外开启。
   - **验收：**通过可控时钟测试覆盖上述场景；结束时间与触发策略一致，重复任务不漏记、不重复启动，取消与触发并发有确定结果。
+  - **实绩：**历史日期分批核对与进度持久化、唤醒后复核、领取中断提示、取消竞态、固定时区 / DST / 系统时间调整与原截止修正；135 单测、双 renderer、构建、最新 macOS 实际打包六组调度和四组配置通过。物理睡眠未操作，只注入隔离 resume 事件；Windows 本次推送后待核实。
 
 ### 阶段出口
 
-- [ ] 单次和每周重复任务完成从配置到自动启动、课堂结束、查看日志的完整验收。
-- [ ] macOS / Windows 的托盘常驻、App 重启、睡眠唤醒及任务冲突经过验证；退出后能否执行的实际边界写入使用说明。
+- [x] 单次和每周重复任务在隔离模拟环境完成从配置到自动启动、课堂结束、查看执行记录的完整验收。
+- [ ] macOS / Windows 的托盘常驻、App 重启、睡眠唤醒及任务冲突经过验证；退出后能否执行的实际边界写入使用说明。（自动化已验证托盘隐藏 / 重启 / 注入唤醒 / 冲突；实体睡眠与真实课堂待真人验收。）
 
 ## Phase 5：日历互动（Ideation）
 
@@ -250,4 +251,6 @@
 | P4.1 | 2026-10-01 | [`ccb0d80`](https://github.com/tzuo5/attendance-handler/commit/ccb0d80) · `feat: define timezone-aware scheduled start rules and runtime guidance` | 94 单测、类型检查、生产构建、双 renderer；21 项定时规则测试与设置运行条件说明，见 [定时开启规则](docs/scheduled-starts.md) | 配置和自动调度分别在 P4.2 / P4.3 完成；[Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36839642451) 首次尝试全部通过（含原有 Chrome 与实际安装版回归）；真实课堂与系统边界仍待真人验收 |
 | P4.2 | 2026-10-01 | [`c79ca5b`](https://github.com/tzuo5/attendance-handler/commit/c79ca5b) · `feat: configure and persist single and weekly classroom schedules`；测试时序修正 [`4459814`](https://github.com/tzuo5/attendance-handler/commit/4459814) | 101 单测、类型检查、构建、双 renderer、macOS 实际打包四组配置与多次重开验证；[定时开启规则](docs/scheduled-starts.md) | [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36843239858) 首次尝试全部通过（含安装版配置与真实 DPAPI）；自动调度待 P4.3，真实课堂 / Mac 钥匙串仍待验收 |
 
-| P4.3 | 2026-10-01 | [`a352c1a`](https://github.com/tzuo5/attendance-handler/commit/a352c1a) · `feat: dispatch scheduled classrooms with durable execution claims` | 113 单测、类型检查、生产构建、双 renderer、25 原有 Chrome 集成、macOS 实际打包四组调度验收 | Windows 本次 CI 待核实；真实学校 / 课堂、Mac 钥匙串与物理睡眠待验收；P4.4 补全时间变化 |
+| P4.3 | 2026-10-01 | [`a352c1a`](https://github.com/tzuo5/attendance-handler/commit/a352c1a) · `feat: dispatch scheduled classrooms with durable execution claims` | 113 单测、类型检查、生产构建、双 renderer、25 原有 Chrome 集成、macOS 实际打包四组调度验收 | Windows 安装版 CI 首次全部通过；真实学校 / 课堂、Mac 钥匙串与物理睡眠待验收；P4.4 补全时间变化 |
+
+| P4.4 | 2026-10-01 | `feat: recover scheduled starts across clock changes and interrupted scans` | 135 单测、类型检查、构建、双 renderer、macOS 实际打包六组调度与四组配置 | Windows 本次 CI 待核实；实体睡眠、真实学校 / 课堂、Mac 钥匙串待验收；历史记录分批补齐 |

@@ -43,3 +43,13 @@ describe('saved schedules',()=>{
   expect(nextOccurrences(weekly,Date.parse('2026-10-01T00:00:00Z'))[0].resolution).toBe('nonexistent');
  });
 });
+
+describe('schedule scan persistence',()=>{
+ it('migrates legacy scans and preserves files with invalid scan metadata',()=>fixture((store,directory)=>{
+  store.saveSchedule(task,100);const {scheduleScans,...legacy}=store.data;writeFileSync(store.path,JSON.stringify(legacy));expect(new Store(directory).data.scheduleScans).toEqual({});
+  for(const scan of [{effectiveFrom:100,through:'2026-02-30'},{effectiveFrom:-1,through:'2026-10-01'}]){const text=JSON.stringify({...store.data,scheduleScans:{[task.id]:scan}});writeFileSync(store.path,text);expect(()=>new Store(directory)).toThrow('原文件已保留');expect(readFileSync(store.path,'utf8')).toBe(text);}
+ }));
+ it('rejects invalid execution time zones before the history page can render them',()=>fixture((store,directory)=>{
+  const run={key:`${task.id}/2026-10-02`,scheduleId:task.id,courseId:course.id,courseName:course.name,localDate:'2026-10-02',timeZone:'Invalid/City',scheduledStart:0,endsAt:1,at:0,updatedAt:0,status:'failed',detail:'示例'};const text=JSON.stringify({...store.data,scheduledRuns:[run]});writeFileSync(store.path,text);expect(()=>new Store(directory)).toThrow('原文件已保留');expect(readFileSync(store.path,'utf8')).toBe(text);
+ }));
+});

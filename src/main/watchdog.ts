@@ -283,7 +283,11 @@ export class Watchdog {
   }
   private armDeadline(run: SessionState) {
     clearTimeout(this.deadlineTimer);
-    this.deadlineTimer = setTimeout(() => { void this.stop(true); }, Math.max(0, run.endsAt - this.now()));
+    this.deadlineTimer = setTimeout(() => {
+      if (this.session !== run || !ACTIVE(run)) return;
+      if (this.now() < run.endsAt) { this.armDeadline(run); return; }
+      void this.stop(true);
+    }, Math.max(0, run.endsAt - this.now()));
   }
   async extend() {
     if (!ACTIVE(this.session) || this.now() >= this.session.endsAt) throw new Error('本次监控已结束，请重新开始上课。');

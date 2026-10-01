@@ -114,7 +114,7 @@ function App() {
           <section className="panel activity-panel"><div className="section-heading"><h2>最近动态</h2><button className="text-button" onClick={() => setView('logs')}>全部记录 ↗</button></div>{state.logs.length ? <ol>{state.logs.slice(0, 5).map(entry => <li key={entry.id}><span className={`event-dot ${entry.level}`}/><div><p>{entry.message}</p><time>{new Date(entry.at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time></div></li>)}</ol> : <p className="empty-log">签到、题目与连接状态会记录在这里。</p>}</section>
         </aside>
       </div>}
-      <footer className="page-footer"><span>ATTENDANCE HANDLER</span><span>保持窗口可见，保持课堂连接。</span><span>v{version}</span></footer>
+      <footer className="page-footer"><span>ATTENDANCE HANDLER</span><span>关闭主窗口仍可运行；退出 App 将停止监控。</span><span>v{version}</span></footer>
     </main>
     {form !== null && <CourseForm initial={form} imported={imported} courses={state.courses} origin={state.classroomOrigin} onClose={() => setForm(null)} onSave={async course => { const updated = await window.attendance.saveCourse(course); setState(updated); setForm(null); setToast('课程已保存'); }} onImport={async () => { const courses = await window.attendance.importCourses(); setImported(courses); }}/>
     }

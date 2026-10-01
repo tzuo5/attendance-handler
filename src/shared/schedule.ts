@@ -165,6 +165,6 @@ export interface ScheduledRun {
 }
 export const scheduledRunSchema = z.object({
   key:z.string().min(1).max(250),scheduleId:z.string().uuid(),courseId:z.string().uuid(),courseName:z.string().max(160),
-  localDate:localDateSchema,timeZone:z.string().min(1).max(100),scheduledStart:z.number().finite().nullable(),endsAt:z.number().finite().nullable(),
+  localDate:localDateSchema,timeZone:z.string().min(1).max(100).refine(zone=>{try{canonicalTimeZone(zone);return true;}catch{return false;}}),scheduledStart:z.number().finite().nullable(),endsAt:z.number().finite().nullable(),
   at:z.number().finite(),updatedAt:z.number().finite(),status:z.enum(['claimed','started','skipped','failed']),detail:z.string().max(1000),sessionId:z.string().uuid().optional(),
 });

@@ -25,6 +25,19 @@ describe('classroom watchdog', () => {
     expect(watchdog.session).toMatchObject({id:'33333333-3333-4333-8333-333333333333',scheduleKey:'schedule/date',endsAt});
     await vi.advanceTimersByTimeAsync(20000);expect(watchdog.session?.status).toBe('completed');
   });
+  it('rechecks the absolute scheduled end when a clock rewind makes the old timer fire early', async () => {
+    const initial=Date.now(),endsAt=initial+60000;
+    await watchdog.start(course,{endsAt,scheduleKey:'schedule/date',sessionId:'33333333-3333-4333-8333-333333333333'});
+    await vi.advanceTimersByTimeAsync(30000);vi.setSystemTime(initial);await vi.advanceTimersByTimeAsync(30000);
+    expect(watchdog.session?.status).toBe('monitoring');expect(driver.disarm).not.toHaveBeenCalled();expect(watchdog.session?.endsAt).toBe(endsAt);
+    await vi.advanceTimersByTimeAsync(30000);expect(watchdog.session?.summary).toMatchObject({reason:'expired',plannedEndsAt:endsAt,endedAt:endsAt});expect(driver.disarm).toHaveBeenCalled();
+  });
+  it('ends a scheduled classroom after a forward clock jump before any further browser actions', async () => {
+    const endsAt=Date.now()+60000;
+    await watchdog.start(course,{endsAt,scheduleKey:'schedule/date',sessionId:'33333333-3333-4333-8333-333333333333'});
+    vi.mocked(driver.read).mockClear();snapshot.question=question();vi.setSystemTime(endsAt+600000);await watchdog.resumed();
+    expect(watchdog.session?.summary).toMatchObject({reason:'expired',plannedEndsAt:endsAt});expect(driver.read).not.toHaveBeenCalled();expect(driver.answerA).not.toHaveBeenCalled();
+  });
   it('refuses an expired scheduled start without opening Chrome', async () => {
     await expect(watchdog.start(course,{endsAt:Date.now(),scheduleKey:'schedule/date',sessionId:'33333333-3333-4333-8333-333333333333'})).rejects.toThrow('已结束');
     expect(driver.prepare).not.toHaveBeenCalled();

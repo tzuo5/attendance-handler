@@ -48,7 +48,7 @@ export function ActivityLog({ logs, sessionId, scope, onScopeChange }: { logs: L
         {entry.courseName && <p className="log-course">{entry.courseName}{entry.mode && ` · ${entry.mode === 'auto-a' ? '自动选择 A' : '提醒手动作答'}`}</p>}
         {entry.questionTitle && <h3 className="log-question">{entry.questionTitle}</h3>}
         <p className="log-message">{entry.message}</p>
-        {(entry.attemptedAt || entry.confirmedAt || entry.endsAt) && <div className="log-times">{entry.attemptedAt && <span>尝试：{time(entry.attemptedAt)}</span>}{entry.confirmedAt && <span>确认：{time(entry.confirmedAt)}</span>}{entry.endsAt && <span>预计结束：{time(entry.endsAt)}</span>}</div>}
+        {(entry.attemptedAt || entry.confirmedAt || entry.endsAt || entry.scheduledStart) && <div className="log-times">{entry.scheduledStart && <span>计划开始：{time(entry.scheduledStart)}</span>}{entry.attemptedAt && <span>尝试：{time(entry.attemptedAt)}</span>}{entry.confirmedAt && <span>确认：{time(entry.confirmedAt)}</span>}{entry.endsAt && <span>预计结束：{time(entry.endsAt)}</span>}</div>}
         {entry.questionKey && <details className="log-identifiers"><summary>题目记录标识</summary><code>{entry.questionKey}</code></details>}
       </article>) : <p className="empty-log">没有符合筛选条件的记录。</p>}
     </div>

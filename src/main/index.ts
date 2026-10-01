@@ -49,7 +49,7 @@ async function main() {
       { id: '22222222-2222-4222-8222-222222222222', remoteId: 'demo', name: '模拟课堂 · 提醒作答', url: `${origin}/#/course/demo/overview`, latitude: 0, longitude: 0, accuracy: 10, durationMinutes: 50, mode: 'notify' },
     ]; store.data.setup = initialSetup(true); store.save();
   }
-  const snapshot = (): AppState => ({ courses: store.data.courses, schedules: store.data.schedules, scheduledRuns: store.data.scheduledRuns.slice(0,100), session: watchdog?.session || store.data.session, logs: store.data.logs, summaries: store.data.summaries, classroomOrigin: origin, browserConnected: browser?.isOpen() || false, browserMode: browser?.mode || 'visible', browserTransitioning: browser?.isTransitioning() || false, settings: store.data.settings, demo, notificationError, notificationCanConfirm: !!activeTestAttempt && activeTestAttempt === store.data.setup.notification?.attemptId && ['requested','pending'].includes(store.data.setup.notification.status), environment, loginReport, courseImport, setup: store.data.setup });
+  const snapshot = (): AppState => ({ courses: store.data.courses, schedules: store.data.schedules, scheduledRuns: [...store.data.scheduledRuns].sort((a,b)=>(b.scheduledStart??Date.parse(b.localDate))-(a.scheduledStart??Date.parse(a.localDate))||b.updatedAt-a.updatedAt).slice(0,100), session: watchdog?.session || store.data.session, logs: store.data.logs, summaries: store.data.summaries, classroomOrigin: origin, browserConnected: browser?.isOpen() || false, browserMode: browser?.mode || 'visible', browserTransitioning: browser?.isTransitioning() || false, settings: store.data.settings, demo, notificationError, notificationCanConfirm: !!activeTestAttempt && activeTestAttempt === store.data.setup.notification?.attemptId && ['requested','pending'].includes(store.data.setup.notification.status), environment, loginReport, courseImport, setup: store.data.setup });
   const emit = () => {
     if (window && !window.isDestroyed()) window.webContents.send('state:changed', snapshot());
     if (tray) {
@@ -268,7 +268,7 @@ async function main() {
   else await window.loadFile(join(__dirname, '../dist/index.html'));
   app.on('second-instance', () => { window.show(); window.focus(); });
   app.on('activate', () => { window.show(); });
-  powerMonitor.on('resume', () => { void watchdog.resumed().catch(reportError); });
+  powerMonitor.on('resume', () => { void (async () => { await watchdog.resumed(); await scheduler.tick(); })().catch(reportError); });
   powerMonitor.on('suspend', () => { if (ACTIVE(watchdog.session)) log('warning', '系统已进入睡眠；唤醒后按原截止时间恢复监控'); });
   const menuTimer = setInterval(emit, 15000);
   app.on('before-quit', event => {
