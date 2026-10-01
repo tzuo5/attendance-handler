@@ -25,6 +25,7 @@ function App() {
   const logsOpen = view === 'logs';
   const [logScope, setLogScope] = useState('all');
   const [deleting, setDeleting] = useState<string>();
+  useEffect(() => { window.scrollTo(0, 0); }, [view]);
   useEffect(() => {
     window.attendance.getState().then(state => { setState(state); if (state.setup && !state.setup.completedAt && !state.setup.dismissed) setView('setup'); }).catch(e => setError(String(e)));
     const unsubscribe = window.attendance.onState(setState);

@@ -149,7 +149,8 @@ try {
   await page.evaluate(async()=>{const state=await window.attendance.getState();window.__testState({browserMode:'background',session:{...state.session,status:'monitoring',endsAt:Date.now()+60000}});});
   await page.getByText('后台模式 · 无 Chrome 窗口',{exact:true}).waitFor();
   assert.equal(await page.getByRole('button',{name:'最小化课堂',exact:true}).count(),0);
-  assert.ok((await page.getByRole('button',{name:'结束上课',exact:true}).boundingBox()).y<640);
+  const stopBounds=await page.getByRole('button',{name:'结束上课',exact:true}).boundingBox();
+  assert.ok(stopBounds.y>=0&&stopBounds.y+stopBounds.height<=640,'the complete stop button must remain in the viewport after settings navigation');
   await mkdir('.test-artifacts/phase1', { recursive:true });
   await page.screenshot({path:'.test-artifacts/phase1/courses.png'});
   assert.deepEqual(errors,[]);
