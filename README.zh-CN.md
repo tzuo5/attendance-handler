@@ -9,6 +9,8 @@
     ·
     <a href="https://github.com/tzuo5/attendance-handler/releases">全部 Release</a>
     ·
+    <a href="https://tzuo5.github.io/attendance-handler/">官网</a>
+    ·
     <a href="README.md">English</a>
   </p>
 </div>
@@ -23,6 +25,8 @@
 > **预览版本** — 本项目面向个人、本机使用。模拟课堂流程已经测试，真实 iClicker 课堂的最终联调仍待完成。请只在课程规则允许的情况下使用。
 
 ## 开发计划
+
+当前源码加入中英双语 GitHub Pages 官网，以及 Windows 安装版 / 可写目录 macOS 版应用内更新。界面加载后异步检查，3 秒总超时；下载期间继续监控，校验成功后再安装并重启，保留课程和本地数据。现有 v0.1.1 用户需先手动安装含更新器的新版本，Windows ZIP 继续手动下载。详见 [官网与更新发布流程](docs/updates-and-website.md)。上方下载链接仍对应当前正式发布版本。
 
 查看 [分阶段开发计划](dev-plans.md)，了解 MVP 的开发顺序、依赖和验收检查点：课堂反馈与日志、首次配置、后台模式、定时开启，以及日历互动设想。当前源码已完成 Phase 3 后台模式、Phase 4 定时开启的全部 MVP 和 Phase 5 ideation 交付；完成状态与验证边界见该文档。
 

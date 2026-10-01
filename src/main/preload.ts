@@ -1,6 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { AttendanceAPI, AppState } from '../shared/types';
 const api: AttendanceAPI = {
+  checkForUpdates: () => ipcRenderer.invoke('update:check'),
+  downloadUpdate: () => ipcRenderer.invoke('update:download'),
+  cancelUpdate: () => ipcRenderer.invoke('update:cancel'),
+  openUpdatePage: () => ipcRenderer.invoke('update:page'),
   getState: () => ipcRenderer.invoke('state:get'),
   saveCourse: course => ipcRenderer.invoke('course:save', course),
   deleteCourse: id => ipcRenderer.invoke('course:delete', id),

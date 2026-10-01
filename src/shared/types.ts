@@ -87,6 +87,7 @@ export interface SetupState { step: SetupStep; completedSteps: SetupStep[]; dism
 export interface LoginReport { status: 'waiting' | 'verified' | 'closed' | 'error'; checkedAt: number; detail: string; }
 export interface CourseImportReport { status: 'courses' | 'empty' | 'login' | 'error'; courses: RemoteCourse[]; checkedAt: number; detail: string; }
 export interface AppState {
+  update?: import('./update').UpdateState;
   courses: CourseConfig[];
   schedules: ScheduleConfig[];
   scheduledRuns: ScheduledRun[];
@@ -107,6 +108,10 @@ export interface AppState {
   courseImport?: CourseImportReport;
 }
 export interface AttendanceAPI {
+  checkForUpdates(): Promise<void>;
+  downloadUpdate(): Promise<void>;
+  cancelUpdate(): Promise<void>;
+  openUpdatePage(): Promise<void>;
   getState(): Promise<AppState>;
   saveCourse(course: CourseConfig): Promise<AppState>;
   deleteCourse(id: string): Promise<AppState>;

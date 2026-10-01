@@ -12,6 +12,7 @@ import { EnvironmentPanel } from './EnvironmentPanel';
 import { SetupWizard } from './SetupWizard';
 import { NotificationPanel } from './NotificationPanel';
 import { Schedules } from './Schedules';
+import { UpdatePanel } from './UpdatePanel';
 import { SCHEDULE_RUNTIME_HELP, SCHEDULE_TIMING_HELP } from '../shared/schedule';
 
 function App() {
@@ -62,6 +63,7 @@ function App() {
       <button className={`nav-item ${view === 'schedules' ? 'selected' : ''}`} onClick={() => setView('schedules')}><Icon name="clock"/>定时任务</button>
       <button className={`nav-item ${logsOpen ? 'selected' : ''}`} onClick={() => setView('logs')}><Icon name="clock"/>课堂记录</button>
       <div className="sidebar-bottom">
+        <UpdatePanel update={state.update}/>
         <div className="connection"><span className={`dot ${state.browserConnected ? 'green' : ''}`}/>{state.browserTransitioning ? '正在切换运行方式' : state.browserConnected ? state.browserMode === 'background' ? '后台 Chrome 已连接' : 'Chrome 已连接' : '等待连接 Chrome'}</div>
         <p>会话与课程保存在这台电脑。</p>
         <span className="local-label">{state.demo ? '模拟课堂模式' : 'LOCAL WORKSPACE'} <span>↗</span></span>

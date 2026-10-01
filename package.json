@@ -1,10 +1,10 @@
 {
   "name": "attendance-handler",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "description": "Visible-window iClicker classroom companion for macOS and Windows",
   "author": "Attendance Handler",
-  "homepage": "https://github.com/tzuo5/attendance-handler#readme",
+  "homepage": "https://tzuo5.github.io/attendance-handler/",
   "repository": {
     "type": "git",
     "url": "https://github.com/tzuo5/attendance-handler.git"
@@ -33,9 +33,16 @@
     "test:schedule-config": "node scripts/schedule-config-smoke.mjs",
     "test:recovery": "node scripts/recovery-smoke.mjs",
     "test:setup-renderer": "node scripts/setup-renderer-check.mjs",
-    "test:setup": "node scripts/setup-smoke.mjs"
+    "test:setup": "node scripts/setup-smoke.mjs",
+    "build:site": "node scripts/build-site.mjs",
+    "test:updates": "vitest run tests/update.test.ts tests/update-release.test.ts",
+    "test:update-renderer": "node scripts/update-renderer-check.mjs",
+    "test:update-native": "node scripts/update-native-smoke.mjs",
+    "release:metadata": "node scripts/release-metadata.mjs"
   },
   "dependencies": {
+    "builder-util-runtime": "9.7.0",
+    "electron-updater": "6.8.9",
     "playwright-core": "1.63.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -50,7 +57,8 @@
     "esbuild": "^0.27.0",
     "typescript": "^5.9.0",
     "vite": "8.3.0",
-    "vitest": "5.0.1"
+    "vitest": "5.0.1",
+    "yaml": "2.9.1"
   },
   "build": {
     "appId": "com.attendancehandler.desktop",
@@ -90,7 +98,21 @@
       "entitlementsInherit": "build/entitlements.mac.plist",
       "minimumSystemVersion": "13.0.0",
       "x64ArchFiles": "**/attendance-native",
-      "artifactName": "Attendance-Handler-${version}-mac-${arch}.${ext}"
+      "artifactName": "Attendance-Handler-${version}-mac-${arch}.${ext}",
+      "extraResources": [
+        {
+          "from": "dist-electron/Attendance Updater.app",
+          "to": "Attendance Updater.app"
+        }
+      ],
+      "extendInfo": {
+        "SUPublicEDKey": "ahcjNERfNKrQ9558wLGRMKjF9aifdUMH2JBnb3p32Os=",
+        "SUFeedURL": "https://tzuo5.github.io/attendance-handler/updates/appcast.xml",
+        "SUEnableAutomaticChecks": false,
+        "SUAutomaticallyUpdate": false,
+        "SUEnableSystemProfiling": false,
+        "SUVerifyUpdateBeforeExtraction": true
+      }
     },
     "dmg": {
       "title": "Attendance Handler",
@@ -124,7 +146,13 @@
           ]
         }
       ],
-      "artifactName": "Attendance-Handler-${version}-win-${arch}.${ext}"
+      "artifactName": "Attendance-Handler-${version}-win-${arch}.${ext}",
+      "publish": [
+        {
+          "provider": "generic",
+          "url": "https://tzuo5.github.io/attendance-handler/updates/windows/"
+        }
+      ]
     },
     "nsis": {
       "oneClick": false,

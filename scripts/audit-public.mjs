@@ -44,14 +44,14 @@ if (appIndex >= 0) {
       const name = relative(directory, file).replace(/\\/g, '/');
       if (forbiddenPath.test(name)) failures.push([name, 'private data path']);
       if (entry.isDirectory()) await walk(file);
-      else if (entry.isFile() && (name.endsWith('attendance-native') || name.endsWith('Info.plist'))) {
+      else if (entry.isFile() && (name.endsWith('attendance-native') || name.endsWith('attendance-updater') || name.endsWith('Info.plist'))) {
         inspect(name, await readFile(file)); inspected++;
       }
     }
   }
   await walk(directory);
 } else {
-  const files = execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean);
+  const files = execFileSync('git', ['ls-files', '--cached', '--others', '--exclude-standard', '-z'], { encoding: 'utf8' }).split('\0').filter(Boolean);
   if (!files.length) throw new Error('No tracked files: stage the public allowlist before auditing.');
   const rootFiles = new Set(['.gitignore', 'package.json', 'package-lock.json', 'tsconfig.json', 'vite.config.ts', 'vitest.config.ts', 'README.md', 'README.zh-CN.md', 'VERIFICATION.md', 'PRIVACY.md', 'dev-plans.md']);
   for (const name of files) {

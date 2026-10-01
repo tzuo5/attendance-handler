@@ -1,0 +1,70 @@
+name: Complete desktop release
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  windows:
+    uses: ./.github/workflows/windows.yml
+  mac:
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run audit:public
+      - run: npm test
+      - run: npm run dist:mac
+      - run: npm run test:update-native
+        timeout-minutes: 10
+      - run: node scripts/audit-public.mjs --app 'release-public/mac-universal/Attendance Handler.app'
+      - name: Sign macOS update archive
+        run: npm run release:metadata
+        env:
+          ATTENDANCE_SPARKLE_PRIVATE_KEY: ${{ secrets.ATTENDANCE_SPARKLE_PRIVATE_KEY }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: mac-release
+          if-no-files-found: error
+          path: |
+            release-public/Attendance-Handler-*-mac-universal.dmg
+            release-public/Attendance-Handler-*-mac-universal.zip
+            release-public/SHA256SUMS.txt
+            release-public/appcast.xml
+  draft:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [windows, mac]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          pattern: '*-release'
+          merge-multiple: true
+          path: release-public
+      - run: node scripts/release-metadata.mjs --validate
+      - name: Create complete draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$GITHUB_REF_NAME" = "v$(node -p 'require("./package.json").version')"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo 'Release already exists; verified assets remain in workflow artifacts.'
+          else
+            gh release create "$GITHUB_REF_NAME" release-public/* --verify-tag --draft --title "$GITHUB_REF_NAME · macOS + Windows" --notes-file "docs/RELEASE-$GITHUB_REF_NAME.md"
+          fi
