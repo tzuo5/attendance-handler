@@ -1,11 +1,15 @@
 import { app, BrowserWindow, ipcMain, Menu, nativeImage, Notification, powerMonitor, powerSaveBlocker, safeStorage, Tray, dialog, shell } from 'electron';
 import { release } from 'node:os';
 import { join } from 'node:path';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { z } from 'zod';
 import { ChromeClassroom } from './browser';
 import { nativeHelperName, findChrome } from './platform';
 import { checkEnvironment, checkDataWritable } from './environment';
 import { Store } from './store';
+import { UpdateService } from './updater';
+import { supportsUpdates, MacUpdateAdapter, WindowsUpdateAdapter } from './update-adapters';
+import { UPDATE_SITE } from '../shared/update';
 import { Watchdog } from './watchdog';
 import { Scheduler, type ScheduledStart } from './scheduler';
 import { validateCourse } from '../shared/validation';
@@ -14,10 +18,16 @@ import { ACTIVE, environmentReady, sessionPresentation, type AppState, type LogD
 import { advanceSetup, initialSetup } from '../shared/setup';
 import { beginNotificationTest, notificationEvent, notificationResolved, recordNotificationChoice, unverifiedNotification } from '../shared/notification-check';
 
-const demo = process.env.ATTENDANCE_DEMO === '1';
-const origin = demo ? process.env.ATTENDANCE_ORIGIN || 'http://127.0.0.1:43891' : 'https://student.iclicker.com';
+// Test-only packages preserve isolation even when LaunchServices relaunches them
+// without the original environment. Shipping packages never carry this field.
+const metadata = app.isPackaged ? JSON.parse(readFileSync(join(app.getAppPath(), 'package.json'), 'utf8')) : undefined;
+const testRuntime = metadata?.name === 'attendance-handler-update-test' ? z.object({ dataDir: z.string().min(1), origin: z.string().url(), feed: z.string().url() }).strict().parse(metadata.attendanceUpdateTest) : undefined;
+if (testRuntime && [testRuntime.origin, testRuntime.feed].some(value => new URL(value).hostname !== '127.0.0.1')) throw new Error('更新测试仅允许本机地址');
+const demo = process.env.ATTENDANCE_DEMO === '1' || !!testRuntime;
+const origin = demo ? testRuntime?.origin || process.env.ATTENDANCE_ORIGIN || 'http://127.0.0.1:43891' : 'https://student.iclicker.com';
 if (demo && !['127.0.0.1', 'localhost'].includes(new URL(origin).hostname)) throw new Error('演示课堂仅允许本机地址');
 if (process.env.ATTENDANCE_DATA_DIR && demo) app.setPath('userData', process.env.ATTENDANCE_DATA_DIR);
+if (testRuntime) app.setPath('userData', testRuntime.dataDir);
 app.setName('Attendance Handler');
 if (process.platform === 'win32') app.setAppUserModelId('com.attendancehandler.desktop');
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -28,6 +38,10 @@ async function main() {
   let window: BrowserWindow;
   let tray: Tray;
   let quitting = false;
+  let updateShutdown = false;
+  let installationPreparing = false;
+  let updater: UpdateService | undefined;
+  let updateTestStatus: string | undefined;
   let blockId: number | undefined;
   let notificationError: string | undefined;
   let environment:EnvironmentReport|undefined;
@@ -49,7 +63,7 @@ async function main() {
       { id: '22222222-2222-4222-8222-222222222222', remoteId: 'demo', name: '模拟课堂 · 提醒作答', url: `${origin}/#/course/demo/overview`, latitude: 0, longitude: 0, accuracy: 10, durationMinutes: 50, mode: 'notify' },
     ]; store.data.setup = initialSetup(true); store.save();
   }
-  const snapshot = (): AppState => ({ courses: store.data.courses, schedules: store.data.schedules, scheduledRuns: [...store.data.scheduledRuns].sort((a,b)=>(b.scheduledStart??Date.parse(b.localDate))-(a.scheduledStart??Date.parse(a.localDate))||b.updatedAt-a.updatedAt).slice(0,100), session: watchdog?.session || store.data.session, logs: store.data.logs, summaries: store.data.summaries, classroomOrigin: origin, browserConnected: browser?.isOpen() || false, browserMode: browser?.mode || 'visible', browserTransitioning: browser?.isTransitioning() || false, settings: store.data.settings, demo, notificationError, notificationCanConfirm: !!activeTestAttempt && activeTestAttempt === store.data.setup.notification?.attemptId && ['requested','pending'].includes(store.data.setup.notification.status), environment, loginReport, courseImport, setup: store.data.setup });
+  const snapshot = (): AppState => ({ update: updater?.state, courses: store.data.courses, schedules: store.data.schedules, scheduledRuns: [...store.data.scheduledRuns].sort((a,b)=>(b.scheduledStart??Date.parse(b.localDate))-(a.scheduledStart??Date.parse(a.localDate))||b.updatedAt-a.updatedAt).slice(0,100), session: watchdog?.session || store.data.session, logs: store.data.logs, summaries: store.data.summaries, classroomOrigin: origin, browserConnected: browser?.isOpen() || false, browserMode: browser?.mode || 'visible', browserTransitioning: browser?.isTransitioning() || false, settings: store.data.settings, demo, notificationError, notificationCanConfirm: !!activeTestAttempt && activeTestAttempt === store.data.setup.notification?.attemptId && ['requested','pending'].includes(store.data.setup.notification.status), environment, loginReport, courseImport, setup: store.data.setup });
   const emit = () => {
     if (window && !window.isDestroyed()) window.webContents.send('state:changed', snapshot());
     if (tray) {
@@ -106,13 +120,18 @@ async function main() {
       if (!enabled && blockId !== undefined) { powerSaveBlocker.stop(blockId); blockId = undefined; }
     },
   });
-  const showClassroom = () => watchdog.transition(signal => browser.show(signal));
+  const requireClassroomReady = () => {
+    if (quitting || installationPreparing) throw new Error('App 正在退出或安装更新，请稍候。');
+  };
+  const showClassroom = () => { requireClassroomReady(); return watchdog.transition(signal => browser.show(signal)); };
   const resumeInterrupted = async () => {
+    requireClassroomReady();
     if (watchdog.session) validateCourse(watchdog.session.course, origin);
     await watchdog.resumeInterrupted();
     if (ACTIVE(watchdog.session) && browser.mode === 'visible') await showClassroom();
   };
   const returnToBackground = async () => {
+    requireClassroomReady();
     if (!ACTIVE(watchdog.session)) throw new Error('请先开始本节监控。');
     const run = watchdog.session;
     await watchdog.transition(signal => browser.returnToBackground(signal));
@@ -130,7 +149,7 @@ async function main() {
   const invoke = (channel: string, handler: (...args: any[]) => unknown) => {
     ipcMain.handle(channel, (event, ...args) => {
       if (event.sender !== window.webContents || event.senderFrame !== window.webContents.mainFrame) throw new Error('未授权的请求');
-      if (quitting) throw new Error('App 正在退出，请稍候。');
+      if (quitting || (installationPreparing && channel !== 'state:get')) throw new Error('App 正在退出或安装更新，请稍候。');
       return handler(...args);
     });
   };
@@ -173,7 +192,7 @@ async function main() {
   };
   let startingCourse = false;
   const startCourse = async (id: string, timing?: ScheduledStart) => {
-    if (quitting || startingCourse) throw new Error('App 正在退出或课堂正在启动，请稍候。');
+    if (quitting || installationPreparing || startingCourse) throw new Error('App 正在退出或课堂正在启动，请稍候。');
     startingCourse = true;
     try {
       const saved = store.data.courses.find(course => course.id === id);
@@ -189,11 +208,48 @@ async function main() {
       try {
         const supported = process.platform === 'darwin' ? Number(release().split('.')[0]) >= 22 : process.platform === 'win32' && Number(release().split('.')[0]) >= 10 && process.arch === 'x64';
         if (!supported || !await findChrome() || !safeStorage.isEncryptionAvailable()) return false;
-        await checkDataWritable(store.directory); return !quitting;
+        await checkDataWritable(store.directory); return !quitting && !installationPreparing;
       } catch { return false; }
     },
     start: startCourse, changed: emit, log, notify: (title, body) => sendNotification('schedule-error', title, body),
   });
+  updater = new UpdateService({
+    currentVersion: app.getVersion(), directory: store.directory,
+    supported: app.isPackaged && supportsUpdates(process.platform, process.resourcesPath, process.execPath),
+    disabled: (demo && !testRuntime) || !app.isPackaged,
+    manifestUrl: testRuntime ? testRuntime.feed + 'version.json' : undefined,
+    adapter: process.platform === 'win32' ? new WindowsUpdateAdapter(testRuntime?.feed) : new MacUpdateAdapter(process.resourcesPath, testRuntime?.feed),
+    changed: state => {
+      const status = JSON.stringify({ phase: state.phase, detail: state.detail });
+      if (testRuntime && status !== updateTestStatus) { updateTestStatus = status; process.stderr.write('update-test: ' + status + '\n'); }
+      emit();
+    },
+    startupAvailable: () => { void (async () => {
+      const result = await dialog.showMessageBox(window, { type: 'info', title: '发现新版本', message: `Attendance Handler ${updater!.state.release!.version} 已发布`, detail: updater!.state.supported && updater!.state.release!.updates ? '下载完成后会自动安装并重启，课程和本地记录会保留。' : '此安装方式需要从官网下载更新。', buttons: ['下载更新', '稍后'], defaultId: 1, cancelId: 1 });
+      if (result.response === 0) {
+        if (updater!.state.supported && updater!.state.release!.updates) await updater!.download();
+        else await shell.openExternal(UPDATE_SITE);
+      }
+    })().catch(reportError); },
+    activeSession: () => ACTIVE(watchdog.session) || startingCourse || browser.isTransitioning() ? watchdog.session?.id || 'classroom-starting' : undefined,
+    confirmInterruption: async () => {
+      const result = await dialog.showMessageBox(window, { type: 'question', title: '确认更新', message: '当前正在上课，确认更新？', detail: '更新将在下载完成后结束本节监控并重启应用。下载失败或取消下载时，课堂会继续运行。', buttons: ['确认更新', '继续上课'], defaultId: 1, cancelId: 1 });
+      return result.response === 0;
+    },
+    prepareInstall: async () => {
+      installationPreparing = true; scheduler.stop();
+      if (startingCourse || browser.isTransitioning()) throw new Error('课堂正在启动或切换，请稍后重试更新。');
+      store.save();
+      if (ACTIVE(watchdog.session)) log('info', '为了安装更新，结束本节监控并重启应用');
+      await watchdog.stop(); await browser.dispose(); clearNotifications();
+      updateShutdown = true;
+    },
+    installationFailed: () => { installationPreparing = false; updateShutdown = false; scheduler.start(); },
+  });
+  invoke('update:check', () => updater!.check());
+  invoke('update:download', () => updater!.download());
+  invoke('update:cancel', () => updater!.cancelDownload());
+  invoke('update:page', () => shell.openExternal(updater!.state.release?.releaseUrl || UPDATE_SITE));
   invoke('environment:check',runEnvironmentCheck);
   invoke('help:open',async input=>{
     const target=z.enum(['chrome','data','notifications']).parse(input);
@@ -266,14 +322,16 @@ async function main() {
   }
   if (process.env.ATTENDANCE_DEV === '1' && !app.isPackaged) await window.loadURL('http://127.0.0.1:5173');
   else await window.loadFile(join(__dirname, '../dist/index.html'));
+  if (testRuntime) writeFileSync(join(store.directory, 'update-test-started.json'), JSON.stringify({ version: app.getVersion(), pid: process.pid, courses: store.data.courses, schedules: store.data.schedules, settings: store.data.settings, logs: store.data.logs, summaries: store.data.summaries }), { mode: 0o600 });
   app.on('second-instance', () => { window.show(); window.focus(); });
   app.on('activate', () => { window.show(); });
   powerMonitor.on('resume', () => { void (async () => { await watchdog.resumed(); await scheduler.tick(); })().catch(reportError); });
   powerMonitor.on('suspend', () => { if (ACTIVE(watchdog.session)) log('warning', '系统已进入睡眠；唤醒后按原截止时间恢复监控'); });
   const menuTimer = setInterval(emit, 15000);
   app.on('before-quit', event => {
+    if (updateShutdown) { quitting = true; updater?.dispose(); scheduler.stop(); clearInterval(menuTimer); clearTimeout(notificationTimer); tray.destroy(); return; }
     if (quitting) return;
-    event.preventDefault(); quitting = true; scheduler.stop(); clearInterval(menuTimer); clearTimeout(notificationTimer);
+    event.preventDefault(); quitting = true; updater?.dispose(); scheduler.stop(); clearInterval(menuTimer); clearTimeout(notificationTimer);
     void (async () => {
       await watchdog.stop().catch(reportError);
       await browser.dispose().catch(reportError);
@@ -281,4 +339,5 @@ async function main() {
     })();
   });
   scheduler.start();
+  updater.start();
 }

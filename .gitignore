@@ -11,6 +11,10 @@ build/icon-maker
 build/AppIcon.iconset/
 build/icon.icns
 build/native-*/
+build/sparkle/
+build/update-helper-*/
+.update-signing/
+.site-build/
 release-public/
 .env
 .env.*
@@ -29,3 +33,5 @@ release-public/
 *.mobileprovision
 *.dmg
 *.zip
+
+build/swift-module-cache/

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f6f5ef">
+  <meta name="description" content="Attendance Handler is a local-first iClicker classroom companion for macOS and Windows. Download, install, and keep your classroom within reach.">
+  <title>Attendance Handler — Your classroom, within reach</title>
+  <link rel="icon" href="assets/icon.png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="site.js" type="module"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main" data-i18n="skip">Skip to content</a>
+  <header class="nav wrap">
+    <a class="brand" href="#" aria-label="Attendance Handler home"><img src="assets/icon.png" width="36" height="36" alt=""><span>Attendance<br><small>HANDLER</small></span></a>
+    <nav aria-label="Main navigation"><a href="#features" data-i18n="navFeatures">Features</a><a href="#install" data-i18n="navInstall">Get started</a><a href="https://github.com/tzuo5/attendance-handler">GitHub ↗</a></nav>
+    <button id="language" type="button" aria-label="Switch to Chinese">中文</button>
+  </header>
+  <main id="main">
+    <section class="hero wrap">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="status-dot"></span><span data-i18n="eyebrow">A LITTLE LESS CLASSROOM FRICTION</span></div>
+        <h1 data-i18n="headline">Your classroom,<br><em>within reach.</em></h1>
+        <p class="hero-description" data-i18n="description">One companion for your iClicker routine. Keep the classroom ready, catch the next question, and stay in control.</p>
+        <div class="download-actions">
+          <a id="mac-download" class="button primary" href="https://github.com/tzuo5/attendance-handler/releases/latest"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12m-5-5 5 5 5-5M5 16v4h14v-4"/></svg><span data-i18n="downloadMac">Download for macOS</span></a>
+          <a id="windows-download" class="button secondary" href="https://github.com/tzuo5/attendance-handler/releases/latest"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 4h7v7H3zm11 0h7v7h-7zM3 15h7v7H3zm11 0h7v7h-7z"/></svg><span data-i18n="downloadWindows">Download for Windows</span></a>
+        </div>
+        <div class="release-line"><span id="release-version" data-i18n="releaseFallback">Latest release on GitHub</span><span class="divider">/</span><span id="release-date"></span><a id="release-notes" href="https://github.com/tzuo5/attendance-handler/releases/latest" data-i18n="releaseNotes">Release notes ↗</a></div>
+        <p class="platform-note" data-i18n="platforms">macOS 13+ · Apple Silicon & Intel · Windows 10/11 x64</p>
+      </div>
+      <div class="preview-area" aria-label="Illustrative application preview">
+        <div class="orbit orbit-one"></div><div class="orbit orbit-two"></div>
+        <div class="app-preview">
+          <div class="preview-bar"><div class="traffic"><i></i><i></i><i></i></div><span>Attendance Handler</span><span class="preview-local" data-i18n="local">LOCAL WORKSPACE</span></div>
+          <div class="preview-body">
+            <aside class="preview-sidebar"><span class="monogram">a<span>h</span></span><span class="mini-label" data-i18n="workspace">WORKSPACE</span><span class="preview-nav active" data-i18n="myCourses">My courses</span><span class="preview-nav" data-i18n="connection">Connection</span><span class="mini-bottom"><span class="status-dot"></span><span data-i18n="chromeReady">Chrome ready</span></span></aside>
+            <div class="preview-content"><div class="mini-label">YOUR CLASSROOM, WITHIN REACH</div><h2 data-i18n="myCourses">My courses</h2><p class="mini-subtitle" data-i18n="previewSubtitle">A quiet place to get ready.</p><div class="course-preview"><span class="book-symbol">▤</span><span class="mini-label" data-i18n="sample">SAMPLE COURSE</span><h3 data-i18n="sampleCourse">Introduction to ideas</h3><span class="mode-tag" data-i18n="reminders">Answer reminders</span><div class="mini-rule"></div><div class="mini-start"><span data-i18n="startSession">Start session</span><span>↗</span></div></div></div>
+          </div>
+        </div>
+        <div class="floating-note"><span class="check-mark">✓</span><div><strong data-i18n="noteTitle">Your space. Your session.</strong><span data-i18n="noteBody">Course data stays on your computer.</span></div></div>
+        <span class="preview-caption" data-i18n="previewCaption">Illustrative preview · synthetic course data</span>
+      </div>
+    </section>
+    <div class="principles wrap"><span><i>01</i><span data-i18n="principleOne">Built for your desktop</span></span><span><i>02</i><span data-i18n="principleTwo">Local-first by design</span></span><span><i>03</i><span data-i18n="principleThree">You stay in control</span></span></div>
+    <section id="features" class="section wrap">
+      <div class="section-heading"><div><span class="eyebrow" data-i18n="featuresEyebrow">A CALMER ROUTINE</span><h2 data-i18n="featuresTitle">Less setup.<br>More presence.</h2></div><p data-i18n="featuresIntro">A few thoughtful tools for the moments between joining a class and answering its next question.</p></div>
+      <div class="feature-grid">
+        <article class="feature"><span class="feature-icon">↗</span><span class="feature-number">01 /</span><h3 data-i18n="featureOneTitle">A real classroom window</h3><p data-i18n="featureOneBody">A dedicated Chrome window keeps your classroom available. Complete school sign-in and interact with the page whenever you need.</p></article>
+        <article class="feature"><span class="feature-icon">◉</span><span class="feature-number">02 /</span><h3 data-i18n="featureTwoTitle">Reminders when it matters</h3><p data-i18n="featureTwoBody">Get notified when a question needs your answer. Choose reminder mode, or automatic A for eligible single-choice questions.</p></article>
+        <article class="feature"><span class="feature-icon">⌂</span><span class="feature-number">03 /</span><h3 data-i18n="featureThreeTitle">A workspace of your own</h3><p data-i18n="featureThreeBody">Save courses and settings on your computer. Login session storage is encrypted with the operating system; passwords are never saved.</p></article>
+      </div>
+      <div id="modern-features" class="modern-features" hidden><span class="status-dot"></span><p data-i18n="modernFeatures">Also included: background mode, scheduled starts, classroom records, and updates you can install from the app.</p></div>
+    </section>
+    <section id="install" class="install-section">
+      <div class="wrap"><div class="section-heading"><div><span class="eyebrow" data-i18n="installEyebrow">FROM DOWNLOAD TO CLASSROOM</span><h2 data-i18n="installTitle">Make yourself<br>at home.</h2></div><p data-i18n="installIntro">You need Google Chrome and your iClicker account. No Node.js or developer tools required.</p></div>
+        <div class="install-grid">
+          <article class="install-card"><h3>macOS <span>13+</span></h3><ol><li data-i18n="macOne">Download the universal DMG. Open it and drag Attendance Handler into Applications.</li><li data-i18n="macTwo">Install Google Chrome in Applications, then open Attendance Handler.</li><li data-i18n="macThree">Sign in through the dedicated Chrome window and configure your course.</li></ol><p class="install-note" data-i18n="macNotice">This free preview is ad-hoc signed and not notarized. macOS may require approval in System Settings → Privacy & Security after you verify the download source.</p></article>
+          <article class="install-card"><h3>Windows <span>10 / 11 · x64</span></h3><ol><li data-i18n="winOne">Download and run the installer for your Windows user account.</li><li data-i18n="winTwo">Install Google Chrome, then open Attendance Handler from the Start menu.</li><li data-i18n="winThree">Sign in through the dedicated Chrome window and configure your course.</li></ol><p class="install-note" data-i18n="winNotice">This free preview is unsigned. Windows may show an unknown-publisher or SmartScreen prompt. Verify that the installer came from this project's GitHub release.</p></article>
+        </div>
+        <p class="all-releases"><span data-i18n="alternative">Looking for ZIP downloads or checksums?</span> <a href="https://github.com/tzuo5/attendance-handler/releases" data-i18n="allReleases">View all release files ↗</a></p>
+      </div>
+    </section>
+    <section class="closing wrap"><span class="eyebrow" data-i18n="previewEyebrow">AN EARLY PREVIEW</span><h2 data-i18n="closingTitle">Small companion.<br>Clear boundaries.</h2><p data-i18n="closingBody">Use Attendance Handler only where your course policy permits. It is an independent project, not affiliated with iClicker or your school. Live classroom verification is still pending.</p><div><a href="https://github.com/tzuo5/attendance-handler/blob/main/PRIVACY.md" data-i18n="privacy">Privacy & local storage ↗</a><a href="https://github.com/tzuo5/attendance-handler/issues" data-i18n="feedback">Report an issue ↗</a></div></section>
+  </main>
+  <footer class="wrap"><span>ATTENDANCE HANDLER</span><p data-i18n="footer">Built for a calmer classroom workflow.</p><a href="https://github.com/tzuo5/attendance-handler">GitHub ↗</a></footer>
+</body>
+</html>

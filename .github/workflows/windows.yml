@@ -3,9 +3,9 @@ name: Windows build and release
 on:
   push:
     branches: [main, codex/windows-release]
-    tags: ['v*']
   pull_request:
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -13,7 +13,7 @@ permissions:
 jobs:
   windows:
     runs-on: windows-2022
-    timeout-minutes: 25
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
@@ -24,9 +24,14 @@ jobs:
       - run: npm run audit:public
       - run: npm test
       - run: npm run dist:win
+      - run: node scripts/release-metadata.mjs --windows
+      - run: npm run test:update-native
+        timeout-minutes: 12
       - run: npm run test:renderer
         timeout-minutes: 3
       - run: npm run test:setup-renderer
+        timeout-minutes: 3
+      - run: npm run test:update-renderer
         timeout-minutes: 3
       - run: npm run test:integration
         timeout-minutes: 3
@@ -82,6 +87,8 @@ jobs:
             release-public/Attendance-Handler-*.exe
             release-public/Attendance-Handler-*.zip
             release-public/SHA256SUMS-windows.txt
+            release-public/latest.yml
+            release-public/*.blockmap
       - name: Upload synthetic UI screenshots
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
@@ -93,26 +100,3 @@ jobs:
             .test-artifacts/app-*.png
             .test-artifacts/phase1/*.png
             .test-artifacts/phase2/*.png
-
-  release:
-    if: startsWith(github.ref, 'refs/tags/v')
-    needs: windows
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: windows-release
-          path: release-public
-      - name: Create draft release with verified Windows assets
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          test "$GITHUB_REF_NAME" = "v$(node -p 'require("./package.json").version')"
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            echo "Release already exists; verified files remain available in the workflow artifact."
-          else
-            gh release create "$GITHUB_REF_NAME" release-public/* --verify-tag --draft --title "$GITHUB_REF_NAME · macOS + Windows" --notes-file "docs/RELEASE-$GITHUB_REF_NAME.md"
-          fi

@@ -9,6 +9,8 @@
     ·
     <a href="https://github.com/tzuo5/attendance-handler/releases">All releases</a>
     ·
+    <a href="https://tzuo5.github.io/attendance-handler/">Website</a>
+    ·
     <a href="README.zh-CN.md">中文说明</a>
   </p>
 </div>
@@ -23,6 +25,8 @@
 > **Preview release** — This project is designed for personal, local use. The simulated classroom flow is tested; final verification against a live iClicker class is still pending. Use it only where your course policy permits.
 
 ## Development plan
+
+The current source adds a bilingual GitHub Pages website and updates for Windows NSIS / writable macOS installations. Checks run after startup with a three-second deadline, and downloads keep monitoring active until verification and installation. Courses and local data survive upgrades. Existing v0.1.1 users must manually install an updater-enabled version once; Windows ZIP remains manual. See the [website and release workflow](docs/updates-and-website.md). The download links above still describe the currently published version.
 
 See the [phased development plan (中文)](dev-plans.md) for the MVP roadmap, dependencies, and acceptance checkpoints: classroom feedback and logs, first-run setup, background mode, scheduled starts, and calendar integration ideas. The current source completes the Phase 3 background-mode and Phase 4 scheduled-start MVPs, and the Phase 5 ideation deliverables. Completed checkpoints and verification limits are tracked in that document.
 

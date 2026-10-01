@@ -14,6 +14,9 @@ macOS 数据位于用户 Library 下的 `Application Support/Attendance Handler/
 - `state.json`：课程、用户输入的坐标及教室名称和最近运行记录（最多 2000 条事件，包含题目标题与作答确认时间；较早事件自动清理），以及最近 100 节课堂的结束摘要、定时任务配置、执行实例和跨日扫描进度。执行实例键持续保留用于重启去重，执行事实取消后仍保留。不加密；macOS 使用本机文件权限限制访问，Windows 使用当前用户资料目录的访问权限。
 - `chrome-profile/`：专用 Chrome 会话资料。与日常 Chrome 分开。
 - `session.enc`：必要的会话存储，通过 Electron safeStorage 加密（macOS 钥匙串 / Windows DPAPI）。App 不保存密码。
+- `update-cache.json`：正式版本信息、ETag 和检查时间；不包含课堂资料或登录数据，缓存损坏不影响 `state.json`。
+
+应用更新只请求公开 GitHub Pages 版本文件和 GitHub Releases 元数据 / 安装包，不发送课程、坐标、记录或登录信息。官网不使用分析脚本或外部字体；语言选择保存在浏览器本机。GitHub 托管服务会按其自身政策处理普通网络请求信息。
 
 App 没有上传课程、坐标或日志到开发者服务器的功能。登录、签到和作答会通过专用浏览器与 iClicker 及学校身份服务通信；用户配置的定位会提供给该课堂网页。公开发布不意味着这些本机数据被同步到 GitHub。
 
