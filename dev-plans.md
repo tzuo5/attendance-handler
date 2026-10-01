@@ -166,10 +166,11 @@
 
 ### 检查点
 
-- [ ] **P4.1 — 定时规则与触发策略**
+- [x] **P4.1 — 定时规则与触发策略**
   - 明确定时的课程、日期、当地开始时刻、时区和监控时长；MVP 先覆盖单次任务与每周重复任务。
   - 明确 App 未运行、机器睡眠、启动晚于计划、课程重叠和手动课堂正在运行时的策略；决定是否提供开机启动选项。
   - **验收：**每个边界场景有可执行规则和用户文案；界面准确说明后台常驻、退出与睡眠对定时开启的影响。
+  - **实绩：**共享单次 / 每周规则、城市时区、夏令时缺口 / 回拨、最多 10 分钟补开且保留原截止、冲突跳过、任务生效时间和稳定实例键已实现；第一版依赖托盘，不提供开机启动。94 单测、类型检查、构建与双 renderer 通过，设置明确当前尚未开放自动调度；详见 [定时开启规则](docs/scheduled-starts.md)。
 
 - [ ] **P4.2 — 定时任务配置与预览**（依赖 P4.1）
   - 在课程配置或独立页面中添加定时任务，显示下一次开始时刻、预计结束时刻、重复规则及启用状态。
@@ -244,3 +245,4 @@
 | P3.2 | 2026-10-01 | [`fe68166`](https://github.com/tzuo5/attendance-handler/commit/fe68166) · `feat: add saved background mode and headless classroom monitoring`；界面修正 [`52813d5`](https://github.com/tzuo5/attendance-handler/commit/52813d5) | 64 单测、双 renderer、六组后台运行、六组模式原型、25 原有集成、生命周期、macOS 实际打包 UI / 首次向导；[Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36830875240) 全部通过，含安装版与 DPAPI；[后台模式记录](docs/background-mode.md) | 界面修正的 Windows CI 已通过；macOS 测试用明确标记的合成加密，真实课堂与系统钥匙串仍待验收；P3.3 后续已完成；P3.4 尚未完成 |
 | P3.3 | 2026-10-01 | [`6ee7269`](https://github.com/tzuo5/attendance-handler/commit/6ee7269) · `feat: return human-handled classrooms to background safely` | 66 单测、双 renderer、九组后台运行、25 原有集成、macOS 实际打包通知处理器 / 人工作答 / 返回后台 / 托盘失败提示；[后台模式记录](docs/background-mode.md) | [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36833334316) 全部通过，含真实 DPAPI；真实学校、真人通知与 Mac 钥匙串仍待验收；P3.4 生命周期尚未完成 |
 | P3.4 | 2026-10-01 | [`60c6730`](https://github.com/tzuo5/attendance-handler/commit/60c6730) · `feat: recover interrupted classrooms and wait for Chrome process exit` | 73 单测、双 renderer、25 原有集成、九组后台运行、立即重开及四轮生命周期、macOS 实际打包五组 App / Chrome 崩溃恢复与退出；[后台模式记录](docs/background-mode.md) | [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36837581087) 首次尝试全部通过（含实际安装版、DPAPI 与恢复）；真实学校、Mac 钥匙串和物理睡眠仍待验收 |
+| P4.1 | 2026-10-01 | `feat: define timezone-aware scheduled start rules and runtime guidance` · 本窗口功能提交 | 94 单测、类型检查、生产构建、双 renderer；21 项定时规则测试与设置运行条件说明，见 [定时开启规则](docs/scheduled-starts.md) | 配置和自动调度分别在 P4.2 / P4.3 完成；本提交 CI 随推送验证；真实课堂与系统边界仍待真人验收 |

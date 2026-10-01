@@ -134,6 +134,10 @@ try {
   await page.getByRole('button',{name:'保存课程',exact:true}).click();
   await page.getByRole('heading',{name:'导入课程',exact:true}).waitFor();
   await page.getByRole('button',{name:'连接与提醒',exact:true}).click();
+  const schedulePolicy = page.getByRole('article',{name:'定时开启的运行条件',exact:true});
+  await schedulePolicy.getByText('定时配置和自动调度正在分步开发，目前请手动开始上课。',{exact:true}).waitFor();
+  assert.match(await schedulePolicy.innerText(),/退出 App、关机或睡眠期间无法开始/);
+  assert.match(await schedulePolicy.innerText(),/结束时间|原定结束时间/);
   await page.getByRole('button',{name:'开始检查',exact:true}).click();
   await page.getByRole('button',{name:'重新检查',exact:true}).waitFor();
   assert.equal(await page.getByRole('region',{name:'环境检查',exact:true}).getByText('通过',{exact:true}).count(),5);

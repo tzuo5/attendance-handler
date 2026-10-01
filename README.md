@@ -26,6 +26,8 @@
 
 See the [phased development plan (中文)](dev-plans.md) for the MVP roadmap, dependencies, and acceptance checkpoints: classroom feedback and logs, first-run setup, background mode, scheduled starts, and calendar integration ideas. These are planned improvements; completed checkpoints and verification evidence are tracked in that document.
 
+Scheduled starts are being built in separate checkpoints. The [schedule rules (中文)](docs/scheduled-starts.md) define time zones, DST, late starts, conflicts, and tray runtime requirements; automatic dispatch is not available in P4.1.
+
 The current source branch includes Phase 1: clearer monitoring and recovery states, question receipts, a full event log, a ten-minute session extension, saved end summaries, and simpler course configuration. All four Phase 2 MVPs are implemented: environment checks, a resumable first-run wizard, page-verified sign-in with course import, and explicit reminder confirmation with a readiness summary. P3.2 adds a saved background-mode preference and monitoring without a visible Chrome window. Human walkthrough and platform limits are recorded in verification. The download links above still point to the earlier `v0.1.1` release.
 
 ## What it does
