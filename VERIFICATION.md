@@ -2,7 +2,7 @@
 
 ## Phase 4.2 定时配置（2026-10-01）
 
-101 单测、类型检查、生产构建、双 renderer 通过；macOS 实际打包新增四组 `test:schedule-config`：单次 / 每周预览、时区和 DST 拦截、900×640 保存入口、多次真实 App 重开、编辑 / 暂停 / 启用持久化、取消确认、课程关联取消及无课程禁用。首次两次定位失败及修正见 [定时开启规则](docs/scheduled-starts.md)。此配置检查未打开课堂或调用加密。本功能提交 Windows CI 将验证实际安装版配置重开及全部既有回归；自动调度尚未开放。
+101 单测、类型检查、生产构建、双 renderer 通过；macOS 实际打包新增四组 `test:schedule-config`：单次 / 每周预览、时区和 DST 拦截、900×640 保存入口、多次真实 App 重开、编辑 / 暂停 / 启用持久化、取消确认、课程关联取消及无课程禁用。新增检查的下拉框命名、稳定定位及课程删除后渲染时序失败与修正见 [定时开启规则](docs/scheduled-starts.md)。此配置检查未打开课堂或调用加密。功能提交 [`c79ca5b`](https://github.com/tzuo5/attendance-handler/commit/c79ca5b) 及修正 [`4459814`](https://github.com/tzuo5/attendance-handler/commit/4459814) 的源码 / Windows CI 均首次尝试通过；修正的 [Source checks](https://github.com/tzuo5/attendance-handler/actions/runs/36843239848) 与 [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36843239858) 包含 101 单测、双 renderer、全部原有 Chrome 检查、实际安装版四组配置重开 / UI / 恢复 / 首次向导、真实 DPAPI、包审计和 ZIP 一致性。自动调度尚未开放。
 
 ## Phase 4.1 定时规则（2026-10-01）
 
