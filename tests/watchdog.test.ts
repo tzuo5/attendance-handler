@@ -214,4 +214,21 @@ describe('classroom watchdog', () => {
     await Promise.all([extending,stopped]); expect(gate).toBe(0);
   });
 
+  it('summarizes confirmed answers separately from pending attempts and unconfirmed questions', async () => {
+    snapshot.question=question(); await watchdog.start(course);
+    snapshot.question.answered=true; await vi.advanceTimersByTimeAsync(5000);
+    snapshot.question=question({key:'q2',kind:'other'}); await vi.advanceTimersByTimeAsync(5000);
+    snapshot.question=question({key:'q3'}); await vi.advanceTimersByTimeAsync(5000);
+    await watchdog.stop();
+    const summary=watchdog.session!.summary!;
+    expect(summary).toMatchObject({reason:'manual',attendance:'confirmed',observedQuestionCount:3,confirmedAnswerCount:1,pendingAttemptCount:1,unconfirmedQuestionCount:2,endedAt:Date.now()});
+    expect(summary.questions).toHaveLength(3);
+    await watchdog.stop();expect(watchdog.session!.summary).toEqual(summary);
+  });
+  it('creates an expiry summary with gaps after a monitoring interruption', async () => {
+    snapshot.question=question({kind:'other'}); await watchdog.start(course);
+    open=false; await vi.advanceTimersByTimeAsync(60000);
+    expect(watchdog.session?.summary).toMatchObject({reason:'expired',hadInterruptions:true,observedQuestionCount:1,confirmedAnswerCount:0,pendingAttemptCount:0});
+  });
+
 });

@@ -1,3 +1,4 @@
+import { summarizeSession } from '../shared/session-summary';
 import { ACTIVE, type CourseConfig, type LogDetails, type LogEvent, type PageSnapshot, type QuestionSnapshot, type SessionState } from '../shared/types';
 export interface ClassroomDriver {
   isOpen(): boolean;
@@ -63,6 +64,7 @@ export class Watchdog {
   private change(status: SessionState['status'], detail: string, issue?: SessionState['issue']) {
     if (!this.session) return;
     const changed = this.session.status !== status || this.session.detail !== detail || this.session.issue !== issue;
+    if (['offline','needs-login','window-closed','attention'].includes(status)) this.session.hadInterruptions = true;
     this.session.status = status; this.session.detail = detail; this.session.issue = issue;
     if (changed) this.event(issue || ['offline', 'window-closed', 'needs-login', 'attention'].includes(status) ? 'warning' : 'info', detail, 'status-changed', { status });
     this.emit();
@@ -238,6 +240,7 @@ export class Watchdog {
     if (this.stopping) return this.stopping;
     if (!ACTIVE(this.session)) return;
     this.controller?.abort(); clearTimeout(this.timer); clearTimeout(this.deadlineTimer);
+    this.session.summary = summarizeSession(this.session, this.now(), expired ? 'expired' : 'manual');
     this.session.question = undefined;
     this.change(expired ? 'completed' : 'stopped', expired ? '课程时间已到，监控已停止' : '已手动结束监控');
     this.hooks.clearNotifications(); this.hooks.keepAwake(false);

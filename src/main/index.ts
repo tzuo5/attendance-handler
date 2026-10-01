@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { z } from 'zod';
 import { ChromeClassroom } from './browser';
 import { nativeHelperName } from './platform';
+import { summarizeSession } from '../shared/session-summary';
 import { Store } from './store';
 import { Watchdog } from './watchdog';
 import { validateCourse } from '../shared/validation';
@@ -29,9 +30,10 @@ async function main() {
   try { store = new Store(app.getPath('userData')); }
   catch (error) { dialog.showErrorBox('无法读取课程数据', String(error)); app.exit(1); return; }
   if (ACTIVE(store.data.session)) {
+    store.data.session.summary = summarizeSession(store.data.session, store.data.session.lastCheckedAt || store.data.session.startedAt, 'interrupted');
     store.data.session.status = 'stopped';
     store.data.session.detail = '上次运行已中断，请重新开始上课';
-    store.save();
+    store.setSession(store.data.session);
   }
   if (demo && !store.data.courses.length) {
     store.data.courses = [
@@ -39,7 +41,7 @@ async function main() {
       { id: '22222222-2222-4222-8222-222222222222', remoteId: 'demo', name: '模拟课堂 · 提醒作答', url: `${origin}/#/course/demo/overview`, latitude: 0, longitude: 0, accuracy: 10, durationMinutes: 50, mode: 'notify' },
     ]; store.save();
   }
-  const snapshot = (): AppState => ({ courses: store.data.courses, session: watchdog?.session || store.data.session, logs: store.data.logs, browserConnected: browser?.isOpen() || false, demo, notificationError });
+  const snapshot = (): AppState => ({ courses: store.data.courses, session: watchdog?.session || store.data.session, logs: store.data.logs, summaries: store.data.summaries, browserConnected: browser?.isOpen() || false, demo, notificationError });
   const emit = () => {
     if (window && !window.isDestroyed()) window.webContents.send('state:changed', snapshot());
     if (tray) {
@@ -78,7 +80,7 @@ async function main() {
     notification.show();
   };
   const watchdog = new Watchdog(browser, {
-    changed: session => { store.data.session = session; store.save(); emit(); }, log,
+    changed: session => { store.setSession(session); emit(); }, log,
     notify: sendNotification, clearNotifications,
     keepAwake: enabled => {
       if (enabled && blockId === undefined) blockId = powerSaveBlocker.start('prevent-app-suspension');

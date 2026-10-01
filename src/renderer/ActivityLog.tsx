@@ -9,8 +9,7 @@ const EVENT_LABELS: Record<LogEvent, string> = {
 const LEVEL_LABELS = { info:'信息', success:'成功', warning:'需要注意', error:'错误' };
 const time = (at: number) => new Date(at).toLocaleString('zh-CN', { year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit' });
 
-export function ActivityLog({ logs, sessionId }: { logs: LogEntry[]; sessionId?: string }) {
-  const [scope, setScope] = useState('all');
+export function ActivityLog({ logs, sessionId, scope, onScopeChange }: { logs: LogEntry[]; sessionId?: string; scope: string; onScopeChange(scope:string):void }) {
   const [level, setLevel] = useState('all');
   const [search, setSearch] = useState('');
   const [newCount, setNewCount] = useState(0);
@@ -34,7 +33,7 @@ export function ActivityLog({ logs, sessionId }: { logs: LogEntry[]; sessionId?:
   return <section className="panel log-panel">
     <div className="section-heading"><h2>课堂事件记录</h2><span className="small-label">本机保留最近 2000 条事件</span></div>
     <div className="log-filters">
-      <label>课堂<select aria-label="课堂" value={scope} onChange={e => setScope(e.target.value)}><option value="all">全部课堂</option>{sessionId && <option value="current">本次课堂</option>}{sessions.map(([id,session]) => <option value={id} key={id}>{session.name} · {time(session.at)}</option>)}</select></label>
+      <label>课堂<select aria-label="课堂" value={scope} onChange={e => onScopeChange(e.target.value)}><option value="all">全部课堂</option>{scope !== 'all' && scope !== 'current' && !sessions.some(([id])=>id===scope) && <option value={scope}>历史课堂（详细日志已清理）</option>}{sessionId && <option value="current">本次课堂</option>}{sessions.map(([id,session]) => <option value={id} key={id}>{session.name} · {time(session.at)}</option>)}</select></label>
       <label>事件级别<select aria-label="事件级别" value={level} onChange={e => setLevel(e.target.value)}><option value="all">全部级别</option>{Object.entries(LEVEL_LABELS).map(([value,label]) => <option value={value} key={value}>{label}</option>)}</select></label>
       <label>搜索记录<input type="search" placeholder="课程、题目或信息" value={search} onChange={e => setSearch(e.target.value)}/></label>
     </div>

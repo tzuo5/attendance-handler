@@ -83,6 +83,9 @@ try {
   await watchdog.resumed(); checks.push('explicit reopen restores session');
   await watchdog.stop();
   assert.equal(watchdog.session.status, 'stopped');
+  assert.ok(watchdog.session.summary.observedQuestionCount >= 3);
+  assert.ok(watchdog.session.summary.confirmedAnswerCount >= 1);
+  checks.push('end summary counts only observed and confirmed questions');
   const gate = await browser.page.evaluate(() => window.__attendanceDeadline);
   assert.equal(gate, 0); checks.push('stop disarms actions');
   await browser.context.setGeolocation({ latitude: 0, longitude: 0 }); // synthetic location only

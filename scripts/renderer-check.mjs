@@ -77,8 +77,19 @@ try {
   assert.ok(await page.locator('.log-list').evaluate(element=>element.scrollTop)>600);
   await page.getByRole('button',{name:'查看 1 条新事件',exact:true}).click();
   assert.equal(await page.locator('.log-list').evaluate(element=>element.scrollTop),0);
+  await page.evaluate(async () => {
+    const state=await window.attendance.getState();
+    const summary={id:'session',courseId:'demo',courseName:'示例课程',startedAt:Date.now()-60000,endedAt:Date.now(),plannedEndsAt:Date.now(),reason:'manual',attendance:'confirmed',observedQuestionCount:3,confirmedAnswerCount:1,pendingAttemptCount:1,unconfirmedQuestionCount:2,hadInterruptions:true,questions:[]};
+    window.__testState({session:{...state.session,status:'stopped',summary},summaries:[summary]});
+  });
+  await page.getByRole('button',{name:'我的课程',exact:false}).click();
+  await page.getByRole('region',{name:'结束摘要',exact:true}).waitFor();
+  assert.ok((await page.getByRole('region',{name:'结束摘要',exact:true}).innerText()).includes('尝试尚未确认'));
+  await page.getByRole('button',{name:'本节日志',exact:true}).click();
+  assert.equal(await page.getByLabel('课堂',{exact:true}).inputValue(),'session');
+  assert.ok(await page.getByLabel('课堂历史',{exact:true}).count());
   await mkdir('.test-artifacts/phase1', { recursive:true });
   await page.screenshot({path:'.test-artifacts/phase1/logs.png'});
   assert.deepEqual(errors,[]);
-  console.log('Renderer acceptance passed: status, recovery actions, small window controls, full event log, reading position and question receipts.');
+  console.log('Renderer acceptance passed: status, recovery actions, small window controls, full event log, reading position and question receipts and persisted-summary navigation.');
 } finally { await browser?.close(); await server.close(); }

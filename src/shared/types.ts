@@ -30,6 +30,12 @@ export interface SessionQuestion {
   key: string; title: string; kind: QuestionSnapshot['kind']; mode: AnswerMode;
   firstSeenAt: number; lastSeenAt: number; closedAt?: number; attemptedAt?: number; confirmedAt?: number;
 }
+export interface SessionSummary {
+  id: string; courseId: string; courseName: string; startedAt: number; endedAt: number; plannedEndsAt: number;
+  reason: 'manual' | 'expired' | 'interrupted'; attendance: PageSnapshot['attendance']; attendanceConfirmedAt?: number;
+  observedQuestionCount: number; confirmedAnswerCount: number; pendingAttemptCount: number; unconfirmedQuestionCount: number;
+  hadInterruptions: boolean; questions: SessionQuestion[];
+}
 export interface SessionState {
   id: string;
   course: CourseConfig;
@@ -43,6 +49,8 @@ export interface SessionState {
   attendance: PageSnapshot['attendance'];
   question?: QuestionSnapshot;
   questions?: Record<string, SessionQuestion>;
+  hadInterruptions?: boolean;
+  summary?: SessionSummary;
   handled: Record<string, 'attempted' | 'confirmed'>;
   detail: string;
 }
@@ -58,6 +66,7 @@ export interface AppState {
   courses: CourseConfig[];
   session: SessionState | null;
   logs: LogEntry[];
+  summaries: SessionSummary[];
   browserConnected: boolean;
   demo: boolean;
   notificationError?: string;
