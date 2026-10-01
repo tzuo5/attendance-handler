@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { version } from '../../package.json';
 import { ACTIVE, sessionPresentation, type AppState, type CourseConfig, type RemoteCourse } from '../shared/types';
 import './styles.css';
+import { ActivityLog } from './ActivityLog';
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {
   const paths: Record<string, React.ReactNode> = {
@@ -25,7 +26,9 @@ function App() {
   const [now, setNow] = useState(Date.now());
   const [form, setForm] = useState<Partial<CourseConfig> | null>(null);
   const [imported, setImported] = useState<RemoteCourse[]>([]);
-  const [settings, setSettings] = useState(false);
+  const [view, setView] = useState<'courses' | 'settings' | 'logs'>('courses');
+  const settings = view === 'settings';
+  const logsOpen = view === 'logs';
   const [deleting, setDeleting] = useState<string>();
   useEffect(() => {
     window.attendance.getState().then(setState).catch(e => setError(String(e)));
@@ -52,8 +55,9 @@ function App() {
     <aside className="sidebar">
       <div className="brand"><div className="brand-mark">a<span>h</span></div><div>Attendance<span>课堂助手</span></div></div>
       <div className="nav-label">工作空间</div>
-      <button className={`nav-item ${!settings ? 'selected' : ''}`} onClick={() => setSettings(false)}><Icon name="book"/>我的课程<span className="count">{state.courses.length}</span></button>
-      <button className={`nav-item ${settings ? 'selected' : ''}`} onClick={() => setSettings(true)}><Icon name="settings"/>连接与提醒</button>
+      <button className={`nav-item ${view === 'courses' ? 'selected' : ''}`} onClick={() => setView('courses')}><Icon name="book"/>我的课程<span className="count">{state.courses.length}</span></button>
+      <button className={`nav-item ${settings ? 'selected' : ''}`} onClick={() => setView('settings')}><Icon name="settings"/>连接与提醒</button>
+      <button className={`nav-item ${logsOpen ? 'selected' : ''}`} onClick={() => setView('logs')}><Icon name="clock"/>课堂记录</button>
       <div className="sidebar-bottom">
         <div className="connection"><span className={`dot ${state.browserConnected ? 'green' : ''}`}/>{state.browserConnected ? 'Chrome 已连接' : '等待连接 Chrome'}</div>
         <p>会话与课程保存在这台电脑。</p>
@@ -61,7 +65,7 @@ function App() {
       </div>
     </aside>
     <main>
-      <header className="page-header"><div><div className="eyebrow">YOUR CLASSROOM, WITHIN REACH</div><h1>{settings ? '连接与提醒' : '我的课程'}</h1><p>{settings ? '准备好浏览器和通知，就可以开始上课。' : '课堂窗口随时可见，提醒在需要时到来。'}</p></div><div className="header-actions"><button className="secondary" onClick={() => action('login', () => window.attendance.login())} disabled={!!busy}><Icon name="browser"/>{busy === 'login' ? '正在连接…' : '登录 iClicker'}</button>{!settings && <button className="primary" onClick={() => { setImported([]); setForm({}); }}><Icon name="plus"/>添加课程</button>}</div></header>
+      <header className="page-header"><div><div className="eyebrow">YOUR CLASSROOM, WITHIN REACH</div><h1>{settings ? '连接与提醒' : logsOpen ? '课堂记录' : '我的课程'}</h1><p>{settings ? '准备好浏览器和通知，就可以开始上课。' : logsOpen ? '查看题目、签到和连接变化的完整过程。' : '课堂窗口随时可见，提醒在需要时到来。'}</p></div><div className="header-actions"><button className="secondary" onClick={() => action('login', () => window.attendance.login())} disabled={!!busy}><Icon name="browser"/>{busy === 'login' ? '正在连接…' : '登录 iClicker'}</button>{!settings && !logsOpen && <button className="primary" onClick={() => { setImported([]); setForm({}); }}><Icon name="plus"/>添加课程</button>}</div></header>
       {state.demo && <div className="demo-banner">模拟课堂 · 操作仅作用于本机演示页面，不会提交真实签到或答案。</div>}
       {error && <div className="banner error" role="alert"><span>{error}</span><button aria-label="关闭错误" onClick={() => setError('')}><Icon name="close" size={16}/></button></div>}
       {toast && <div className="banner success" role="status">{toast}</div>}
@@ -70,7 +74,7 @@ function App() {
         <article className="panel setting-card"><div className="tile-icon"><Icon name="browser" size={26}/></div><h2>专用 Chrome 窗口</h2><p>首次登录时完成学校验证。后续会保留登录状态，你可以随时查看或手动操作课堂页面。</p><button className="primary" disabled={!!busy} onClick={() => action('login', () => window.attendance.login())}>打开登录窗口<Icon name="arrow" size={17}/></button><div className="hint">切换应用、遮挡或最小化窗口，都不影响监控。</div></article>
         <article className="panel setting-card"><div className="tile-icon amber"><Icon name="bell" size={26}/></div><h2>系统题目提醒</h2><p>需要手动答题时立即提醒。题目未作答且仍开放时，每 30 秒再次提醒；点击通知返回课堂。</p><button className="secondary" onClick={() => action('notification', async () => { await window.attendance.testNotification(); setToast('已请求发送测试通知，请在系统通知中确认。'); })}>发送测试通知<Icon name="arrow" size={17}/></button><div className="hint">请在 系统通知设置中允许 Attendance Handler 通知和声音。</div></article>
         <article className="panel setting-card wide"><h2>运行方式</h2><div className="settings-row"><span>页面检查</span><strong>每 5 秒一次</strong></div><div className="settings-row"><span>上课期间</span><strong>阻止闲置睡眠，允许屏幕熄灭</strong></div><div className="settings-row"><span>关闭 App 窗口</span><strong>继续在菜单栏或系统托盘运行</strong></div><div className="settings-row"><span>关闭课堂窗口</span><strong>暂停操作，倒计时继续</strong></div><p className="hint">合盖或手动睡眠时无法检查题目。唤醒后，监控会在剩余课程时间内恢复。</p></article>
-      </section> : <div className="content-grid">
+      </section> : logsOpen ? <ActivityLog logs={state.logs} sessionId={session?.id}/> : <div className="content-grid">
         <section className="courses-section"><div className="section-heading"><h2>课程列表 <span>{state.courses.length.toString().padStart(2, '0')}</span></h2><button className="text-button" disabled={!!busy || running} onClick={importCourses}>{busy === 'import' ? '正在读取…' : '从 iClicker 导入'} <span>↗</span></button></div>
           {state.courses.length ? <div className="course-list">{state.courses.map((course, i) => <article className={`course-card ${running && session.course.id === course.id ? 'active' : ''}`} key={course.id}>
             <div className="course-top"><div className={`course-symbol color-${i % 3}`}><Icon name="book" size={23}/></div><button className="edit-button" aria-label={`编辑 ${course.name}`} onClick={() => { setImported([]); setForm(course); }} disabled={running && session.course.id === course.id}>编辑</button></div>
@@ -92,7 +96,7 @@ function App() {
           {session?.attendanceConfirmedAt && <div><span>签到确认时间</span><strong>{new Date(session.attendanceConfirmedAt).toLocaleTimeString('zh-CN')}</strong></div>}
           <div><span>最后成功检查</span><strong>{session?.lastSuccessfulCheckAt ? `${Math.max(0, Math.floor((now - session.lastSuccessfulCheckAt) / 1000))} 秒前` : '尚未成功检查'}</strong></div></div>
         </section>
-          <section className="panel activity-panel"><div className="section-heading"><h2>最近动态</h2><span className="small-label">本机记录</span></div>{state.logs.length ? <ol>{state.logs.slice(0, 5).map(entry => <li key={entry.id}><span className={`event-dot ${entry.level}`}/><div><p>{entry.message}</p><time>{new Date(entry.at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time></div></li>)}</ol> : <p className="empty-log">签到、题目与连接状态会记录在这里。</p>}</section>
+          <section className="panel activity-panel"><div className="section-heading"><h2>最近动态</h2><button className="text-button" onClick={() => setView('logs')}>全部记录 ↗</button></div>{state.logs.length ? <ol>{state.logs.slice(0, 5).map(entry => <li key={entry.id}><span className={`event-dot ${entry.level}`}/><div><p>{entry.message}</p><time>{new Date(entry.at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time></div></li>)}</ol> : <p className="empty-log">签到、题目与连接状态会记录在这里。</p>}</section>
         </aside>
       </div>}
       <footer className="page-footer"><span>ATTENDANCE HANDLER</span><span>保持窗口可见，保持课堂连接。</span><span>v{version}</span></footer>

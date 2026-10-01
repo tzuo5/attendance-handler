@@ -45,8 +45,23 @@ try {
     assert.equal(await page.locator('.start-button').innerText(),label);
     assert.ok((await page.getByRole('button',{name:'结束上课',exact:true}).boundingBox()).y < 640);
   }
+  await page.evaluate(() => window.__testState({logs:Array.from({length:80},(_,i)=>({id:`event-${i}`,at:Date.now()-i*10000,level:i%2?'info':'success',event:i%2?'question-opened':'answer-confirmed',sessionId:'session',courseName:'示例课程',questionTitle:`题目 ${i}`,message:'示例事件',confirmedAt:i%2?undefined:Date.now()-i*10000}))}));
+  await page.getByRole('button',{name:'课堂记录',exact:true}).click();
+  assert.equal(await page.locator('.log-entry').count(),80);
+  await page.getByLabel('事件级别',{exact:true}).selectOption('success');
+  assert.equal(await page.locator('.log-entry').count(),40);
+  await page.getByLabel('事件级别',{exact:true}).selectOption('all');
+  await page.getByLabel('搜索记录',{exact:true}).fill('题目 79');
+  assert.equal(await page.locator('.log-entry').count(),1);
+  await page.getByLabel('搜索记录',{exact:true}).fill('');
+  await page.locator('.log-list').evaluate(element => {element.scrollTop=600;});
+  await page.evaluate(async () => {const state=await window.attendance.getState();window.__testState({logs:[{id:'new-event',at:Date.now(),level:'warning',message:'新事件'},...state.logs]});});
+  await page.getByRole('button',{name:'查看 1 条新事件',exact:true}).waitFor();
+  assert.ok(await page.locator('.log-list').evaluate(element=>element.scrollTop)>600);
+  await page.getByRole('button',{name:'查看 1 条新事件',exact:true}).click();
+  assert.equal(await page.locator('.log-list').evaluate(element=>element.scrollTop),0);
   await mkdir('.test-artifacts/phase1', { recursive:true });
-  await page.screenshot({path:'.test-artifacts/phase1/status.png'});
+  await page.screenshot({path:'.test-artifacts/phase1/logs.png'});
   assert.deepEqual(errors,[]);
-  console.log('Renderer acceptance passed: status, recovery actions, small window controls.');
+  console.log('Renderer acceptance passed: status, recovery actions, small window controls, full event log and reading position.');
 } finally { await browser?.close(); await server.close(); }
