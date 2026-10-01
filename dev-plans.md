@@ -256,4 +256,4 @@
 
 | P4.4 | 2026-10-01 | [`82b6546`](https://github.com/tzuo5/attendance-handler/commit/82b6546) · `feat: recover scheduled starts across clock changes and interrupted scans` | 135 单测、类型检查、构建、双 renderer、macOS 实际打包六组调度与四组配置 | Windows 安装版六组与 DPAPI 首次全部通过；实体睡眠、真实学校 / 课堂、Mac 钥匙串待验收；历史记录分批补齐 |
 
-| P5.1 | 2026-10-01 | `docs: define calendar agent intents and synthetic acceptance scenarios` | 设计语义检查、16 个合成 JSON 场景一致性验收；前一功能 Source / Windows CI 首次通过 | ideation 提案；尚无真实日历读取、授权、写入或产品解析器；本次文档 CI 推送后核实 |
+| P5.1 | 2026-10-01 | [`f09f389`](https://github.com/tzuo5/attendance-handler/commit/f09f389) · `docs: define calendar agent intents and synthetic acceptance scenarios` | 设计语义检查、16 个合成 JSON 场景一致性验收；前一功能 Source / Windows CI 首次通过 | ideation 提案；尚无真实日历读取、授权、写入或产品解析器；本次 Source / Windows CI 首次全部通过，验证既有运行代码回归 |

@@ -4,7 +4,7 @@
 
 新增 [@tt 设计约定](docs/calendar-ideation.md) 与 [16 个合成事件](docs/examples/calendar-intents.json)。完成设计走查及一次性数据一致性检查：JSON 可解析、16 场景 / 事件标识唯一、四个合成课程引用有效、可提议的课程名称唯一、事件时长在 Phase 4 范围内、取消和已开始实例的原截止上下文一致。分组为待确认 4、课程需选择 3、时间需补齐 3、忽略 2、取消未来 2、保留当前 2。
 
-这些检查验证设计数据一致性，没有调用日历 API、运行产品解析器、生成真实任务或验证真实授权。Google / Apple 接入条件待 P5.2 官方调研；P5.3 / P5.4 分别完成映射与隔离样例。本窗口没有修改运行代码，前一功能 `82b6546` 的 Source / Windows CI 首次全部通过；本次文档 CI 待推送后核实。
+这些检查验证设计数据一致性，没有调用日历 API、运行产品解析器、生成真实任务或验证真实授权。Google / Apple 接入条件待 P5.2 官方调研；P5.3 / P5.4 分别完成映射与隔离样例。本窗口没有修改运行代码，前一功能 `82b6546` 的 Source / Windows CI 首次全部通过；提案提交 [`f09f389`](https://github.com/tzuo5/attendance-handler/commit/f09f389) 的 [Source checks](https://github.com/tzuo5/attendance-handler/actions/runs/36851633544) 与 [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36851633562) 首次全部通过，包含既有 135 单测、双 renderer、Chrome 回归、实际安装版调度 / 配置 / UI / 恢复 / 向导、DPAPI、包审计及 ZIP 一致性。公开源码审核 85 文件通过。CI 证明既有运行代码回归通过，不代表实际日历接入或 16 场景已由产品解析器执行。
 
 ## Phase 4.4 时间变化与中断恢复（2026-10-01）
 
