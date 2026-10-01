@@ -62,6 +62,9 @@ try {
   assert.equal(await page.getByRole('button',{name:'查看提交结果',exact:true}).count(),0);
   await page.evaluate(async () => {const state=await window.attendance.getState();state.session.status='offline';state.session.question=undefined;window.__testState(state);});
   await page.getByText('历史题目 · 恢复后核实当前课堂',{exact:false}).waitFor();
+  await page.evaluate(async () => {const state=await window.attendance.getState();state.session.status='monitoring';state.session.questions['q-feedback'].closedAt=Date.now();window.__testState(state);});
+  await page.getByText('最近题目',{exact:false}).waitFor();
+  assert.equal(await page.getByText('历史题目 · 恢复后核实当前课堂',{exact:false}).count(),0);
   await page.evaluate(() => window.__testState({logs:Array.from({length:80},(_,i)=>({id:`event-${i}`,at:Date.now()-i*10000,level:i%2?'info':'success',event:i%2?'question-opened':'answer-confirmed',sessionId:'session',courseName:'示例课程',questionTitle:`题目 ${i}`,message:'示例事件',confirmedAt:i%2?undefined:Date.now()-i*10000}))}));
   await page.getByRole('button',{name:'课堂记录',exact:true}).click();
   assert.equal(await page.locator('.log-entry').count(),80);

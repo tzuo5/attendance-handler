@@ -9,7 +9,7 @@ export function SessionSummaryPanel({ summary, onViewLogs, onOpen }: { summary:S
     <h3>{summary.courseName}</h3><p className="summary-time">{time(summary.startedAt)} → {time(summary.endedAt)}</p>
     <dl><div><dt>签到</dt><dd>{summary.attendance === 'confirmed' ? '已确认签到' : '尚未确认签到'}</dd></div>{summary.attendanceConfirmedAt && <div><dt>签到确认时间</dt><dd>{time(summary.attendanceConfirmedAt)}</dd></div>}<div><dt>已观察题目</dt><dd>{summary.observedQuestionCount}</dd></div><div><dt>答案已确认</dt><dd>{summary.confirmedAnswerCount}</dd></div><div><dt>尝试尚未确认</dt><dd>{summary.pendingAttemptCount}</dd></div><div><dt>未观察到答案确认</dt><dd>{summary.unconfirmedQuestionCount}</dd></div></dl>
     <p className="summary-note">{summary.reason === 'interrupted' ? '中断时的结束时间为最后一次记录时间。' : ''}{summary.hadInterruptions ? '监控曾中断，期间可能有题目未被记录。' : '统计基于本机观察到的题目和网站回执。'}</p>
-    <div className="summary-actions"><button className="secondary" onClick={() => onViewLogs(summary.id)}>本节日志</button><button className="text-button" onClick={onOpen}>查看课堂</button></div>
+    <div className="summary-actions"><button className="secondary" onClick={() => onViewLogs(summary.id)}>本节日志</button><button className="text-button" onClick={onOpen}>查看当前课堂</button></div>
   </section>;
 }
 export function SummaryHistory({ summaries, onViewLogs, onOpen }: { summaries:SessionSummary[]; onViewLogs(id:string):void; onOpen():void }) {

@@ -16,9 +16,27 @@ const application = await electron.launch({ executablePath: resolve(process.env.
 const electronPid = await application.evaluate(() => process.pid);
 const launcher = application.process();
 const errors = [];
+const syntheticCipher = process.env.ATTENDANCE_UI_CIPHER === 'synthetic';
 let classroom;
 try {
   const window = await application.firstWindow();
+  if (syntheticCipher) await application.evaluate(({ safeStorage }) => {
+    // Test-only substitution in this isolated demo process; production code and
+    // the default smoke check continue to use the operating system's storage.
+    const { randomBytes, createCipheriv, createDecipheriv } = process.getBuiltinModule('node:crypto');
+    const key = randomBytes(32);
+    safeStorage.isEncryptionAvailable = () => true;
+    safeStorage.encryptString = value => {
+      const iv = randomBytes(12); const cipher = createCipheriv('aes-256-gcm', key, iv);
+      const payload = Buffer.concat([cipher.update(value, 'utf8'),cipher.final()]);
+      return Buffer.concat([iv,payload,cipher.getAuthTag()]);
+    };
+    safeStorage.decryptString = value => {
+      const cipher = createDecipheriv('aes-256-gcm', key, value.subarray(0,12));
+      cipher.setAuthTag(value.subarray(-16));
+      return Buffer.concat([cipher.update(value.subarray(12,-16)),cipher.final()]).toString();
+    };
+  });
   window.on('pageerror', e => errors.push(e.message));
   await window.getByRole('heading', { name: '我的课程', exact: true }).waitFor();
   assert.equal(await window.locator('.course-card').count(), 2);
@@ -48,7 +66,8 @@ try {
   await page.locator('.course-title').first().waitFor();
   await window.evaluate(id => window.attendance.start(id), saved.courses[0].id);
   mock.control({ open: true });
-  await window.waitForFunction(async () => (await window.attendance.getState()).session?.attendance === 'confirmed', undefined, { timeout: 20000 });
+  await window.getByText('已确认签到',{exact:true}).waitFor({timeout:20000});
+  assert.equal((await window.evaluate(() => window.attendance.getState())).session.attendance,'confirmed');
   const encrypted = await readFile(join(data, 'session.enc'));
   assert.ok(!encrypted.includes(Buffer.from('demo-access-token')));
   const vault = await application.evaluate(({ safeStorage }, base64) => JSON.parse(safeStorage.decryptString(Buffer.from(base64, 'base64'))), encrypted.toString('base64'));
@@ -73,7 +92,7 @@ try {
   });
   const notifications = process.platform === 'darwin' ? await application.evaluate(async ({ Notification }) => (await Notification.getHistory()).map(n => ({ title: n.title, body: n.body }))) : [];
   assert.deepEqual(errors, []);
-  const checks = ['course list', 'course persistence and duplicate protection', 'extension and persisted summary', 'settings', 'packaged Chrome launch and native helper', 'mock attendance', 'OS-encrypted session round trip'];
+  const checks = ['course list', 'course persistence and duplicate protection', 'extension and persisted summary', 'settings', 'packaged Chrome launch and native helper', 'mock attendance', syntheticCipher ? 'synthetic encrypted session round trip (OS storage not verified)' : 'OS-encrypted session round trip'];
   await writeFile('.test-artifacts/ui-report.json', JSON.stringify({ checks, errors, notification, delivered: notifications, data }, null, 2));
   console.log(JSON.stringify({ checks, errors, notification, deliveredCount: notifications.length }, null, 2));
 } finally {

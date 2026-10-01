@@ -139,6 +139,15 @@ describe('classroom watchdog', () => {
     await vi.advanceTimersByTimeAsync(10000);
     expect(driver.answerA).toHaveBeenCalledTimes(1);
   });
+  it('keeps a confirmed attendance receipt when a later page is pending again', async () => {
+    await watchdog.start(course); const confirmedAt=watchdog.session!.attendanceConfirmedAt;
+    snapshot={state:'joinable',courseId:'course',attendance:'pending'};
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(watchdog.session?.attendance).toBe('confirmed');
+    expect(watchdog.session?.attendanceConfirmedAt).toBe(confirmedAt);
+    await watchdog.stop();expect(watchdog.session?.summary?.attendance).toBe('confirmed');
+    expect(vi.mocked(hooks.log).mock.calls.filter(call=>call[2]?.event==='attendance-confirmed')).toHaveLength(1);
+  });
   it('does not mislabel page inspection failures as network failures', async () => {
     vi.mocked(driver.read).mockRejectedValue(new Error('Page inspection timed out'));
     await watchdog.start(course);
@@ -167,6 +176,15 @@ describe('classroom watchdog', () => {
     expect(watchdog.session?.question).toBeUndefined();
     expect(watchdog.session?.questions?.[question().key].closedAt).toBeUndefined();
     expect(watchdog.session?.questions?.[question().key].title).toBe('Question');
+  });
+  it('records a receipt first observed after a question closes without another submission', async () => {
+    snapshot.question=question();await watchdog.start(course);
+    snapshot.question={...snapshot.question,open:false,answered:true};
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(watchdog.session?.handled[question().key]).toBe('confirmed');
+    expect(watchdog.session?.questions?.[question().key].confirmedAt).toBeDefined();
+    expect(driver.answerA).toHaveBeenCalledTimes(1);
+    await watchdog.stop();expect(watchdog.session?.summary?.confirmedAnswerCount).toBe(1);
   });
 
   it('extends only this session and replaces the original hard deadline', async () => {
@@ -205,6 +223,16 @@ describe('classroom watchdog', () => {
     expect(watchdog.session?.status).toBe('monitoring');
     await vi.advanceTimersByTimeAsync(600000); expect(watchdog.session?.status).toBe('completed');
     await expect(watchdog.extend()).rejects.toThrow('已结束');
+  });
+  it('uses the extended deadline on wake and never acts after it has passed', async () => {
+    await watchdog.start(course);await watchdog.extend();const ends=watchdog.session!.endsAt;
+    vi.setSystemTime(ends-1);await watchdog.resumed();
+    expect(watchdog.session?.status).toBe('monitoring');expect(watchdog.session?.endsAt).toBe(ends);
+    vi.mocked(driver.read).mockClear();snapshot.question=question();
+    vi.setSystemTime(ends+1);await watchdog.resumed();
+    expect(watchdog.session?.status).toBe('completed');
+    expect(driver.read).not.toHaveBeenCalled();expect(driver.answerA).not.toHaveBeenCalled();
+    expect(watchdog.session?.summary?.reason).toBe('expired');
   });
   it('waits for a late extension even when the first disarm fails', async () => {
     await watchdog.start(course); let resolve!:()=>void; let gate=watchdog.session!.endsAt;

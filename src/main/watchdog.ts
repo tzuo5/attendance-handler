@@ -146,7 +146,7 @@ export class Watchdog {
       if (this.lastReminders.delete('wrong-course')) this.hooks.clearNotifications();
       if (page.state !== 'unknown') run.lastSuccessfulCheckAt = this.now();
       if (page.attendance === 'confirmed' && run.attendance !== 'confirmed') { run.attendanceConfirmedAt = this.now(); this.event('success', '已确认课堂签到成功', 'attendance-confirmed', { confirmedAt: run.attendanceConfirmedAt, result: 'confirmed' }); }
-      if (page.attendance !== 'unknown') run.attendance = page.attendance;
+      if (run.attendance !== 'confirmed' && page.attendance !== 'unknown') run.attendance = page.attendance;
       const previousKey = run.question?.key;
       if (page.state !== 'unknown') this.observeQuestion(run, page.question);
       run.question = page.question;
@@ -175,14 +175,14 @@ export class Watchdog {
       if (page.state === 'waiting') { this.change('waiting', '等待老师开课，保持每 5 秒检查'); return; }
       this.joins = 0;
       const q = page.question;
-      if (!q || !q.open) { this.change('monitoring', '已进入课堂，等待新题目'); return; }
-      if (q.answered) {
+      if (q?.answered) {
         if (run.handled[q.key] !== 'confirmed') {
           const record = run.questions![q.key]; record.confirmedAt = this.now();
           this.event('success', '已确认题目答案被接收', 'answer-confirmed', { attemptedAt: record.attemptedAt, confirmedAt: record.confirmedAt, result: 'confirmed' });
         }
         run.handled[q.key] = 'confirmed'; this.change('monitoring', '当前题目已作答'); return;
       }
+      if (!q || !q.open) { this.change('monitoring', '已进入课堂，等待新题目'); return; }
       if (run.handled[q.key] === 'confirmed') { this.change('monitoring', '当前题目已处理'); return; }
       if (run.course.mode === 'auto-a' && q.kind === 'single' && q.hasA && q.stable && !q.selected && !run.handled[q.key]) {
         // Persist intent BEFORE the side effect. An uncertain result never causes a second automatic submission.
