@@ -8,7 +8,7 @@
 
 | 阶段 | 交付目标 | 进入条件 | 状态 |
 | --- | --- | --- | --- |
-| Phase 1 | 状态与恢复、课堂反馈、详细日志、简化课程配置 | 当前版本作为基线 | 开发中 |
+| Phase 1 | 状态与恢复、课堂反馈、详细日志、简化课程配置 | 当前版本作为基线 | 已完成（2026-09-30） |
 | Phase 2 | 首次配置向导与环境检查 | Phase 1 验收通过 | 未开始 |
 | Phase 3 | 无 Chrome 窗口的后台模式 | Phase 2 验收通过；模式切换验证通过 | 未开始 |
 | Phase 4 | 设置定时开启 | Phase 3 验收通过 | 未开始 |
@@ -83,9 +83,9 @@
 
 ### 阶段出口
 
-- [ ] 正常课堂、断网恢复、登录恢复、关窗恢复、题目切换、延长及结束摘要的完整路径验收通过。
-- [ ] 旧版本本机数据可升级；签到回执、单题去重、到期停止和已有答案保护的回归检查通过。
-- [ ] macOS / Windows 的状态、日志、配置及关键按钮完成 UI 验收；已验证结果写入验证记录。
+- [x] 正常课堂、断网恢复、登录恢复、关窗恢复、题目切换、延长及结束摘要的完整路径验收通过。
+- [x] 旧版本本机数据可升级；签到回执、单题去重、到期停止和已有答案保护的回归检查通过。
+- [x] macOS / Windows 的状态、日志、配置及关键按钮完成 UI 验收；已验证结果写入验证记录。
 
 ## Phase 2：首次配置向导与环境检查
 
@@ -214,12 +214,13 @@
 
 | 检查点 | 完成日期 | 提交 / PR | 验证证据与平台 | 剩余限制 |
 | --- | --- | --- | --- | --- |
-| P1.1 | 2026-09-30 | `feat: clarify classroom health and recovery actions` | 25 项单元测试、类型检查、模拟 UI（macOS Chrome，900×640） | Windows 原生行为待 CI 验证 |
-| P1.2 | 2026-09-30 | `feat: record structured classroom and question events` | 27 项单元测试、类型检查；旧数据、脱敏与保留上限验证 | 最多保留 2000 条本机事件，较早事件自动清理 |
-| P1.3 | 2026-09-30 | `feat: add searchable classroom event log` | 类型检查、900×640 模拟 UI；筛选、搜索与新事件阅读位置验证 | Windows 原生界面待 CI 验证 |
-| P1.4 | 2026-09-30 | `feat: show question progress and confirmed receipts` | 28 项单元测试、类型检查、模拟 UI；尝试、回执及历史题目验证 | 真实题型适配仍按 VERIFICATION.md 的范围 |
-| P1.5 | 2026-09-30 | `feat: extend current monitoring deadline by ten minutes` | 33 项单元测试、类型检查、模拟 UI、16 项专用 Chrome 集成检查 | Windows 原生流程待 CI 验证 |
-| P1.6 | 2026-09-30 | `feat: persist classroom end summaries and history` | 36 项单元测试、类型检查、模拟 UI、17 项专用 Chrome 集成检查 | 最近 100 节摘要；更早详细日志受 2000 条保留上限约束 |
-| P1.7 | 2026-09-30 | `feat: simplify course setup and reuse saved classrooms` | 41 项单元测试、生产构建、macOS 900×640 模拟 UI；导入、手动配置、位置复用、字段错误、编辑及焦点验证；打包 App 保存与重复拦截通过 | Windows 完整界面流程待本次 CI；macOS 打包加密流程等待系统钥匙串授权 |
+| P1.1 | 2026-09-30 | [`1ff62c8`](https://github.com/tzuo5/attendance-handler/commit/1ff62c8) · `feat: clarify classroom health and recovery actions` | 25 项单元测试、类型检查、模拟 UI（macOS Chrome，900×640）；Windows 最终验收见验证记录 | 实体设备交互仍按 VERIFICATION.md 的范围 |
+| P1.2 | 2026-09-30 | [`5098c72`](https://github.com/tzuo5/attendance-handler/commit/5098c72) · `feat: record structured classroom and question events` | 27 项单元测试、类型检查；旧数据、脱敏与保留上限验证 | 最多保留 2000 条本机事件，较早事件自动清理 |
+| P1.3 | 2026-09-30 | [`d75229a`](https://github.com/tzuo5/attendance-handler/commit/d75229a) · `feat: add searchable classroom event log` | 类型检查、900×640 模拟 UI；筛选、搜索与新事件阅读位置验证；Windows 最终验收见验证记录 | 较早详细日志受保存上限约束 |
+| P1.4 | 2026-09-30 | [`6476323`](https://github.com/tzuo5/attendance-handler/commit/6476323) · `feat: show question progress and confirmed receipts` | 28 项单元测试、类型检查、模拟 UI；尝试、回执及历史题目验证 | 真实题型适配仍按 VERIFICATION.md 的范围 |
+| P1.5 | 2026-09-30 | [`d448bac`](https://github.com/tzuo5/attendance-handler/commit/d448bac) · `feat: extend current monitoring deadline by ten minutes` | 33 项单元测试、类型检查、模拟 UI、16 项专用 Chrome 集成检查；Windows 安装版延长通过 | 实际睡眠唤醒仍按 VERIFICATION.md 的范围 |
+| P1.6 | 2026-09-30 | [`adccb5f`](https://github.com/tzuo5/attendance-handler/commit/adccb5f) · `feat: persist classroom end summaries and history` | 36 项单元测试、类型检查、模拟 UI、17 项专用 Chrome 集成检查；Windows 安装版持久化通过 | 最近 100 节摘要；更早详细日志受 2000 条保留上限约束 |
+| P1.7 | 2026-09-30 | [`0629977`](https://github.com/tzuo5/attendance-handler/commit/0629977) · `feat: simplify course setup and reuse saved classrooms` | 41 项单元测试、生产构建、macOS 900×640 模拟 UI；导入、手动配置、位置复用、字段错误、编辑及焦点验证；打包 App 保存与重复拦截通过；Windows 安装版通过最终回归 | macOS 打包加密流程等待系统钥匙串授权 |
 | Phase 1 回归补充 | 2026-09-30 | `fix: preserve classroom receipts and wait for confirmed smoke results` | 44 项单元测试、类型检查、模拟 UI、macOS 打包模拟课堂；补充签到历史、关题后的回执及延长后的唤醒边界 | macOS 打包测试使用明确标记的合成加密；系统钥匙串仍待授权验证，Windows 使用真实 DPAPI |
 | P1.3 保留上限边界 | 2026-09-30 | `fix: keep log reading position when older events expire` | 类型检查与模拟 UI：同时插入新事件、清理旧事件后，同一条可见记录的位置保持不变 | 已被清理的详细事件无法恢复，摘要仍按独立上限保留 |
+| Phase 1 阶段出口 | 2026-09-30 | [`a28135f`](https://github.com/tzuo5/attendance-handler/commit/a28135f) · 最终功能提交 | [验证记录](VERIFICATION.md)：44 项单元测试、17 项集成、生命周期、双平台 UI、生产构建、实际 Windows 安装版及隐私审计；[Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36813357714) 全部通过 | 本次 macOS 钥匙串授权、真实课堂及实体设备交互仍按验证记录单独标为待验证；此前 v0.1.1 下载包未更新 |
