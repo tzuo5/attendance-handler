@@ -1,5 +1,11 @@
 # 验证记录
 
+## Phase 5.2 官方接入调研（2026-10-01）
+
+新增 [Google / Apple 接入比较](docs/calendar-provider-research.md)，只使用 Google、Apple 和 IETF 的公开原始资料，关键条件经独立复核。核实 Google 只读 scopes 与 Desktop loopback / PKCE、同步分页与 410 / 删除、重复原定实例及 push 的 HTTPS / 续期限制；核实 EventKit 无只读授权、macOS 13 / 14+ 分支、变化通知和身份限制；iCloud CalDAV 与受支持第三方授权独立评估，当前 App 接入资格仍未核实。README、设计和隐私文档明确 App 日历选择不缩小账号 / 系统权限，读取未标记文本与只读使用的边界。
+
+没有调用真实日历 API、申请授权或创建真实任务。Apple 部分网页工具仅返回 JS 提示或拒绝 Markdown 类型，改为正常证书校验的 `curl` 读取官方 Markdown 正文；这属于资料读取，不是功能验收。未来路线和错误处理建议标为工程判断。53 处本地文档引用全部存在，调研中的 37 个不同来源链接均来自官方域名；逐项资料复核独立于域名检查。公开数据审核 86 文件和 `git diff --check` 通过。本窗口没有修改运行代码；上一提交 `4ab37c2` 的 Source checks / Windows CI 首次全部通过，本次提交的回归结果待补记。日历事件映射及隔离样例仍待 P5.3 / P5.4。
+
 ## Phase 5.1 日历语义提案（2026-10-01）
 
 新增 [@tt 设计约定](docs/calendar-ideation.md) 与 [16 个合成事件](docs/examples/calendar-intents.json)。完成设计走查及一次性数据一致性检查：JSON 可解析、16 场景 / 事件标识唯一、四个合成课程引用有效、可提议的课程名称唯一、事件时长在 Phase 4 范围内、取消和已开始实例的原截止上下文一致。分组为待确认 4、课程需选择 3、时间需补齐 3、忽略 2、取消未来 2、保留当前 2。

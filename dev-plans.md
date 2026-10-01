@@ -209,10 +209,11 @@
   - **验收：**用合成事件写出正常、信息不足、课程不匹配和取消的例子；用户可预期每种情况下 agent 的行为。
   - **实绩：**[日历设想](docs/calendar-ideation.md) 明确独立文本标记、课程精确绑定与首次确认、事件时间 / 固定时区、改时 / 取消 / 读失败 / App 内暂停、原截止和已执行实例保护；[16 个合成场景](docs/examples/calendar-intents.json) 通过 JSON、唯一标识、课程引用、时长和预期分组一致性检查。没有真实日历连接或产品解析器；P5.2–P5.4 按后续窗口推进。
 
-- [ ] **P5.2 — Google / Apple 接入方式调研**（依赖 P5.1）
+- [x] **P5.2 — Google / Apple 接入方式调研**（依赖 P5.1）
   - 分别核实各平台的日历读取、变更检测、重复事件、授权与运行平台限制；区分读取用户已有事件与替用户创建 / 修改事件。
   - 对照官方资料记录可行方案、限制、维护成本及撤销连接方式；选择可先验证的接入路径。
   - **验收：**形成带来源的对比结论，明确 `@tt` 交互能否实现；未经验证的能力标记为待验证。
+  - **实绩：**[官方接入调研](docs/calendar-provider-research.md) 对比 Google API、Apple EventKit 和 iCloud / CalDAV；核实文本读取、只读 / 完整权限、桌面 OAuth、macOS 13 / 14+ 分支、变更 / 分页 / 取消 / 身份、撤销及维护成本。建议先用 Google 合成响应验证，再独立评估 EventKit；App 选定日历不缩小实际授权，iCloud 第三方授权资格待验证。本轮只读公开资料，没有日历连接或账号授权。
 
 - [ ] **P5.3 — 日历事件与定时任务映射**（依赖 P5.1、P5.2；复用 Phase 4）
   - 定义事件与课程的匹配、时间与时区转换、重复事件例外、修改 / 删除同步及去重规则。
@@ -251,9 +252,7 @@
 | P3.4 | 2026-10-01 | [`60c6730`](https://github.com/tzuo5/attendance-handler/commit/60c6730) · `feat: recover interrupted classrooms and wait for Chrome process exit` | 73 单测、双 renderer、25 原有集成、九组后台运行、立即重开及四轮生命周期、macOS 实际打包五组 App / Chrome 崩溃恢复与退出；[后台模式记录](docs/background-mode.md) | [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36837581087) 首次尝试全部通过（含实际安装版、DPAPI 与恢复）；真实学校、Mac 钥匙串和物理睡眠仍待验收 |
 | P4.1 | 2026-10-01 | [`ccb0d80`](https://github.com/tzuo5/attendance-handler/commit/ccb0d80) · `feat: define timezone-aware scheduled start rules and runtime guidance` | 94 单测、类型检查、生产构建、双 renderer；21 项定时规则测试与设置运行条件说明，见 [定时开启规则](docs/scheduled-starts.md) | 配置和自动调度分别在 P4.2 / P4.3 完成；[Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36839642451) 首次尝试全部通过（含原有 Chrome 与实际安装版回归）；真实课堂与系统边界仍待真人验收 |
 | P4.2 | 2026-10-01 | [`c79ca5b`](https://github.com/tzuo5/attendance-handler/commit/c79ca5b) · `feat: configure and persist single and weekly classroom schedules`；测试时序修正 [`4459814`](https://github.com/tzuo5/attendance-handler/commit/4459814) | 101 单测、类型检查、构建、双 renderer、macOS 实际打包四组配置与多次重开验证；[定时开启规则](docs/scheduled-starts.md) | [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36843239858) 首次尝试全部通过（含安装版配置与真实 DPAPI）；自动调度待 P4.3，真实课堂 / Mac 钥匙串仍待验收 |
-
 | P4.3 | 2026-10-01 | [`a352c1a`](https://github.com/tzuo5/attendance-handler/commit/a352c1a) · `feat: dispatch scheduled classrooms with durable execution claims` | 113 单测、类型检查、生产构建、双 renderer、25 原有 Chrome 集成、macOS 实际打包四组调度验收 | Windows 安装版 CI 首次全部通过；真实学校 / 课堂、Mac 钥匙串与物理睡眠待验收；P4.4 补全时间变化 |
-
 | P4.4 | 2026-10-01 | [`82b6546`](https://github.com/tzuo5/attendance-handler/commit/82b6546) · `feat: recover scheduled starts across clock changes and interrupted scans` | 135 单测、类型检查、构建、双 renderer、macOS 实际打包六组调度与四组配置 | Windows 安装版六组与 DPAPI 首次全部通过；实体睡眠、真实学校 / 课堂、Mac 钥匙串待验收；历史记录分批补齐 |
-
 | P5.1 | 2026-10-01 | [`f09f389`](https://github.com/tzuo5/attendance-handler/commit/f09f389) · `docs: define calendar agent intents and synthetic acceptance scenarios` | 设计语义检查、16 个合成 JSON 场景一致性验收；前一功能 Source / Windows CI 首次通过 | ideation 提案；尚无真实日历读取、授权、写入或产品解析器；本次 Source / Windows CI 首次全部通过，验证既有运行代码回归 |
+| P5.2 | 2026-10-01 | `docs: compare official Google and Apple calendar access paths` | Google / Apple / IETF 原始资料逐项引用与关键条件复核；文档引用和源码公开数据审核 | 接入研究完成；真实授权、原生桥接、iCloud 资格与服务行为未验证；本次提交的 CI 待结果补记 |
