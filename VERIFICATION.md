@@ -4,7 +4,9 @@
 
 新增 [Google / Apple 接入比较](docs/calendar-provider-research.md)，只使用 Google、Apple 和 IETF 的公开原始资料，关键条件经独立复核。核实 Google 只读 scopes 与 Desktop loopback / PKCE、同步分页与 410 / 删除、重复原定实例及 push 的 HTTPS / 续期限制；核实 EventKit 无只读授权、macOS 13 / 14+ 分支、变化通知和身份限制；iCloud CalDAV 与受支持第三方授权独立评估，当前 App 接入资格仍未核实。README、设计和隐私文档明确 App 日历选择不缩小账号 / 系统权限，读取未标记文本与只读使用的边界。
 
-没有调用真实日历 API、申请授权或创建真实任务。Apple 部分网页工具仅返回 JS 提示或拒绝 Markdown 类型，改为正常证书校验的 `curl` 读取官方 Markdown 正文；这属于资料读取，不是功能验收。未来路线和错误处理建议标为工程判断。53 处本地文档引用全部存在，调研中的 37 个不同来源链接均来自官方域名；逐项资料复核独立于域名检查。公开数据审核 86 文件和 `git diff --check` 通过。本窗口没有修改运行代码；上一提交 `4ab37c2` 的 Source checks / Windows CI 首次全部通过，本次提交的回归结果待补记。日历事件映射及隔离样例仍待 P5.3 / P5.4。
+没有调用真实日历 API、申请授权或创建真实任务。Apple 部分网页工具仅返回 JS 提示或拒绝 Markdown 类型，改为正常证书校验的 `curl` 读取官方 Markdown 正文；这属于资料读取，不是功能验收。未来路线和错误处理建议标为工程判断。53 处本地文档引用全部存在，调研中的 37 个不同来源链接均来自官方域名；逐项资料复核独立于域名检查。公开数据审核 86 文件和 `git diff --check` 通过。本窗口没有修改运行代码；上一提交 `4ab37c2` 的 Source checks / Windows CI 首次全部通过。
+
+调研提交 [`8f9ddb6`](https://github.com/tzuo5/attendance-handler/commit/8f9ddb6) 的 [Source checks](https://github.com/tzuo5/attendance-handler/actions/runs/36855068291) 与 [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36855068456) 首次全部通过：既有单测、双 renderer、全部 Chrome 集成 / 生命周期 / 后台检查、实际 Windows 安装版调度 / 配置 / UI / 恢复 / 向导、真实 DPAPI、源码及包审计、ZIP 一致性。CI 验证既有运行代码回归，不代表真实日历连接或授权已验证；事件映射及隔离样例仍待 P5.3 / P5.4。
 
 ## Phase 5.1 日历语义提案（2026-10-01）
 
