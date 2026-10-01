@@ -40,7 +40,7 @@ try{
  await window.screenshot({path:'.test-artifacts/phase4/schedule-config.png'});
  await window.getByRole('button',{name:'我的课程',exact:false}).click();const courseCard=window.locator('.course-card').filter({has:window.getByRole('heading',{name:'模拟课堂 · 自动 A',exact:true})});await courseCard.getByRole('button',{name:'删除 模拟课堂 · 自动 A',exact:true}).click();await courseCard.getByText(/也会取消 1 个关联定时任务/).waitFor();await courseCard.getByRole('button',{name:'确认删除',exact:true}).click();await courseCard.waitFor({state:'hidden'});await stop();await start();assert.equal((await state()).schedules.length,0);assert.equal((await state()).courses.length,1);await openTasks();
  passed.push('cancel confirmation keeps or removes only the intended plan; deleting a course explains and persistently cancels linked plans');
- const remaining=(await state()).courses[0].id;await window.evaluate(id=>window.attendance.deleteCourse(id),remaining);assert.equal(await window.getByRole('button',{name:'添加定时任务',exact:true}).isDisabled(),true);await window.getByText('先在“我的课程”添加课程，再设置开始时间。',{exact:true}).waitFor();
+ const remaining=(await state()).courses[0].id;await window.evaluate(id=>window.attendance.deleteCourse(id),remaining);await window.getByText('先在“我的课程”添加课程，再设置开始时间。',{exact:true}).waitFor();assert.equal(await window.getByRole('button',{name:'添加定时任务',exact:true}).isDisabled(),true);
  assert.equal((await state()).browserConnected,false);assert.deepEqual(errors,[]);passed.push('no-course creation disabled, no renderer errors, and configuration never starts a classroom');
  await stop();const disk=JSON.parse(await readFile(join(data,'state.json'),'utf8'));assert.deepEqual(disk.schedules,[]);console.log(JSON.stringify({passed},null,2));
 }finally{await stop();await mock.close();}
