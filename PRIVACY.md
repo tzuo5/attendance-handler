@@ -11,10 +11,14 @@
 
 macOS 数据位于用户 Library 下的 `Application Support/Attendance Handler/`；Windows 数据位于 `%APPDATA%/Attendance Handler/`：
 
-- `state.json`：课程、用户输入的坐标及教室名称和最近运行记录（最多 2000 条事件，包含题目标题与作答确认时间；较早事件自动清理），以及最近 100 节课堂的结束摘要。不加密；macOS 使用本机文件权限限制访问，Windows 使用当前用户资料目录的访问权限。
+- `state.json`：课程、用户输入的坐标及教室名称和最近运行记录（最多 2000 条事件，包含题目标题与作答确认时间；较早事件自动清理），以及最近 100 节课堂的结束摘要、定时任务配置、执行实例和跨日扫描进度。执行实例键持续保留用于重启去重，执行事实取消后仍保留。不加密；macOS 使用本机文件权限限制访问，Windows 使用当前用户资料目录的访问权限。
 - `chrome-profile/`：专用 Chrome 会话资料。与日常 Chrome 分开。
 - `session.enc`：必要的会话存储，通过 Electron safeStorage 加密（macOS 钥匙串 / Windows DPAPI）。App 不保存密码。
 
 App 没有上传课程、坐标或日志到开发者服务器的功能。登录、签到和作答会通过专用浏览器与 iClicker 及学校身份服务通信；用户配置的定位会提供给该课堂网页。公开发布不意味着这些本机数据被同步到 GitHub。
 
 `.gitignore` 只是第一道保护。发布前运行 `npm run audit:public`，并对最终 macOS `.app` 或 Windows `win-unpacked` 目录执行 `node scripts/audit-public.mjs --app <app路径>`。自动扫描不是绝对保证，仍应审查实际提交文件与 Release 附件；不要把诊断目录、资料目录或原始日志当作附件上传。
+
+## 日历设想中的数据
+
+Phase 5 目前只有设计提案与合成事件，没有读取真实日历或保存日历授权。公开样例使用虚构日历键、事件标识和课程名称；后续真实接入只应读取用户选择的日历、识别标记事件，具体权限 / 保存字段 / 撤销路径由后续检查点明确。原始私人事件、参与者、地址、账号和授权令牌不作为公开诊断或仓库附件。

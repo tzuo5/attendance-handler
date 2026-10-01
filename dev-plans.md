@@ -12,7 +12,7 @@
 | Phase 2 | 首次配置向导与环境检查 | Phase 1 验收通过 | 4 项 MVP 已实现；真人走查待验收 |
 | Phase 3 | 无 Chrome 窗口的后台模式 | Phase 2 验收通过；模式切换验证通过 | 四项 MVP 已实现；真实课堂仍待验证 |
 | Phase 4 | 设置定时开启 | Phase 3 验收通过 | 四项 MVP 已实现；实体睡眠与真实课堂待验收 |
-| Phase 5 | Google Calendar / Apple Calendar 与 `@tt` 互动设想 | 可提前调研；实现规划依赖 Phase 4 | 探索待开始 |
+| Phase 5 | Google Calendar / Apple Calendar 与 `@tt` 互动设想 | 可提前调研；实现规划依赖 Phase 4 | P5.1 语义完成；接入调研、映射与样例待后续窗口 |
 
 本次 Phase 3–5 按用户要求分时推进，截止为 2026-10-01 08:00 America/Chicago，窗口与实绩见 [分时执行记录](docs/overnight-execution.md)。
 
@@ -203,10 +203,11 @@
 
 ### 检查点
 
-- [ ] **P5.1 — 场景与 `@tt` 语义**
+- [x] **P5.1 — 场景与 `@tt` 语义**
   - 描述最小使用路径：创建事件、指定课程与时长、标记 `@tt`、查看识别结果、修改或取消事件。
   - 明确 `@tt` 是事件标题 / 描述标记、邀请对象还是其他交互形式；确定第一版需要的最少事件信息及歧义处理。
   - **验收：**用合成事件写出正常、信息不足、课程不匹配和取消的例子；用户可预期每种情况下 agent 的行为。
+  - **实绩：**[日历设想](docs/calendar-ideation.md) 明确独立文本标记、课程精确绑定与首次确认、事件时间 / 固定时区、改时 / 取消 / 读失败 / App 内暂停、原截止和已执行实例保护；[16 个合成场景](docs/examples/calendar-intents.json) 通过 JSON、唯一标识、课程引用、时长和预期分组一致性检查。没有真实日历连接或产品解析器；P5.2–P5.4 按后续窗口推进。
 
 - [ ] **P5.2 — Google / Apple 接入方式调研**（依赖 P5.1）
   - 分别核实各平台的日历读取、变更检测、重复事件、授权与运行平台限制；区分读取用户已有事件与替用户创建 / 修改事件。
@@ -254,3 +255,5 @@
 | P4.3 | 2026-10-01 | [`a352c1a`](https://github.com/tzuo5/attendance-handler/commit/a352c1a) · `feat: dispatch scheduled classrooms with durable execution claims` | 113 单测、类型检查、生产构建、双 renderer、25 原有 Chrome 集成、macOS 实际打包四组调度验收 | Windows 安装版 CI 首次全部通过；真实学校 / 课堂、Mac 钥匙串与物理睡眠待验收；P4.4 补全时间变化 |
 
 | P4.4 | 2026-10-01 | [`82b6546`](https://github.com/tzuo5/attendance-handler/commit/82b6546) · `feat: recover scheduled starts across clock changes and interrupted scans` | 135 单测、类型检查、构建、双 renderer、macOS 实际打包六组调度与四组配置 | Windows 安装版六组与 DPAPI 首次全部通过；实体睡眠、真实学校 / 课堂、Mac 钥匙串待验收；历史记录分批补齐 |
+
+| P5.1 | 2026-10-01 | `docs: define calendar agent intents and synthetic acceptance scenarios` | 设计语义检查、16 个合成 JSON 场景一致性验收；前一功能 Source / Windows CI 首次通过 | ideation 提案；尚无真实日历读取、授权、写入或产品解析器；本次文档 CI 推送后核实 |

@@ -1,0 +1,355 @@
+{
+  "format": "attendance-calendar-intents-v1",
+  "synthetic": true,
+  "purpose": "P5.1 semantic scenarios only; not provider API payloads or executable calendar integration",
+  "courses": [
+    {
+      "id": "11111111-1111-4111-8111-111111111111",
+      "name": "示例课程 A"
+    },
+    {
+      "id": "22222222-2222-4222-8222-222222222222",
+      "name": "同名示例课程"
+    },
+    {
+      "id": "33333333-3333-4333-8333-333333333333",
+      "name": "同名示例课程"
+    },
+    {
+      "id": "44444444-4444-4444-8444-444444444444",
+      "name": "示例课程 B"
+    }
+  ],
+  "cases": [
+    {
+      "id": "normal_title",
+      "event": {
+        "source": "synthetic",
+        "calendarKey": "demo-calendar",
+        "title": "@tt 示例课程 A",
+        "description": "",
+        "startLocal": "2026-10-05T09:00",
+        "endLocal": "2026-10-05T09:50",
+        "timeZone": "America/Chicago",
+        "allDay": false,
+        "status": "active",
+        "uid": "evt-001"
+      },
+      "expected": {
+        "status": "awaiting-confirmation",
+        "reason": "唯一已保存课程与完整时间；首次由用户确认",
+        "proposedCourseId": "11111111-1111-4111-8111-111111111111"
+      }
+    },
+    {
+      "id": "description_marker",
+      "event": {
+        "source": "synthetic",
+        "calendarKey": "demo-calendar",
+        "title": "课堂讨论",
+        "description": "@tt\n课程：示例课程 A",
+        "startLocal": "2026-10-05T09:00",
+        "endLocal": "2026-10-05T09:50",
+        "timeZone": "America/Chicago",
+        "allDay": false,
+        "status": "active",
+        "uid": "evt-002"
+      },
+      "expected": {
+        "status": "awaiting-confirmation",
+        "reason": "描述明确绑定课程，保留原标题",
+        "proposedCourseId": "11111111-1111-4111-8111-111111111111"
+      }
+    },
+    {
+      "id": "case_insensitive",
+      "event": {
+        "source": "synthetic",
+        "calendarKey": "demo-calendar",
+        "title": "@TT 示例课程 A",
+        "description": "",
+        "startLocal": "2026-10-05T09:00",
+        "endLocal": "2026-10-05T09:50",
+        "timeZone": "America/Chicago",
+        "allDay": false,
+        "status": "active",
+        "uid": "evt-003"
+      },
+      "expected": {
+        "status": "awaiting-confirmation",
+        "reason": "大小写不敏感，仍只表示一次意图",
+        "proposedCourseId": "11111111-1111-4111-8111-111111111111"
+      }
+    },
+    {
+      "id": "duplicate_markers",
+      "event": {
+        "source": "synthetic",
+        "calendarKey": "demo-calendar",
+        "title": "@tt 示例课程 A",
+        "description": "@tt\n课程：示例课程 A",
+        "startLocal": "2026-10-05T09:00",
+        "endLocal": "2026-10-05T09:50",
+        "timeZone": "America/Chicago",
+        "allDay": false,
+        "status": "active",
+        "uid": "evt-004"
+      },
+      "expected": {
+        "status": "awaiting-confirmation",
+        "reason": "标题与描述标记合并为同一个事件意图",
+        "proposedCourseId": "11111111-1111-4111-8111-111111111111"
+      }
+    },
+    {
+      "id": "duplicate_course_names",
+      "event": {
+        "source": "synthetic",
+        "calendarKey": "demo-calendar",
+        "title": "@tt 同名示例课程",
+        "description": "",
+        "startLocal": "2026-10-05T09:00",
+        "endLocal": "2026-10-05T09:50",
+        "timeZone": "America/Chicago",
+        "allDay": false,
+        "status": "active",
+        "uid": "evt-005"
+      },
+      "expected": {
+        "status": "needs-course",
+        "reason": "两门已保存课程同名，不能自动选第一门"
+      }
+    },
+    {
+      "id": "unknown_course",
+      "event": {
+        "source": "synthetic",
+        "calendarKey": "demo-calendar",
+        "title": "@tt 未保存的示例课程",
+        "description": "",
+        "startLocal": "2026-10-05T09:00",
+        "endLocal": "2026-10-05T09:50",
+        "timeZone": "America/Chicago",
+        "allDay": false,
+        "status": "active",
+        "uid": "evt-006"
+      },
+      "expected": {
+        "status": "needs-course",
+        "reason": "课程尚未保存，需要选择或配置"
+      }
+    },
+    {
+      "id": "conflicting_course_fields",
+      "event": {
+        "source": "synthetic",
+        "calendarKey": "demo-calendar",
+        "title": "@tt 示例课程 A",
+        "description": "课程：示例课程 B",
+        "startLocal": "2026-10-05T09:00",
+        "endLocal": "2026-10-05T09:50",
+        "timeZone": "America/Chicago",
+        "allDay": false,
+        "status": "active",
+        "uid": "evt-007"
+      },
+      "expected": {
+        "status": "needs-course",
+        "reason": "标题与描述要求不同课程，重新确认"
+      }
+    },
+    {
+      "id": "missing_end",
+      "event": {
+        "source": "synthetic",
+        "calendarKey": "demo-calendar",
+        "title": "@tt 示例课程 A",
+        "description": "",
+        "startLocal": "2026-10-05T09:00",
+        "endLocal": null,
+        "timeZone": "America/Chicago",
+        "allDay": false,
+        "status": "active",
+        "uid": "evt-008"
+      },
+      "expected": {
+        "status": "needs-time",
+        "reason": "缺少结束时刻，不采用默认时长"
+      }
+    },
+    {
+      "id": "missing_time_zone",
+      "event": {
+        "source": "synthetic",
+        "calendarKey": "demo-calendar",
+        "title": "@tt 示例课程 A",
+        "description": "",
+        "startLocal": "2026-10-05T09:00",
+        "endLocal": "2026-10-05T09:50",
+        "timeZone": null,
+        "allDay": false,
+        "status": "active",
+        "uid": "evt-009"
+      },
+      "expected": {
+        "status": "needs-time",
+        "reason": "当地时间缺少可核对的时区，不猜电脑时区"
+      }
+    },
+    {
+      "id": "all_day",
+      "event": {
+        "source": "synthetic",
+        "calendarKey": "demo-calendar",
+        "title": "@tt 示例课程 A",
+        "description": "",
+        "startLocal": "2026-10-05",
+        "endLocal": "2026-10-06",
+        "timeZone": "America/Chicago",
+        "allDay": true,
+        "status": "active",
+        "uid": "evt-010"
+      },
+      "expected": {
+        "status": "needs-time",
+        "reason": "全天事件不能直接变成课堂计划"
+      }
+    },
+    {
+      "id": "unmarked_event",
+      "event": {
+        "source": "synthetic",
+        "calendarKey": "demo-calendar",
+        "title": "示例课程 A",
+        "description": "",
+        "startLocal": "2026-10-05T09:00",
+        "endLocal": "2026-10-05T09:50",
+        "timeZone": "America/Chicago",
+        "allDay": false,
+        "status": "active",
+        "uid": "evt-011"
+      },
+      "expected": {
+        "status": "ignored",
+        "reason": "未标记的新事件不产生课堂意图"
+      }
+    },
+    {
+      "id": "email_fragments",
+      "event": {
+        "source": "synthetic",
+        "calendarKey": "demo-calendar",
+        "title": "name@tt.example",
+        "description": "@tt.example",
+        "startLocal": "2026-10-05T09:00",
+        "endLocal": "2026-10-05T09:50",
+        "timeZone": "America/Chicago",
+        "allDay": false,
+        "status": "active",
+        "uid": "evt-012"
+      },
+      "expected": {
+        "status": "ignored",
+        "reason": "邮件和域名片段不是独立标记"
+      }
+    },
+    {
+      "id": "cancelled_bound_event",
+      "event": {
+        "source": "synthetic",
+        "calendarKey": "demo-calendar",
+        "title": "@tt 示例课程 A",
+        "description": "",
+        "startLocal": "2026-10-05T09:00",
+        "endLocal": "2026-10-05T09:50",
+        "timeZone": "America/Chicago",
+        "allDay": false,
+        "status": "cancelled",
+        "uid": "evt-013"
+      },
+      "expected": {
+        "status": "cancel-future",
+        "reason": "明确取消已绑定事件，只撤销未来计划"
+      },
+      "prior": {
+        "confirmedCourseId": "11111111-1111-4111-8111-111111111111",
+        "execution": "not-started"
+      }
+    },
+    {
+      "id": "removed_marker",
+      "event": {
+        "source": "synthetic",
+        "calendarKey": "demo-calendar",
+        "title": "示例课程 A",
+        "description": "",
+        "startLocal": "2026-10-05T09:00",
+        "endLocal": "2026-10-05T09:50",
+        "timeZone": "America/Chicago",
+        "allDay": false,
+        "status": "active",
+        "uid": "evt-014"
+      },
+      "expected": {
+        "status": "cancel-future",
+        "reason": "已绑定事件移除标记后撤销未来计划"
+      },
+      "prior": {
+        "confirmedCourseId": "11111111-1111-4111-8111-111111111111",
+        "execution": "not-started"
+      }
+    },
+    {
+      "id": "retimed_started_event",
+      "event": {
+        "source": "synthetic",
+        "calendarKey": "demo-calendar",
+        "title": "@tt 示例课程 A",
+        "description": "",
+        "startLocal": "2026-10-06T10:00",
+        "endLocal": "2026-10-06T10:50",
+        "timeZone": "America/Chicago",
+        "allDay": false,
+        "status": "active",
+        "uid": "evt-015"
+      },
+      "expected": {
+        "status": "keep-current",
+        "reason": "已执行实例移到另一天也不重复开启，当前课堂沿用原截止"
+      },
+      "prior": {
+        "confirmedCourseId": "11111111-1111-4111-8111-111111111111",
+        "execution": "started",
+        "originalStartLocal": "2026-10-05T09:00",
+        "originalEndLocal": "2026-10-05T09:50",
+        "originalTimeZone": "America/Chicago"
+      }
+    },
+    {
+      "id": "cancelled_started_event",
+      "event": {
+        "source": "synthetic",
+        "calendarKey": "demo-calendar",
+        "title": "@tt 示例课程 A",
+        "description": "",
+        "startLocal": "2026-10-05T09:00",
+        "endLocal": "2026-10-05T09:50",
+        "timeZone": "America/Chicago",
+        "allDay": false,
+        "status": "cancelled",
+        "uid": "evt-016"
+      },
+      "expected": {
+        "status": "keep-current",
+        "reason": "取消未来计划并提示人工结束，本节不自动停止"
+      },
+      "prior": {
+        "confirmedCourseId": "11111111-1111-4111-8111-111111111111",
+        "execution": "started",
+        "originalStartLocal": "2026-10-05T09:00",
+        "originalEndLocal": "2026-10-05T09:50",
+        "originalTimeZone": "America/Chicago"
+      }
+    }
+  ]
+}
