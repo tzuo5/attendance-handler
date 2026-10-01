@@ -26,7 +26,8 @@ export class WindowsUpdateAdapter implements UpdateAdapter {
     this.updater = new NsisUpdater({ provider: 'generic', url: this.testFeed || release.updates!.windowsFeed });
     this.updater.disableDifferentialDownload = true;
     this.updater.autoDownload = false; this.updater.autoInstallOnAppQuit = false; this.updater.allowDowngrade = false;
-    this.updater.logger = null;
+    const trace = (...values: unknown[]) => process.stderr.write('update-test: ' + values.map(String).join(' ') + '\n');
+    this.updater.logger = this.testFeed ? { info: trace, warn: trace, error: trace, debug: trace } : null;
     // Errors are handled by the awaited methods, without an unhandled EventEmitter error.
     this.updater.on('error', () => {});
     this.updater.on('download-progress', value => progress(value.percent));
@@ -70,6 +71,13 @@ export class MacUpdateAdapter implements UpdateAdapter {
     const bundle = dirname(dirname(this.resources));
     const child = spawn(executable, [bundle, this.testFeed ? this.testFeed + 'appcast.xml' : release.updates!.macAppcast, release.version], { stdio: ['pipe', 'pipe', 'pipe'], env: this.testFeed ? { ...process.env, ATTENDANCE_UPDATE_TEST: '1' } : process.env });
     this.child = child;
+    // Native errors can exit before the controller sends its cancel command.
+    // An EPIPE on this stream must not become an Electron fatal-error dialog.
+    child.stdin.on('error', () => {
+      if (this.child !== child) return;
+      const error = new Error('无法与 macOS 更新辅助程序通信，请重试。');
+      this.rejectDownload?.(error); this.rejectInstall?.(error);
+    });
     // Sparkle diagnostics may include local paths. Only structured status enters AppState.
     if (this.testFeed) child.stderr.on('data', bytes => process.stderr.write('update-test: ' + bytes.toString()));
     else child.stderr.resume();

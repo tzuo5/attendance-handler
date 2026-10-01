@@ -218,7 +218,7 @@ async function main() {
     disabled: (demo && !testRuntime) || !app.isPackaged,
     manifestUrl: testRuntime ? testRuntime.feed + 'version.json' : undefined,
     adapter: process.platform === 'win32' ? new WindowsUpdateAdapter(testRuntime?.feed) : new MacUpdateAdapter(process.resourcesPath, testRuntime?.feed),
-    changed: emit,
+    changed: state => { if (testRuntime) process.stderr.write('update-test: ' + JSON.stringify({ phase: state.phase, detail: state.detail }) + '\n'); emit(); },
     startupAvailable: () => { void (async () => {
       const result = await dialog.showMessageBox(window, { type: 'info', title: '发现新版本', message: `Attendance Handler ${updater!.state.release!.version} 已发布`, detail: updater!.state.supported && updater!.state.release!.updates ? '下载完成后会自动安装并重启，课程和本地记录会保留。' : '此安装方式需要从官网下载更新。', buttons: ['下载更新', '稍后'], defaultId: 1, cancelId: 1 });
       if (result.response === 0) {

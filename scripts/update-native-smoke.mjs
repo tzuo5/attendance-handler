@@ -19,16 +19,18 @@ const exec = promisify(execFile), root = await mkdtemp(join(tmpdir(), 'attendanc
 const data = join(root, 'user-data'); await mkdir(data);
 const pkg = JSON.parse(await readFile('package.json', 'utf8'));
 const mock = await createMockClassroom();
-let application, badUpdate = false, latestVersion = '99.0.0', relaunchedPid, oldPid;
+let application, badUpdate = false, latestVersion = '99.0.0', relaunchedPid, oldPid, invalidPackageRequests = 0;
 const next = '99.0.1', downloads = new Map();
 const manifest = version => ({ schemaVersion: 1, version, publishedAt: '2026-10-01T12:00:00Z', releaseUrl: `https://github.com/tzuo5/attendance-handler/releases/tag/v${version}`, downloads: { mac: releaseBase(version) + assetNames(version).mac, windows: releaseBase(version) + assetNames(version).windows }, updates: { macAppcast: releaseBase(version) + 'appcast.xml', windowsFeed: releaseBase(version) } });
 const server = createServer(async (request, response) => {
   try {
-    if (request.url === '/version.json') { response.setHeader('Content-Type', 'application/json'); response.end(JSON.stringify(manifest(latestVersion))); return; }
-    if (request.url === '/appcast.xml') { response.setHeader('Content-Type', 'application/xml'); response.end(badUpdate ? appcast.replace(/sparkle:edSignature="(.)/, (_, first) => `sparkle:edSignature="${first === 'A' ? 'B' : 'A'}`) : appcast); return; }
-    if (request.url === '/latest.yml') { response.end(badUpdate ? windowsYaml.replace(/sha512: [^\n]+/g, 'sha512: invalid') : windowsYaml); return; }
-    const path = downloads.get(decodeURIComponent(request.url?.split('?')[0] || ''));
+    const pathname = request.url?.split('?')[0];
+    if (pathname === '/version.json') { response.setHeader('Content-Type', 'application/json'); response.end(JSON.stringify(manifest(latestVersion))); return; }
+    if (pathname === '/appcast.xml') { response.setHeader('Content-Type', 'application/xml'); response.end(badUpdate ? appcast.replace(/sparkle:edSignature="(.)/, (_, first) => `sparkle:edSignature="${first === 'A' ? 'B' : 'A'}`) : appcast); return; }
+    if (pathname === '/latest.yml') { response.end(badUpdate ? windowsYaml.replace(/sha512: (.)/g, (_, first) => `sha512: ${first === 'A' ? 'B' : 'A'}`) : windowsYaml); return; }
+    const path = downloads.get(decodeURIComponent(pathname || ''));
     if (!path) { response.writeHead(404); response.end(); return; }
+    if (badUpdate) invalidPackageRequests++;
     response.setHeader('Content-Length', (await stat(path)).size); createReadStream(path).pipe(response);
   } catch { response.writeHead(500); response.end(); }
 });
@@ -95,6 +97,7 @@ try {
   try { await Promise.race([window.evaluate(() => window.attendance.downloadUpdate()), new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Invalid package rejection timed out')), 90000); })]); }
   finally { clearTimeout(timer); }
   assert.equal((await window.evaluate(() => window.attendance.getState())).update.phase, 'error');
+  assert.ok(invalidPackageRequests > 0, 'the invalid package must actually be downloaded and verified');
   assert.equal(await application.evaluate(({ app }) => app.getVersion()), '99.0.0');
   badUpdate = false;
   console.log('Downloading a verified update and waiting for installation and relaunch…');
