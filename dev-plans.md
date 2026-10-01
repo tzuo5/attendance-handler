@@ -221,10 +221,11 @@
   - **验收：**通过合成事件演练新增、改时、删除、重复例外和重复同步；一个事件实例只对应一次计划执行，歧义有明确处理入口。
   - **实绩：**[映射契约](docs/calendar-mapping.md) 定义结构化实例键、固定计划 ID、UTC 单次投影、完整读取批次、课程确认 / 用户暂停、来源恢复和最少记录。识别当前 Phase 4 的日期键不足以保护跨日改时，明确未来需新增原子日历实例领取；未直接声称产品已支持。11 组 / 36 步手写轨迹、33 个任务投影通过当前 Phase 4 校验器与一致性检查；实际离线同步样例留给 P5.4。
 
-- [ ] **P5.4 — 可行性样例与下一步决策**（依赖 P5.3）
+- [x] **P5.4 — 可行性样例与下一步决策**（依赖 P5.3）
   - 对选定方案制作隔离样例，验证“事件被识别 → 生成计划 → 修改 / 取消同步”，不直接操作真实课堂。
   - 根据结果决定进入开发、缩小范围或继续探索；若进入开发，另列实现阶段的检查点与验收标准。
   - **验收：**结论有样例证据和已知限制；Google 与 Apple 各自状态明确，README 仅将已实现并验证的能力列为现有功能。
+  - **实绩：**[单文件离线原型](docs/examples/calendar-prototype.html) 可双击运行，六组 / 35 次真实按钮点击、31 个现有 Phase 4 校验通过的投影、自由尝试 / 恢复门禁及时间 / 文本 / 旧包 / 过期保护通过；900 / 390 界面检查，无脚本错误或外部请求。[方案结论](docs/calendar-decision.md) 建议先进入 Google 只读验证，并列 C1–C5 与 Apple 专项门槛。只有内存模型，没有真实授权、磁盘事务或课堂调用。
 
 ## 进度记录
 
@@ -258,3 +259,4 @@
 | P5.1 | 2026-10-01 | [`f09f389`](https://github.com/tzuo5/attendance-handler/commit/f09f389) · `docs: define calendar agent intents and synthetic acceptance scenarios` | 设计语义检查、16 个合成 JSON 场景一致性验收；前一功能 Source / Windows CI 首次通过 | ideation 提案；尚无真实日历读取、授权、写入或产品解析器；本次 Source / Windows CI 首次全部通过，验证既有运行代码回归 |
 | P5.2 | 2026-10-01 | [`8f9ddb6`](https://github.com/tzuo5/attendance-handler/commit/8f9ddb6) · `docs: compare official Google and Apple calendar access paths` | Google / Apple / IETF 原始资料逐项引用与关键条件复核；53 处本地引用和 86 文件公开审核通过；Source / Windows CI 首次全部通过 | 接入研究完成；真实授权、原生桥接、iCloud 资格与服务行为未验证；CI 验证既有运行代码，未验证真实日历接入 |
 | P5.3 | 2026-10-01 | [`7ff8107`](https://github.com/tzuo5/attendance-handler/commit/7ff8107) · `docs: specify calendar instance mapping and durable execution boundaries` | 11 组 / 36 步合成设计轨迹，33 个 UTC 单次投影经现有 Phase 4 校验器核对；稳定计划 ID、原截止、重复例外和回拨第二次时刻通过一致性检查；Source / Windows CI 首次全部通过 | 手写状态预期，没有运行同步器或课堂；产品原子日历领取和来源桥接尚未实现；P5.4 再验证可执行样例 |
+| P5.4 | 2026-10-01 | `feat: add isolated calendar mapping prototype and feasibility decision` | 六组 / 35 按钮点击、31 个任务投影、恢复 / 非法确认 / 文本时间 / 旧包 / 过期决定门禁；900 / 390 视觉核对，无脚本错误或外部请求 | 可丢弃内存模型；真实日历、持久事务、完整同步和课堂未接入；本次 CI 待补记 |

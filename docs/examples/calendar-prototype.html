@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>@tt 日历映射 · 离线原型</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f7f8;color:#172c35;font:16px/1.65 system-ui,sans-serif}main{max-width:1060px;margin:36px auto;padding:0 24px 48px}h1{font-size:28px;line-height:1.3}h2{font-size:19px;margin:0 0 14px}p{margin:10px 0}.muted{color:#576970}.tag{display:inline-block;border-radius:7px;background:#d9efea;padding:3px 9px;font-weight:650;color:#176656}.panel{background:white;border:1px solid #d8e1e4;border-radius:14px;padding:22px;margin:18px 0}.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.facts div{background:#f4f8f7;padding:12px;border-radius:8px}.facts strong{display:block;font-size:20px}button{font:inherit;line-height:1.35;background:#fff;border:1px solid #b9ccca;border-radius:8px;padding:10px 14px;margin:4px;cursor:pointer;color:inherit}button:hover{background:#eef7f4}button:focus-visible{outline:3px solid #268775;outline-offset:2px}button[aria-selected=true],button.primary{background:#176d5e;color:white;border-color:#176d5e}button:disabled{opacity:.45;cursor:default}table{border-collapse:collapse;width:100%;margin-top:16px}th,td{text-align:left;vertical-align:top;padding:10px 8px;border-bottom:1px solid #e0e7e9;font-size:14px}.tablewrap{overflow:auto}#notice{padding:12px 16px;background:#eef7f4;border-left:4px solid #268775}#guide{min-height:128px}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px;max-height:400px;overflow:auto}details{margin-top:16px}.steps{display:flex;flex-wrap:wrap;gap:4px}small{font-size:13px}@media(max-width:700px){main{padding:0 14px;margin-top:20px}.facts{grid-template-columns:1fr}.panel{padding:16px}h1{font-size:24px}}
+</style>
+<main>
+<span class="tag">离线原型 · 虚构数据 · 非产品功能</span>
+<h1>日历改时或取消，能否保持一份计划？</h1>
+<p>这里验证 <strong>@tt 事件 → 人工确认 → 计划 → 修改 / 取消</strong>，以及已开始后如何保护原结束时间。可以自由按按钮，也可以跟随下面的演练。</p>
+<p class="muted">所有事件、课程和开始次数都是模拟。页面不连接 Google / Apple、不保存账号或本机数据、不打开 Chrome 课堂，也没有签到或答题回执。刷新页面会清空演练。</p>
+<section class="panel" aria-labelledby="state-title"><h2 id="state-title">当前情况</h2><div class="facts"><div>计划数量<strong id="plan-count">0</strong></div><div>来源读取<strong id="source-health">尚未读取</strong></div><div>模拟开始次数<strong id="start-count">0</strong></div></div><p id="current" class="muted"></p><p id="notice" role="status" aria-live="polite"></p><div class="tablewrap"><table><thead><tr><th>课程 / 事件</th><th>识别结果</th><th>事件时间（来源时区）</th><th>计划 / 原截止</th></tr></thead><tbody id="rows"></tbody></table></div><details><summary>查看完整模拟记录</summary><pre id="raw"></pre></details></section>
+<section class="panel"><h2>自由尝试</h2><div id="free"></div></section>
+<section class="panel"><h2>逐步演练</h2><div id="tabs" role="tablist" aria-label="演练场景"></div><div id="guide" role="tabpanel"></div></section>
+<p class="muted"><small>这是可丢弃的内存状态模型。模拟重开只保留内存快照，不验证磁盘原子保存、真实授权、分页网络协议或产品调度。Google 是优先验证路线；Apple 真实读取、身份重建和 Windows 路线仍待验证。</small></p>
+</main>
+<script id="calendar-model">
+// Pure, offline model. No DOM, network, storage, process or classroom callbacks.
+const CalendarPrototype = (() => {
+  const A='11111111-1111-4111-8111-111111111111',B='22222222-2222-4222-8222-222222222222';
+  const sample={id:'demo-event',summary:'@tt 示例课程 A',description:'',start:{dateTime:'2026-10-05T09:00:00-05:00',timeZone:'America/Chicago'},end:{dateTime:'2026-10-05T09:50:00-05:00',timeZone:'America/Chicago'}};
+  const clone=value=>structuredClone(value);
+  const fresh=()=>({connectionId:'88888888-8888-4888-8888-888888888888',calendarId:'demo-calendar',now:Date.parse('2026-10-01T12:00:00Z'),nextId:1,lastSeq:0,healthy:false,rows:{},aliases:{},claims:{},sourceEvents:[clone(sample)],simulatedStarts:0,current:null,notice:'先读取虚构事件，再确认绑定课程。',courses:[{id:A,name:'示例课程 A'},{id:B,name:'同名示例课程'},{id:'33333333-3333-4333-8333-333333333333',name:'同名示例课程'}]});
+  const marker=/(^|[\s([{，,;；:：!?！？])@tt(?=$|[\s)\]}，,;；:：!?！？])/iu;
+  function intent(event,courses,row){
+    const title=event.summary||'',body=event.description||'';
+    // HTML normalization is deliberately outside this restricted sample.
+    if(/[<>]/.test(title+body))return {status:'needs-text',reason:'此样例只接受普通文本；HTML 转换仍需单独验证。'};
+    if(!marker.test(title)&&!marker.test(body))return {status:'unmarked',reason:'没有独立的 @tt 标记。'};
+    const lines=[...body.matchAll(/^(?:课程|Course)\s*[:：]\s*(.+)$/gmi)].map(m=>m[1].trim());
+    const titleMatch=title.match(/^@tt\s+(.+)$/i)||title.match(/^(.+?)\s+@tt$/i);
+    const names=[...(titleMatch?[titleMatch[1].trim()]:[]),...lines];
+    if(lines.length>1||!names.length||new Set(names).size!==1)return {status:'needs-course',reason:'请明确选择课程，标题和描述不能互相冲突。'};
+    const name=names[0],matches=courses.filter(course=>course.name===name);
+    if(row?.confirmedCourseId&&row.intentName===name&&courses.some(course=>course.id===row.confirmedCourseId))return {status:'valid',name,courseId:row.confirmedCourseId};
+    if(matches.length!==1)return {status:'needs-course',name,reason:'未找到唯一课程；同名课程需要人工选择。'};
+    return {status:'valid',name,courseId:matches[0].id};
+  }
+  function instant(text){
+    if(typeof text!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:00(?:\.000)?(?:Z|[+-]\d{2}:\d{2})$/.test(text))return null;
+    const wall=text.slice(0,19),utc=Date.parse(wall+'Z');
+    if(!Number.isFinite(utc)||new Date(utc).toISOString().slice(0,19)!==wall)return null;
+    const value=Date.parse(text);return Number.isFinite(value)?value:null;
+  }
+  function timing(event){
+    const start=instant(event.start?.dateTime),end=instant(event.end?.dateTime),zone=event.start?.timeZone;
+    if(event.start?.date||event.end?.date||event.endTimeUnspecified||start===null||end===null||!zone)return null;
+    try{if(zone!=='UTC'&&!zone.includes('/'))return null;new Intl.DateTimeFormat('en',{timeZone:zone});}catch{return null;}
+    const duration=(end-start)/60000,date=new Date(start).toISOString().slice(0,10);
+    if(!Number.isInteger(duration)||duration<1||duration>720||date<'2000-01-01'||date>'2100-12-31')return null;
+    return {start,end,zone,duration,date,time:new Date(start).toISOString().slice(11,16)};
+  }
+  function keyFor(state,event){
+    if(event.recurringEventId){const original=instant(event.originalStartTime?.dateTime);if(original===null)return state.aliases[event.id]||null;return JSON.stringify([state.connectionId,state.calendarId,'series',event.recurringEventId,new Date(original).toISOString()]);}
+    return state.aliases[event.id]||JSON.stringify([state.connectionId,state.calendarId,'event',event.id]);
+  }
+  function disable(row,status){row.status=status;if(row.schedule)row.schedule.enabled=false;}
+  function project(state,row,activate){
+    row.planId ||= `55555555-5555-4555-8555-${String(state.nextId++).padStart(12,'0')}`;
+    row.schedule={id:row.planId,courseId:row.confirmedCourseId,enabled:activate,localTime:row.time.time,timeZone:'UTC',durationMinutes:row.time.duration,effectiveFrom:state.now,recurrence:{kind:'once',date:row.time.date}};
+  }
+  function reduce(previous,action){
+    if(action.type==='reset')return fresh();
+    const state=clone(previous);state.now+=1000;
+    const first=Object.keys(state.rows)[0],key=action.key||first,row=state.rows[key];
+    if(action.type==='read'){
+      if(action.seq!==undefined&&action.seq<=state.lastSeq){state.notice='旧读取结果已丢弃，计划未改变。';return state;}
+      if(action.complete===false||action.permission===false){state.healthy=false;for(const item of Object.values(state.rows))if(!state.claims[item.key]){item.sourceHeld=true;disable(item,item.userEnabled===false?'paused':'sync-unconfirmed');}state.notice='读取未完成或权限失效：保留绑定，暂停未来计划。';return state;}
+      state.lastSeq=action.seq??state.lastSeq+1;state.healthy=true;state.sourceEvents=clone(action.events);
+      for(const event of action.events){
+        if(!event.id)continue;
+        const eventKey=keyFor(state,event);if(!eventKey){state.notice='重复实例缺少原定身份，未生成计划。';continue;}
+        let item=state.rows[eventKey];
+        if(event.status==='cancelled'){
+          if(item){item.userEnabled=false;disable(item,state.claims[eventKey]?'consumed':'cancelled');}
+          state.notice=state.claims[eventKey]?'事件取消，已领取的本次保留原截止。':'明确取消：只停用未来计划，保留绑定。';continue;
+        }
+        const requested=intent(event,state.courses,item);
+        if(requested.status==='unmarked'){
+          if(item){item.userEnabled=false;disable(item,state.claims[eventKey]?'consumed':'cancelled');}
+          state.notice=item?'标记已移除，未来计划已停用。':'没有独立标记，忽略新事件。';continue;
+        }
+        item ||= {key:eventKey,eventId:event.id,planId:null,schedule:null,userEnabled:false,confirmedCourseId:null,intentName:null,status:'awaiting-confirmation'};
+        state.rows[eventKey]=item;state.aliases[event.id]=eventKey;item.title=event.summary||'虚构课堂';item.event=clone(event);
+        if(state.claims[eventKey]){item.sourceTime=timing(event);disable(item,'consumed');state.notice='此实例已有执行决定，跨日改时也不重新开始；原截止保留。';continue;}
+        const time=timing(event),fingerprint=JSON.stringify([requested.name,time,requested.courseId]);
+        item.requested=requested;item.time=time;
+        if(requested.status!=='valid'){disable(item,requested.status);state.notice=requested.reason;continue;}
+        if(!time){disable(item,'needs-time');state.notice='需要明确结束、城市时区和整分钟时间；不自动取整。';continue;}
+        if(item.confirmedCourseId&&requested.courseId!==item.confirmedCourseId){disable(item,'needs-course');state.notice='来源要求另一门课程，请重新确认。';continue;}
+        const changed=item.fingerprint!==fingerprint;item.fingerprint=fingerprint;
+        if(item.sourceHeld){item.sourceHeld=false;disable(item,item.userEnabled===false?'paused':'awaiting-reenable');state.notice='读取恢复，暂停过的计划需要重新启用。';continue;}
+        if(!item.confirmedCourseId){disable(item,'awaiting-confirmation');state.notice='已识别课程和时间，等待首次确认。';continue;}
+        if(item.userEnabled===false){disable(item,'paused');state.notice='保留本机暂停 / 取消选择，不自动启用。';continue;}
+        if(['needs-time','needs-course','needs-text','cancelled','awaiting-reenable'].includes(item.status)){disable(item,'awaiting-reenable');state.notice='信息已补齐，需要明确重新启用。';continue;}
+        item.status='ready';if(changed)project(state,item,true);state.notice=changed?'同一份计划已更新，生效时间重新核实。':'内容未变：计划 ID 和生效时刻保持不变。';
+      }
+      return state;
+    }
+    if(action.type==='restart'){state.current=null;state.notice='模拟重开保留内存领取记录；不确定的本次不会重复开始。';return state;}
+    if(!row){state.notice='请先读取一个带 @tt 的虚构事件。';return state;}
+    if(action.type==='pause'){row.userEnabled=false;disable(row,state.claims[key]?'consumed':'paused');state.notice='已暂停未来计划；当前模拟课堂保持原截止。';return state;}
+    if(action.type==='confirm'||action.type==='enable'){
+      if(state.claims[key]){state.notice='此实例已领取，不能重新启用成另一节课。';return state;}
+      const chosen=action.courseId||row.requested?.courseId;
+      if(!state.healthy||!row.time||!state.courses.some(course=>course.id===chosen)||['cancelled','unmarked','needs-text'].includes(row.status)){state.notice='需要有效读取、完整时间和明确课程，当前不能启用。';return state;}
+      if(action.type==='enable'&&chosen!==row.confirmedCourseId){state.notice='课程变化需要重新确认，不能只点重新启用。';return state;}
+      row.confirmedCourseId=chosen;row.intentName=row.requested?.name;row.userEnabled=true;row.status='ready';project(state,row,true);state.notice='已明确确认启用；任务仅保存在本次模拟内存。';return state;
+    }
+    if(action.type==='claim'){
+      if(state.claims[key]){state.notice='领取记录已经存在：没有第二次模拟开始。';return state;}
+      if(!state.healthy||row.status!=='ready'||!row.schedule?.enabled||state.current){state.notice='来源、计划或当前课堂条件不满足，未模拟开始。';return state;}
+      state.now=Math.max(state.now,row.time.start);
+      if(row.time.start<row.schedule.effectiveFrom||state.now-row.time.start>600000||state.now>=row.time.end){state.claims[key]={planId:row.planId,endsAt:row.time.end,at:state.now,kind:'skipped'};disable(row,'missed');state.notice='开始已早于生效或超过宽限，保留跳过决定，不模拟补开。';return state;}
+      state.claims[key]={planId:row.planId,endsAt:row.time.end,at:state.now};row.status='consumed';row.schedule.enabled=false;state.simulatedStarts++;state.current={key,endsAt:row.time.end,courseId:row.confirmedCourseId};state.notice='仅模拟领取一次并增加计数；没有开启真实课堂或生成网站回执。';return state;
+    }
+    return state;
+  }
+  return {fresh,reduce,sample,A,B,keyFor};
+})();
+</script>
+<script>
+const model=CalendarPrototype;let state=model.fresh(),scenarioIndex=0,stepIndex=0;
+const event=(changes={})=>({...structuredClone(model.sample),...changes});
+const moved=raw=>({...structuredClone(raw),status:'confirmed',start:{dateTime:'2026-10-06T10:00:00-05:00',timeZone:'America/Chicago'},end:{dateTime:'2026-10-06T10:50:00-05:00',timeZone:'America/Chicago'}});
+const read=events=>({type:'read',events,complete:true});
+const recurring=(id,date)=>event({id,recurringEventId:'demo-series',originalStartTime:{dateTime:`${date}T09:00:00-05:00`},start:{dateTime:`${date}T09:00:00-05:00`,timeZone:'America/Chicago'},end:{dateTime:`${date}T09:50:00-05:00`,timeZone:'America/Chicago'}});
+const keyById=id=>state.aliases[id];
+const scenarios=[
+{name:'修改与取消',description:'先确认，再重复读取、改到明天和取消。观察计划数量和计划 ID。',steps:[['读取事件',()=>read([event()])],['确认启用',()=>({type:'confirm'})],['重复读取',()=>read([event()])],['改到明天',()=>read([moved(event())])],['取消事件',()=>read([{id:'demo-event',status:'cancelled'}])]]},
+{name:'已开始后改时',description:'模拟到点之后再改时和重开。次数应保持 1，原截止不能延长。',steps:[['读取事件',()=>read([event()])],['确认启用',()=>({type:'confirm'})],['模拟到点',()=>({type:'claim'})],['改到明天',()=>read([moved(event())])],['模拟重开',()=>({type:'restart'})],['再次模拟到点',()=>({type:'claim'})],['取消事件',()=>read([{id:'demo-event',status:'cancelled'}])]]},
+{name:'暂停与断网',description:'本机暂停之后，断网和重新读取都不能自行恢复启用。',steps:[['读取事件',()=>read([event()])],['确认启用',()=>({type:'confirm'})],['本机暂停',()=>({type:'pause'})],['模拟读取失败',()=>({type:'read',complete:false,events:[]})],['恢复读取',()=>read([event()])],['尝试到点',()=>({type:'claim'})],['明确重新启用',()=>({type:'enable'})],['模拟到点',()=>({type:'claim'})]]},
+{name:'重复事件例外',description:'两次重复课堂各有身份。改第一节、取消第二节，不应产生第三份计划。',steps:[['读取两节',()=>read([recurring('demo-r1','2026-10-05'),recurring('demo-r2','2026-10-12')])],['确认第一节',()=>({type:'confirm',key:keyById('demo-r1')})],['确认第二节',()=>({type:'confirm',key:keyById('demo-r2')})],['改第一节时间',()=>read([moved(recurring('demo-r1','2026-10-05')),recurring('demo-r2','2026-10-12')])],['取消第二节',()=>read([{id:'demo-r2',recurringEventId:'demo-series',originalStartTime:{dateTime:'2026-10-12T09:00:00-05:00'},status:'cancelled'}])]]},
+{name:'需要补齐',description:'同名课程不能自动选择，未指定结束和秒精度也不能生成可执行计划。',steps:[['读取同名课程',()=>read([event({summary:'@tt 同名示例课程'})])],['尝试直接启用',()=>({type:'confirm'})],['明确选择其中一门',()=>({type:'confirm',courseId:model.B})],['改成未指定结束',()=>read([event({summary:'@tt 同名示例课程',endTimeUnspecified:true})])],['尝试重新启用',()=>({type:'enable'})],['修正为整分钟',()=>read([event({summary:'@tt 同名示例课程'})])],['明确重新启用',()=>({type:'enable'})]]},
+{name:'夏令时回拨',description:'Chicago 的第二个 01:30 带 -06:00，计划应为 UTC 07:30，结束为 08:20。',steps:[['读取明确偏移的事件',()=>read([event({id:'demo-fold',start:{dateTime:'2026-11-01T01:30:00-06:00',timeZone:'America/Chicago'},end:{dateTime:'2026-11-01T02:20:00-06:00',timeZone:'America/Chicago'}})])],['确认启用',()=>({type:'confirm'})],['模拟到点',()=>({type:'claim'})]]}
+];
+const labels={'awaiting-confirmation':'待首次确认',ready:'计划已启用',paused:'本机已暂停',cancelled:'已取消未来计划',consumed:'本次已有决定，不再执行','sync-unconfirmed':'同步未确认','awaiting-reenable':'需重新启用','needs-time':'时间需补齐','needs-course':'课程需选择','needs-text':'文本需核实',missed:'已错过'};
+function dispatch(action){state=model.reduce(state,action);render();}
+function formatTime(value,zone='America/Chicago'){return value?new Intl.DateTimeFormat('zh-CN',{timeZone:zone,dateStyle:'short',timeStyle:'short'}).format(value):'尚未生成';}
+function render(){
+  document.querySelector('#plan-count').textContent=Object.values(state.rows).filter(row=>row.schedule).length;
+  document.querySelector('#source-health').textContent=state.healthy?'本次事件包已核实':'尚未核实 / 已暂停';
+  document.querySelector('#start-count').textContent=state.simulatedStarts;
+  document.querySelector('#notice').textContent=state.notice;
+  const claims=Object.values(state.claims);document.querySelector('#current').textContent=state.current?`本次模拟原截止：${formatTime(state.current.endsAt)}（America/Chicago）；没有真实课堂。`:claims.length?`没有已核实的当前课堂；执行记录保留原截止 ${formatTime(claims[0].endsAt)}。`:'当前没有模拟课堂。';
+  const tbody=document.querySelector('#rows');tbody.replaceChildren();
+  for(const row of Object.values(state.rows)){const tr=document.createElement('tr');const claim=state.claims[row.key],displayTime=row.sourceTime||row.time;const cells=[row.title||'虚构课堂',labels[row.status]||row.status,displayTime?`${formatTime(displayTime.start,displayTime.zone)} – ${formatTime(displayTime.end,displayTime.zone)} · ${displayTime.zone}`:'需要补齐',claim?`原截止 ${formatTime(claim.endsAt)}，不会再次开始`:row.schedule?`${row.schedule.recurrence.date} ${row.schedule.localTime} UTC · ${row.schedule.enabled?'启用':'停用'}`:'尚未生成计划'];for(const text of cells){const td=document.createElement('td');td.textContent=text;tr.append(td);}tbody.append(tr);}
+  document.querySelector('#raw').textContent=JSON.stringify(state,null,2);
+  document.querySelectorAll('[role=tab]').forEach((button,index)=>button.setAttribute('aria-selected',String(index===scenarioIndex)));
+  const guide=document.querySelector('#guide');guide.replaceChildren();const text=document.createElement('p');text.textContent=scenarios[scenarioIndex].description;guide.append(text);
+  const actions=document.createElement('div');actions.className='steps';scenarios[scenarioIndex].steps.forEach(([label,makeAction],index)=>{const button=document.createElement('button');button.textContent=`${index+1}. ${label}`;button.disabled=index!==stepIndex;button.className=index===stepIndex?'primary':'';button.onclick=()=>{stepIndex++;dispatch(makeAction());};actions.append(button);});guide.append(actions);
+  if(stepIndex===scenarios[scenarioIndex].steps.length){const done=document.createElement('p');done.textContent='本组演练结束。可切换场景，或用上方按钮继续尝试。';guide.append(done);}
+}
+const free=[['读取当前虚构事件',()=>read(state.sourceEvents)],['确认并启用',()=>({type:'confirm'})],['改到明天',()=>read([moved(state.sourceEvents[0]||event())])],['取消事件',()=>read([{id:state.sourceEvents[0]?.id||'demo-event',status:'cancelled'}])],['移除 @tt',()=>read([event({summary:'示例课程 A'})])],['本机暂停',()=>({type:'pause'})],['重新启用',()=>({type:'enable'})],['模拟到点（不启动课堂）',()=>({type:'claim'})],['模拟重开',()=>({type:'restart'})],['模拟读取失败',()=>({type:'read',complete:false,events:[]})],['恢复读取',()=>read(state.sourceEvents)],['清空本次演练',()=>({type:'reset'})]];
+for(const [label,makeAction] of free){const button=document.createElement('button');button.textContent=label;button.onclick=()=>{stepIndex=0;dispatch(makeAction());};document.querySelector('#free').append(button);}
+scenarios.forEach((scenario,index)=>{const button=document.createElement('button');button.textContent=scenario.name;button.setAttribute('role','tab');button.setAttribute('aria-selected','false');button.onclick=()=>{scenarioIndex=index;stepIndex=0;dispatch({type:'reset'});};document.querySelector('#tabs').append(button);});
+render();
+</script>
+</html>

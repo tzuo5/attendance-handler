@@ -4,6 +4,8 @@
 
 [实例映射契约](calendar-mapping.md) 定义稳定实例键、UTC 单次投影、完整读取、用户选择与独立领取事实；[11 组状态轨迹](examples/calendar-mapping-traces.json) 演练改时、取消、重复例外及中断边界。现有 Phase 4 的日期执行键还需要扩展，不能直接导入日历事件后就宣称跨日去重已实现。
 
+P5.4 提供可双击运行的 [离线按钮样例](examples/calendar-prototype.html) 和 [方案结论](calendar-decision.md)。样例仅验证选定的普通文本 / 明确时间 / 显式事件变化模型，未实现真实同步、磁盘事务或课堂启动。
+
 ## 最小使用路径
 
 设计中的用户先在 App 保存课程并完成登录，然后在已授权来源中选择需要识别的日历。[P5.2 官方接入调研](calendar-provider-research.md) 记录授权、撤销及平台限制；这里的流程仍是设计，不能当作现有操作指南。选择日历是 App 的读取过滤，不会缩小 Google OAuth 或 Apple 系统实际授予的权限。
