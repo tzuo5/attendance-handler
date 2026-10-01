@@ -25,6 +25,7 @@ describe('release versions and provenance', () => {
   it('rejects off-repository URLs and mixed-version feeds', () => {
     expect(releaseManifestSchema.safeParse(manifest).success).toBe(true);
     expect(releaseManifestSchema.safeParse({ ...manifest, downloads: { ...manifest.downloads, mac: 'https://example.com/app.zip' } }).success).toBe(false);
+    expect(releaseManifestSchema.safeParse({ ...manifest, downloads: { ...manifest.downloads, mac: base + '../v0.1.1/app.dmg' } }).success).toBe(false);
     expect(releaseManifestSchema.safeParse({ ...manifest, updates: { ...manifest.updates, windowsFeed: base.replace('0.1.2', '0.1.3') } }).success).toBe(false);
   });
 });

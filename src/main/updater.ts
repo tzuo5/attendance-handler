@@ -122,7 +122,8 @@ export class UpdateService {
     this.set({ phase: 'downloading', progress: 0, detail: undefined });
     try {
       await this.deps.adapter.download(target, percent => {
-        if (!controller.signal.aborted) this.set({ progress: Math.max(0, Math.min(100, percent)) });
+        const progress = Math.floor(Math.max(0, Math.min(100, percent)));
+        if (!controller.signal.aborted && Number.isFinite(progress) && progress !== this.state.progress) this.set({ progress });
       }, controller.signal);
       if (controller.signal.aborted || this.disposed) return;
       this.set({ phase: 'ready', progress: 100 });

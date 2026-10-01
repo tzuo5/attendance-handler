@@ -12,7 +12,8 @@ export const releaseManifestSchema = z.object({
 }).strict().superRefine((value, context) => {
   const base = `https://github.com/tzuo5/attendance-handler/releases/download/v${value.version}/`;
   if (value.releaseUrl !== `https://github.com/tzuo5/attendance-handler/releases/tag/v${value.version}` ||
-    !Object.values(value.downloads).every(url => url.startsWith(base)) ||
+    value.downloads.mac !== `${base}Attendance-Handler-${value.version}-mac-universal.dmg` ||
+    value.downloads.windows !== `${base}Attendance-Handler-${value.version}-win-x64-Setup.exe` ||
     (value.updates && (value.updates.macAppcast !== `${base}appcast.xml` || value.updates.windowsFeed !== base))) {
     context.addIssue({ code: 'custom', message: 'Release URLs do not match the version' });
   }

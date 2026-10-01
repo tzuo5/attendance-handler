@@ -21,6 +21,8 @@ export async function prepareSparkle(architectures) {
   const helper = resolve('dist-electron/Attendance Updater.app/Contents');
   await rm(resolve('dist-electron/Attendance Updater.app'), { recursive: true, force: true });
   await mkdir(join(helper, 'MacOS'), { recursive: true }); await mkdir(join(helper, 'Frameworks'), { recursive: true });
+  await mkdir(join(helper, 'Resources'), { recursive: true });
+  await cp(join(directory, 'LICENSE'), join(helper, 'Resources/Sparkle-LICENSE.txt'));
   await cp(join(directory, 'Sparkle.framework'), join(helper, 'Frameworks/Sparkle.framework'), { recursive: true, verbatimSymlinks: true });
   const binaries = [];
   for (const architecture of architectures) {

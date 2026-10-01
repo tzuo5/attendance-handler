@@ -17,6 +17,10 @@ import { assetNames, releaseBase } from './release-metadata.mjs';
 assert.ok(['darwin', 'win32'].includes(process.platform), 'Native update tests require macOS or Windows');
 const exec = promisify(execFile), root = await mkdtemp(join(tmpdir(), 'attendance-update-install-'));
 const data = join(root, 'user-data'); await mkdir(data);
+await writeFile(join(data, 'state.json'), JSON.stringify({ version: 1, courses: [], session: null,
+  logs: [{ id: '33333333-3333-4333-8333-333333333333', at: 1790841000000, level: 'info', message: 'Synthetic previous classroom event' }],
+  summaries: [{ id: '44444444-4444-4444-8444-444444444444', courseId: '11111111-1111-4111-8111-111111111111', courseName: '模拟课堂 · 自动 A', startedAt: 1790838000000, endedAt: 1790841000000, plannedEndsAt: 1790841000000, reason: 'manual', attendance: 'confirmed', observedQuestionCount: 0, confirmedAnswerCount: 0, pendingAttemptCount: 0, unconfirmedQuestionCount: 0, hadInterruptions: false, questions: [] }],
+}), { mode: 0o600 });
 const pkg = JSON.parse(await readFile('package.json', 'utf8'));
 const mock = await createMockClassroom();
 let application, badUpdate = false, latestVersion = '99.0.0', relaunchedPid, oldPid, invalidPackageRequests = 0;
@@ -86,6 +90,7 @@ try {
     await window.attendance.saveSchedule({ id: crypto.randomUUID(), courseId: state.courses[0].id, enabled: true, localTime: '12:00', timeZone: 'UTC', durationMinutes: 50, effectiveFrom: Date.now(), recurrence: { kind: 'once', date: '2099-01-01' } });
   });
   const expected = await window.evaluate(() => window.attendance.getState());
+  assert.ok(expected.logs.length > 0 && expected.summaries.length > 0, 'history fixtures must be nonempty');
   const loginBytes = Buffer.from('synthetic opaque encrypted-session fixture');
   await writeFile(join(data, 'session.enc'), loginBytes);
   await mkdir(join(data, 'chrome-profile'), { recursive: true });

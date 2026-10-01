@@ -43,6 +43,7 @@ async function signingPublicKey() {
 }
 export async function createMacMetadata(directory, version) {
   assertVersion(version);
+  if (process.env.GITHUB_ACTIONS === 'true' && !process.env.ATTENDANCE_SPARKLE_PRIVATE_KEY) throw new Error('Configure the ATTENDANCE_SPARKLE_PRIVATE_KEY Actions secret before publishing macOS updates');
   const name = assetNames(version).macZip, archive = join(directory, name);
   const signingArguments = ['--account', 'com.attendancehandler.updates'];
   let secureDirectory;
