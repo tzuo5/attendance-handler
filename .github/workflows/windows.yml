@@ -25,6 +25,8 @@ jobs:
       - run: npm test
       - run: npm run dist:win
       - run: node scripts/release-metadata.mjs --windows
+      - run: npm run test:update-native
+        timeout-minutes: 12
       - run: npm run test:renderer
         timeout-minutes: 3
       - run: npm run test:setup-renderer
@@ -41,8 +43,6 @@ jobs:
         timeout-minutes: 3
       - name: Audit packaged application
         run: node scripts/audit-public.mjs --app release-public/win-unpacked
-      - run: npm run test:update-native
-        timeout-minutes: 12
       - name: Install and test the actual installer
         timeout-minutes: 5
         shell: pwsh

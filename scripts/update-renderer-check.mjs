@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { readFile, mkdir, access } from 'node:fs/promises';
-import { join, resolve, extname } from 'node:path';
+import { join, resolve, extname, sep } from 'node:path';
 import { createServer as createViteServer } from 'vite';
 import { chromium } from 'playwright-core';
 import { buildSite } from './build-site.mjs';
@@ -19,7 +19,7 @@ const vite = await createViteServer({ logLevel: 'error', server: { port: 0 } });
 const website = createServer(async (request, response) => {
   const relative = decodeURIComponent(request.url.split('?')[0]).replace(/^\/attendance-handler\//, '').replace(/^\//, '') || 'index.html';
   const file = resolve(siteDirectory, relative);
-  if (!file.startsWith(siteDirectory + '/')) { response.writeHead(403); response.end(); return; }
+  if (!file.startsWith(siteDirectory + sep)) { response.writeHead(403); response.end(); return; }
   try { response.setHeader('Content-Type', ({ '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript', '.json': 'application/json', '.png': 'image/png' })[extname(file)] || 'application/octet-stream'); response.end(await readFile(file)); }
   catch { response.writeHead(404); response.end(); }
 });
