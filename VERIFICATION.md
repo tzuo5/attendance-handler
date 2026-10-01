@@ -6,7 +6,7 @@
 - `tests/browser-lifecycle.test.ts` 在真实事件接口注入旧 PID 仍活着的关闭 / 重开：修正前新启动已发出，修正后等待实际退出；另覆盖启动取消后的专用进程清理。未加入产品测试开关。
 - 25 原有 Chrome 集成、九组后台运行通过。生命周期改为关窗后立即重开，并通过四轮连续关窗 / 重开，核实前一个 PID 退出；有额外标签页时保留浏览器。
 - 实际 macOS 打包 `test:recovery` 五组通过：强制结束 App 后显示中断并暂停遗留门禁；人工恢复保留原会话、截止和回执；强制结束后台 Chrome 后自动重连且不重答；过期中断保持结束并关闭遗留 Chrome；最终 App 和所有记录的专用 Chrome PID 退出。首次用旧构建执行时门禁断言失败，重新打包最新源码后通过。
-- 最新 macOS 打包 App 的原有 UI / 人工往返回归通过，原生测试通知产生 `show`；源码审核（74 文件）与最终包审核（16 文件）通过。Mac 使用隔离合成加密；Windows 本功能提交 CI 待完成，工作流已接入实际安装版恢复检查。真实学校 / 课堂、Keychain、物理睡眠与真人通知继续待验收。
+- 最新 macOS 打包 App 的原有 UI / 人工往返回归通过，原生测试通知产生 `show`；源码审核（74 文件）与最终包审核（16 文件）通过。Mac 使用隔离合成加密；功能提交 [`60c6730`](https://github.com/tzuo5/attendance-handler/commit/60c6730) 的 [Source checks](https://github.com/tzuo5/attendance-handler/actions/runs/36837581084) 与 [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36837581087) 首次尝试全部通过，包含 73 单测、全部 Chrome 检查、实际安装版五组恢复 / 人工往返 / 首次向导及真实 DPAPI。真实学校 / 课堂、Keychain、物理睡眠与真人通知继续待验收。
 - P3.1 首次 Windows 超时日志定位与同类竞态复现记录见 [后台模式记录](docs/background-mode.md)。旧日志缺少 PID / 资料锁时间，无法唯一证明当次根因；不把历史重跑当作修复依据。
 
 ## Phase 3.3 人工处理与返回后台（2026-10-01）

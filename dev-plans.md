@@ -153,11 +153,11 @@
   - 复核 P3.1 Windows CI 首次尝试的关窗后重开连接超时；区分 CDP 断开、实际进程退出及资料锁释放，避免依赖重跑掩盖时序问题。
   - 区分关闭主界面、停止本次课堂与退出 App；退出时清理浏览器、定时器、提醒及定位覆盖。
   - **验收：**崩溃、重连、重启、睡眠唤醒及主动退出均有明确结果；截止时间已过的课堂保持结束，无残留专用浏览器进程。
-  - **实绩：**73 单测、双 renderer、25 原有集成、九组后台运行、立即关窗重开及四轮生命周期检查、macOS 实际打包五组恢复检查通过；回归注入复现并修正 CDP 断开早于 PID 退出的启动竞态，保留首次 Windows 历史失败边界。Windows 本提交 CI 随推送验证；真实课堂、学校登录、系统钥匙串及物理睡眠继续待验收。
+  - **实绩：**73 单测、双 renderer、25 原有集成、九组后台运行、立即关窗重开及四轮生命周期检查、macOS 实际打包五组恢复检查通过；回归注入复现并修正 CDP 断开早于 PID 退出的启动竞态，保留首次 Windows 历史失败边界。功能提交 `60c6730` 的 Source checks 与 Windows CI 首次尝试全部通过，含实际安装版、DPAPI 和五组恢复；真实课堂、学校登录、系统钥匙串及物理睡眠继续待验收。
 
 ### 阶段出口
 
-- [ ] macOS / Windows 的可见与后台往返、登录恢复、手动作答、去重及退出清理通过集成验证。
+- [x] macOS / Windows 的可见与后台往返、登录恢复、手动作答、去重及退出清理通过隔离模拟集成验证。
 - [ ] 真实 iClicker 和学校登录流程完成后台模式验证；模拟验证与真实课堂结果分别记录，进入 Phase 4 前解决阻断问题。
 
 ## Phase 4：设置定时开启
@@ -243,4 +243,4 @@
 | P3.1 | 2026-10-01 | [`334b2fb`](https://github.com/tzuo5/attendance-handler/commit/334b2fb) · `feat: validate dedicated Chrome background mode round trips` | [后台模式记录](docs/background-mode.md)：macOS / Windows 六组模式往返、无可见后台窗口、登录与 Cookie、答案回执、原截止时间、去重与四个进程退出；60 单测、25 原有集成、生命周期和构建；[Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36827376760) 第二次尝试全部通过 | 首次 Windows 原有关窗重开超时在 P3.4 复核；正式 App 设置、异常恢复和真实课堂在后续检查点验收 |
 | P3.2 | 2026-10-01 | [`fe68166`](https://github.com/tzuo5/attendance-handler/commit/fe68166) · `feat: add saved background mode and headless classroom monitoring`；界面修正 [`52813d5`](https://github.com/tzuo5/attendance-handler/commit/52813d5) | 64 单测、双 renderer、六组后台运行、六组模式原型、25 原有集成、生命周期、macOS 实际打包 UI / 首次向导；[Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36830875240) 全部通过，含安装版与 DPAPI；[后台模式记录](docs/background-mode.md) | 界面修正的 Windows CI 已通过；macOS 测试用明确标记的合成加密，真实课堂与系统钥匙串仍待验收；P3.3 后续已完成；P3.4 尚未完成 |
 | P3.3 | 2026-10-01 | [`6ee7269`](https://github.com/tzuo5/attendance-handler/commit/6ee7269) · `feat: return human-handled classrooms to background safely` | 66 单测、双 renderer、九组后台运行、25 原有集成、macOS 实际打包通知处理器 / 人工作答 / 返回后台 / 托盘失败提示；[后台模式记录](docs/background-mode.md) | [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36833334316) 全部通过，含真实 DPAPI；真实学校、真人通知与 Mac 钥匙串仍待验收；P3.4 生命周期尚未完成 |
-| P3.4 | 2026-10-01 | `feat: recover interrupted classrooms and wait for Chrome process exit` · 本窗口功能提交 | 73 单测、双 renderer、25 原有集成、九组后台运行、立即重开及四轮生命周期、macOS 实际打包五组 App / Chrome 崩溃恢复与退出；[后台模式记录](docs/background-mode.md) | Windows 本提交 CI 待完成；真实学校、Mac 钥匙串和物理睡眠仍待验收 |
+| P3.4 | 2026-10-01 | [`60c6730`](https://github.com/tzuo5/attendance-handler/commit/60c6730) · `feat: recover interrupted classrooms and wait for Chrome process exit` | 73 单测、双 renderer、25 原有集成、九组后台运行、立即重开及四轮生命周期、macOS 实际打包五组 App / Chrome 崩溃恢复与退出；[后台模式记录](docs/background-mode.md) | [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36837581087) 首次尝试全部通过（含实际安装版、DPAPI 与恢复）；真实学校、Mac 钥匙串和物理睡眠仍待验收 |
