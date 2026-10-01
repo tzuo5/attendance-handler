@@ -8,7 +8,7 @@ App / 托盘新增返回后台入口；返回前验证当前课程、页面识�
 - 九组 `test:background-runtime` 通过，新增草稿拦截与确认后往返、学校验证、登录过期、未知页面不抢焦点提醒、其他标签页保护；原会话 / 结束时间 / 已确认处理记录保留，无重复提交，结束后无法返回后台继续本节课。
 - 25 项原有 Chrome 集成通过，覆盖登录与学校验证等待等回归。首次新增运行测试发现学校验证标记被识别为未知页面，已修正识别并通过复测。
 - 最终 macOS 打包 App：向真实课堂通知实例注入点击，打开正确可见课堂；待确认时阻止返回且原输入保留；实际托盘 MenuItem 调用产生失败提示且 App 保持隐藏；手动答案按网站回执确认后，用 App 返回后台继续原节课并保留两题记录。应用与专用 CDP 连接正常退出；原生测试通知产生 `show`，无页面运行错误。
-- 原有 Chrome 生命周期回归、公开源码审核（72 文件）与最终 macOS App 审核（16 文件）通过。Mac 使用明确标记的隔离合成加密，生产使用系统 `safeStorage`；Windows 本功能提交 CI 待完成。真实课堂、学校流程、钥匙串、真人通知及实体设备仍待验收。
+- 原有 Chrome 生命周期回归、公开源码审核（72 文件）与最终 macOS App 审核（16 文件）通过。Mac 使用明确标记的隔离合成加密，生产使用系统 `safeStorage`；功能提交 [`6ee7269`](https://github.com/tzuo5/attendance-handler/commit/6ee7269) 的 [Source checks](https://github.com/tzuo5/attendance-handler/actions/runs/36833334278) 与 [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36833334316) 首次尝试全部通过：66 单测、双 renderer、25 原有集成、生命周期、六组模式原型、九组后台运行、实际安装版人工往返和首次向导、真实 DPAPI、包审核与 ZIP 一致性。真实课堂、学校流程、钥匙串、真人通知及实体设备仍待验收。
 
 ## Phase 3.2 后台设置与运行（2026-10-01）
 
