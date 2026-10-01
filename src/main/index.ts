@@ -126,6 +126,7 @@ async function main() {
     await watchdog.start(course);
   });
   invoke('session:stop', () => watchdog.stop());
+  invoke('session:extend', () => watchdog.extend());
   invoke('notification:test', () => sendNotification('test', '课堂提醒已准备好', '有新题目时，你会在这里收到提醒。点击可返回 App。'));
   const icon = nativeImage.createFromPath(join(__dirname, 'tray.png')).resize({ width: 18, height: 18 });
   if (process.platform === 'darwin') icon.setTemplateImage(true);

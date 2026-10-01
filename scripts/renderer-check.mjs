@@ -26,7 +26,7 @@ try {
       getState: async () => structuredClone(state), onState: cb => { listener = cb; return () => {}; },
       saveCourse: async c => { state.courses.push(c); listener?.(structuredClone(state)); return structuredClone(state); },
       deleteCourse: async () => structuredClone(state), login: async () => {}, importCourses: async () => [{ remoteId:'new',name:'导入课程',url:'https://student.iclicker.com/#/course/new/overview' }],
-      start: async () => {}, stop: async () => {}, showClassroom: async () => {}, minimizeClassroom: async () => {}, testNotification: async () => {},
+      extend:async()=>{state.session.endsAt+=600000;listener?.(structuredClone(state));}, start: async () => {}, stop: async () => {}, showClassroom: async () => {}, minimizeClassroom: async () => {}, testNotification: async () => {},
     };
   });
   await page.goto(server.resolvedUrls.local[0]);
@@ -45,6 +45,9 @@ try {
     assert.equal(await page.locator('.start-button').innerText(),label);
     assert.ok((await page.getByRole('button',{name:'结束上课',exact:true}).boundingBox()).y < 640);
   }
+  const originalEnd = await page.evaluate(async ()=>(await window.attendance.getState()).session.endsAt);
+  await page.getByRole('button',{name:'本次延长 10 分钟',exact:true}).click();
+  assert.equal(await page.evaluate(async ()=>(await window.attendance.getState()).session.endsAt),originalEnd+600000);
   await page.evaluate(async () => {
     const state = await window.attendance.getState();
     window.__testState({session:{...state.session,status:'needs-answer',question:{key:'q-feedback',title:'示例待答题目',kind:'single',open:true,answered:false,selected:false},questions:{'q-feedback':{key:'q-feedback',title:'示例待答题目',kind:'single',firstSeenAt:Date.now(),lastSeenAt:Date.now()}}}});

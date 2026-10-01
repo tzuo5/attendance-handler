@@ -70,6 +70,7 @@ export interface AttendanceAPI {
   importCourses(): Promise<RemoteCourse[]>;
   start(id: string): Promise<void>;
   stop(): Promise<void>;
+  extend(): Promise<void>;
   showClassroom(): Promise<void>;
   minimizeClassroom(): Promise<void>;
   testNotification(): Promise<void>;

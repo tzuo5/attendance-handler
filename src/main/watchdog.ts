@@ -6,6 +6,7 @@ export interface ClassroomDriver {
   join(signal: AbortSignal): Promise<void>;
   answerA(question: QuestionSnapshot, signal: AbortSignal): Promise<void>;
   disarm(): Promise<void>;
+  extendDeadline(deadline: number): Promise<void>;
 }
 export interface WatchdogHooks {
   changed(session: SessionState): void;
@@ -24,6 +25,7 @@ export class Watchdog {
   private failures = 0;
   private joins = 0;
   private lastJoin = -Infinity;
+  private extending: Promise<void> | null = null;
   private preparation?: Promise<void>;
   private stopping: Promise<void> | null = null;
   constructor(private driver: ClassroomDriver, private hooks: WatchdogHooks, private now = () => Date.now()) {}
@@ -37,7 +39,7 @@ export class Watchdog {
     const run = this.session;
     this.hooks.keepAwake(true); this.hooks.clearNotifications(); this.emit();
     this.event('info', `开始 ${course.name} · ${course.durationMinutes} 分钟`, 'session-started', { endsAt: run.endsAt });
-    this.deadlineTimer = setTimeout(() => { void this.stop(true); }, run.endsAt - this.now());
+    this.armDeadline(run);
     const signal = this.controller.signal;
     this.preparation = this.driver.prepare(course, run.endsAt, signal);
     try {
@@ -211,6 +213,27 @@ export class Watchdog {
     this.joins = 0; this.lastJoin = -Infinity; this.lastReminders.clear(); this.failures = 0;
     await this.tick();
   }
+  private armDeadline(run: SessionState) {
+    clearTimeout(this.deadlineTimer);
+    this.deadlineTimer = setTimeout(() => { void this.stop(true); }, Math.max(0, run.endsAt - this.now()));
+  }
+  async extend() {
+    if (!ACTIVE(this.session) || this.now() >= this.session.endsAt) throw new Error('本次监控已结束，请重新开始上课。');
+    if (this.extending) return this.extending;
+    const run = this.session;
+    const previousEndsAt = run.endsAt;
+    run.endsAt += 10 * 60000;
+    this.armDeadline(run); this.emit();
+    this.event('info', '本次监控已延长 10 分钟', 'session-extended', { previousEndsAt, endsAt: run.endsAt });
+    this.extending = this.driver.extendDeadline(run.endsAt).catch(error => {
+      if (this.live(run)) {
+        this.change('attention', '时间已延长，浏览器截止时间需要重新核实。请检查课堂。', 'browser');
+        this.event('warning', error instanceof Error ? error.message : '更新浏览器截止时间失败', 'system', { result:'failed' });
+      }
+      throw new Error('时间已延长，但浏览器暂时无法连接。请点击恢复入口重新核实。');
+    }).finally(() => { this.extending = null; });
+    return this.extending;
+  }
   async stop(expired = false) {
     if (this.stopping) return this.stopping;
     if (!ACTIVE(this.session)) return;
@@ -220,14 +243,14 @@ export class Watchdog {
     this.hooks.clearNotifications(); this.hooks.keepAwake(false);
     this.event('info', this.session.detail, 'session-ended', { endsAt: this.session.endsAt });
     this.stopping = (async () => {
-      try {
-        await this.driver.disarm();
-        await this.preparation?.catch(() => {});
-        await this.inFlight?.catch(() => {});
-        await this.driver.disarm();
-      } catch { this.event('warning', '浏览器已断开；下次连接时将清除残留定位设置。', 'system', { result: 'failed' }); }
-      finally { this.stopping = null; }
-    })();
+      let disarmFailed = false;
+      await this.driver.disarm().catch(() => { disarmFailed = true; });
+      await this.preparation?.catch(() => {});
+      await this.inFlight?.catch(() => {});
+      await this.extending?.catch(() => {});
+      await this.driver.disarm().catch(() => { disarmFailed = true; });
+      if (disarmFailed) this.event('warning', '浏览器曾断开；恢复连接时将清除残留定位设置。', 'system', { result:'failed' });
+    })().finally(() => { this.stopping = null; });
     return this.stopping;
   }
 }

@@ -8,6 +8,7 @@ const api: AttendanceAPI = {
   importCourses: () => ipcRenderer.invoke('course:import'),
   start: id => ipcRenderer.invoke('session:start', id),
   stop: () => ipcRenderer.invoke('session:stop'),
+  extend: () => ipcRenderer.invoke('session:extend'),
   showClassroom: () => ipcRenderer.invoke('browser:show'),
   minimizeClassroom: () => ipcRenderer.invoke('browser:minimize'),
   testNotification: () => ipcRenderer.invoke('notification:test'),

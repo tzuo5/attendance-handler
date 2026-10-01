@@ -60,6 +60,11 @@ try {
   await delay(800); await watchdog.tick(); await watchdog.tick();
   assert.equal(mock.state.submissions.length, 1); checks.push('single submission with confirmed receipt');
   assert.equal(await frontmost(), afterLoginFocus, 'automatic answer must not change focus'); checks.push('answer preserves focus');
+  const originalEnd = watchdog.session.endsAt;
+  await watchdog.extend();
+  assert.equal(watchdog.session.endsAt, originalEnd + 600000);
+  assert.equal(await browser.page.evaluate(() => window.__attendanceDeadline), originalEnd + 600000);
+  checks.push('extension updates browser deadline gate');
   await browser.minimize();
   mock.control({ newQuestion: 'single' });
   await until(async () => (await browser.read()).question?.key.endsWith('q2'), 'second question not detected');

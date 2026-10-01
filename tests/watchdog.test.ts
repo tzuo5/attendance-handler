@@ -13,7 +13,7 @@ describe('classroom watchdog', () => {
   beforeEach(() => {
     vi.useFakeTimers(); vi.setSystemTime(new Date('2026-09-22T12:00:00Z'));
     open = true; snapshot = { state: 'classroom', courseId: 'course', attendance: 'confirmed' };
-    driver = { isOpen: vi.fn(() => open), prepare: vi.fn(async () => {}), read: vi.fn(async () => structuredClone(snapshot)), join: vi.fn(async () => {}), answerA: vi.fn(async () => {}), disarm: vi.fn(async () => {}) };
+    driver = { isOpen: vi.fn(() => open), prepare: vi.fn(async () => {}), read: vi.fn(async () => structuredClone(snapshot)), join: vi.fn(async () => {}), answerA: vi.fn(async () => {}), disarm: vi.fn(async () => {}), extendDeadline: vi.fn(async () => {}) };
     hooks = { changed: vi.fn(), log: vi.fn(), notify: vi.fn(), clearNotifications: vi.fn(), keepAwake: vi.fn() };
     watchdog = new Watchdog(driver, hooks);
   });
@@ -167,6 +167,51 @@ describe('classroom watchdog', () => {
     expect(watchdog.session?.question).toBeUndefined();
     expect(watchdog.session?.questions?.[question().key].closedAt).toBeUndefined();
     expect(watchdog.session?.questions?.[question().key].title).toBe('Question');
+  });
+
+  it('extends only this session and replaces the original hard deadline', async () => {
+    await watchdog.start(course); const original=watchdog.session!.endsAt;
+    await watchdog.extend();
+    expect(watchdog.session!.endsAt).toBe(original+600000);
+    expect(driver.extendDeadline).toHaveBeenCalledWith(original+600000);
+    expect(watchdog.session!.course.durationMinutes).toBe(1);
+    await vi.advanceTimersByTimeAsync(60000);
+    expect(watchdog.session?.status).toBe('monitoring');
+    await watchdog.extend(); expect(watchdog.session!.endsAt).toBe(original+1200000);
+    await vi.advanceTimersByTimeAsync(1200000);
+    expect(watchdog.session?.status).toBe('completed');
+    await expect(watchdog.extend()).rejects.toThrow('已结束');
+  });
+  it('disarms again after a late extension finishes during manual stop', async () => {
+    await watchdog.start(course);
+    let resolve!:()=>void; let gate=watchdog.session!.endsAt;
+    vi.mocked(driver.extendDeadline).mockImplementation(async deadline=>{await new Promise<void>(done=>{resolve=done;});gate=deadline;});
+    vi.mocked(driver.disarm).mockImplementation(async()=>{gate=0;});
+    const extending=watchdog.extend(); const stopped=watchdog.stop(); resolve();
+    await Promise.all([extending,stopped]);
+    expect(gate).toBe(0); expect(watchdog.session?.status).toBe('stopped');
+    expect(hooks.keepAwake).toHaveBeenLastCalledWith(false);
+  });
+  it('can extend during an outage and keeps the same deadline after resume', async () => {
+    snapshot.state='offline'; await watchdog.start(course);
+    await watchdog.extend(); const ends=watchdog.session!.endsAt;
+    snapshot.state='classroom'; await watchdog.resumed();
+    expect(watchdog.session?.status).toBe('monitoring');expect(watchdog.session?.endsAt).toBe(ends);
+  });
+
+  it('accepts extension immediately before expiry and rejects it once expired', async () => {
+    await watchdog.start(course); await vi.advanceTimersByTimeAsync(59999);
+    await watchdog.extend(); await vi.advanceTimersByTimeAsync(1);
+    expect(watchdog.session?.status).toBe('monitoring');
+    await vi.advanceTimersByTimeAsync(600000); expect(watchdog.session?.status).toBe('completed');
+    await expect(watchdog.extend()).rejects.toThrow('已结束');
+  });
+  it('waits for a late extension even when the first disarm fails', async () => {
+    await watchdog.start(course); let resolve!:()=>void; let gate=watchdog.session!.endsAt;
+    vi.mocked(driver.extendDeadline).mockImplementation(async deadline=>{await new Promise<void>(done=>{resolve=done;});gate=deadline;});
+    vi.mocked(driver.disarm).mockRejectedValueOnce(new Error('temporary disconnect')).mockImplementation(async()=>{gate=0;});
+    const extending=watchdog.extend(); const stopped=watchdog.stop(); resolve();
+    await Promise.all([extending,stopped]); expect(gate).toBe(0);
   });
 
 });

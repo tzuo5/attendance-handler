@@ -225,6 +225,10 @@ export class ChromeClassroom implements ClassroomDriver {
       if (!this.cachedCipherError && error instanceof Error && error.message.includes('安全存储')) { this.cachedCipherError = true; this.report(error.message); }
     } finally { this.capturing = false; }
   }
+  async extendDeadline(deadline: number) {
+    this.deadline = deadline;
+    await this.armPage();
+  }
   async disarm() {
     this.deadline = 0;
     if (this.isOpen()) await this.armPage().catch(() => {});
