@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { version } from '../../package.json';
-import { ACTIVE, STATUS_LABELS, type AppState, type CourseConfig, type RemoteCourse } from '../shared/types';
+import { ACTIVE, sessionPresentation, type AppState, type CourseConfig, type RemoteCourse } from '../shared/types';
 import './styles.css';
 
 function Icon({ name, size = 20 }: { name: string; size?: number }) {
@@ -40,7 +40,9 @@ function App() {
   };
   if (!state) return <div className="loading">正在准备课堂助手…{error && <p>{error}</p>}</div>;
   const session = state.session;
+  const idleDetail = session?.detail;
   const running = ACTIVE(session);
+  const presentation = sessionPresentation(session);
   const remaining = running ? Math.max(0, Math.ceil((session.endsAt - now) / 1000)) : 0;
   const progress = running ? Math.min(100, Math.max(0, 100 * (now - session.startedAt) / (session.endsAt - session.startedAt))) : 0;
   const importCourses = () => action('import', async () => {
@@ -74,11 +76,22 @@ function App() {
             <div className="course-top"><div className={`course-symbol color-${i % 3}`}><Icon name="book" size={23}/></div><button className="edit-button" aria-label={`编辑 ${course.name}`} onClick={() => { setImported([]); setForm(course); }} disabled={running && session.course.id === course.id}>编辑</button></div>
             <h3>{course.name}</h3><div className={`mode-badge ${course.mode === 'notify' ? 'amber' : ''}`}>{course.mode === 'auto-a' ? <span className="letter-a">A</span> : <Icon name="bell" size={13}/>} {course.mode === 'auto-a' ? '自动选择 A' : '提醒手动作答'}</div>
             <div className="course-meta"><span><Icon name="clock" size={15}/>{course.durationMinutes} 分钟</span><span title="坐标仅在编辑课程时显示"><Icon name="pin" size={15}/>位置已设置</span></div>
-            <div className="course-footer"><button className={`start-button ${running && session.course.id === course.id ? 'in-session' : ''}`} disabled={running || !!busy} onClick={() => action('start', () => window.attendance.start(course.id))}>{running && session.course.id === course.id ? <><span className="dot green"/>上课中</> : <><Icon name="play" size={16}/>开始上课</>}</button>{deleting === course.id ? <button className="delete-confirm" onClick={() => action('delete', async () => { setState(await window.attendance.deleteCourse(course.id)); setDeleting(undefined); })}>确认删除</button> : <button className="delete-button" aria-label={`删除 ${course.name}`} disabled={running && session.course.id === course.id} onClick={() => setDeleting(course.id)}>删除</button>}</div>
+            <div className="course-footer"><button className={`start-button ${running && session.course.id === course.id ? 'in-session' : ''}`} disabled={running || !!busy} onClick={() => action('start', () => window.attendance.start(course.id))}>{running && session.course.id === course.id ? <><span className={`dot ${presentation.tone}`}/>{presentation.label}</> : <><Icon name="play" size={16}/>开始上课</>}</button>{deleting === course.id ? <button className="delete-confirm" onClick={() => action('delete', async () => { setState(await window.attendance.deleteCourse(course.id)); setDeleting(undefined); })}>确认删除</button> : <button className="delete-button" aria-label={`删除 ${course.name}`} disabled={running && session.course.id === course.id} onClick={() => setDeleting(course.id)}>删除</button>}</div>
           </article>)}</div> : <div className="empty-courses"><div className="empty-art"><Icon name="book" size={48}/></div><h3>把第一门课放进来</h3><p>登录 iClicker 后导入课程，<br/>设置位置、时长和答题方式。</p><button className="primary" onClick={importCourses} disabled={!!busy}>导入我的课程<Icon name="arrow" size={16}/></button><button className="text-button" onClick={() => setForm({})}>或手动添加课程</button></div>}
           <div className="quiet-note"><Icon name="check" size={17}/><p>监控只作用于你开始的那门课。你可以随时查看课堂或结束监控。</p></div>
         </section>
-        <aside className="session-column"><section className={`panel session-panel ${running ? 'running' : ''}`}><div className="panel-label"><span className={`dot ${running ? 'green' : ''}`}/>{running ? 'LIVE SESSION' : 'CLASSROOM STATUS'}</div><h2>{running ? session.course.name : '准备好，再开始'}</h2><p className="session-subtitle">{session ? STATUS_LABELS[session.status] : '选择一门课程开始今天的课堂'}</p><div className="timer" style={{ '--progress': `${progress}%` } as React.CSSProperties}><div><strong>{running ? `${Math.floor(remaining / 60).toString().padStart(2, '0')}:${(remaining % 60).toString().padStart(2, '0')}` : '--:--'}</strong><span>{running ? '课程剩余时间' : '等待开始上课'}</span></div></div><div className="session-details"><div><span>签到状态</span><strong className={session?.attendance === 'confirmed' ? 'green-text' : ''}>{session?.attendance === 'confirmed' ? '已确认签到' : session?.attendance === 'pending' ? '等待确认' : '尚未确认'}</strong></div><div><span>最近检查</span><strong>{session?.lastCheckedAt ? `${Math.max(0, Math.floor((now - session.lastCheckedAt) / 1000))} 秒前` : '—'}</strong></div></div>{running && <p className="session-message" role="status">{session.detail}</p>}<button className="secondary full" disabled={busy === 'show'} onClick={() => action('show', () => window.attendance.showClassroom())}><Icon name="browser" size={18}/>查看课堂<Icon name="arrow" size={17}/></button>{running && <div className="session-controls"><button className="text-button" onClick={() => action('minimize', () => window.attendance.minimizeClassroom())}>最小化课堂</button><button className="stop-button" disabled={busy === 'stop'} onClick={() => action('stop', () => window.attendance.stop())}>结束上课</button></div>}</section>
+        <aside className="session-column"><section className={`panel session-panel status-${presentation.tone}`}>
+          <div className="panel-label"><span className={`dot ${presentation.tone}`}/>{presentation.label}</div>
+          <h2>{session ? session.course.name : '准备好，再开始'}</h2>
+          <p className="session-subtitle">{running ? '本次课堂监控' : idleDetail || '选择一门课程开始今天的课堂'}</p>
+          {running && <p className="session-message" role="status">{session.detail}</p>}
+          <button className="secondary full" disabled={!!busy} onClick={() => action('show', () => window.attendance.showClassroom())}><Icon name="browser" size={18}/>{busy === 'show' ? '正在连接…' : presentation.action}<Icon name="arrow" size={17}/></button>
+          {running && <div className="session-controls"><button className="text-button" disabled={!!busy} onClick={() => action('minimize', () => window.attendance.minimizeClassroom())}>最小化课堂</button><button className="stop-button" disabled={busy === 'stop'} onClick={() => action('stop', () => window.attendance.stop())}>结束上课</button></div>}
+          <div className="timer" style={{ '--progress': `${progress}%` } as React.CSSProperties}><div><strong>{running ? `${Math.floor(remaining / 60).toString().padStart(2, '0')}:${(remaining % 60).toString().padStart(2, '0')}` : '--:--'}</strong><span>{running ? '监控剩余时间' : '等待开始上课'}</span></div></div>
+          <div className="session-details"><div><span>本节签到</span><strong className={session?.attendance === 'confirmed' ? 'green-text' : ''}>{session?.attendance === 'confirmed' ? '已确认签到' : session?.attendance === 'pending' ? '等待确认' : '尚未确认'}</strong></div>
+          {session?.attendanceConfirmedAt && <div><span>签到确认时间</span><strong>{new Date(session.attendanceConfirmedAt).toLocaleTimeString('zh-CN')}</strong></div>}
+          <div><span>最后成功检查</span><strong>{session?.lastSuccessfulCheckAt ? `${Math.max(0, Math.floor((now - session.lastSuccessfulCheckAt) / 1000))} 秒前` : '尚未成功检查'}</strong></div></div>
+        </section>
           <section className="panel activity-panel"><div className="section-heading"><h2>最近动态</h2><span className="small-label">本机记录</span></div>{state.logs.length ? <ol>{state.logs.slice(0, 5).map(entry => <li key={entry.id}><span className={`event-dot ${entry.level}`}/><div><p>{entry.message}</p><time>{new Date(entry.at).toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</time></div></li>)}</ol> : <p className="empty-log">签到、题目与连接状态会记录在这里。</p>}</section>
         </aside>
       </div>}

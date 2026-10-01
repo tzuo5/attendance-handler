@@ -6,7 +6,7 @@ import { nativeHelperName } from './platform';
 import { Store } from './store';
 import { Watchdog } from './watchdog';
 import { validateCourse } from '../shared/validation';
-import { ACTIVE, STATUS_LABELS, type AppState } from '../shared/types';
+import { ACTIVE, sessionPresentation, type AppState } from '../shared/types';
 
 const demo = process.env.ATTENDANCE_DEMO === '1';
 const origin = demo ? process.env.ATTENDANCE_ORIGIN || 'http://127.0.0.1:43891' : 'https://student.iclicker.com';
@@ -46,11 +46,11 @@ async function main() {
       const run = watchdog?.session;
       const remaining = ACTIVE(run) ? Math.max(0, Math.ceil((run.endsAt - Date.now()) / 60000)) : null;
       if (process.platform === 'darwin') tray.setTitle(remaining !== null ? `${remaining}m` : '');
-      tray.setToolTip(ACTIVE(run) ? `${run.course.name} · ${STATUS_LABELS[run.status]}` : 'Attendance Handler');
+      tray.setToolTip(ACTIVE(run) ? `${run.course.name} · ${sessionPresentation(run).label}` : 'Attendance Handler');
       tray.setContextMenu(Menu.buildFromTemplate([
-        { label: ACTIVE(run) ? `${run.course.name} · ${remaining} 分钟` : '课堂助手', enabled: false },
+        { label: ACTIVE(run) ? `${run.course.name} · ${sessionPresentation(run).label} · ${remaining} 分钟` : '课堂助手', enabled: false },
         { label: '打开 App', click: () => { window.show(); window.focus(); } },
-        { label: '查看课堂', click: () => { void showClassroom().catch(reportError); } },
+        { label: sessionPresentation(run).action, click: () => { void showClassroom().catch(reportError); } },
         { label: '结束上课', enabled: ACTIVE(run), click: () => { void watchdog.stop().catch(reportError); } },
         { type: 'separator' }, { label: '退出', click: () => app.quit() },
       ]));

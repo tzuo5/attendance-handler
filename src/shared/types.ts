@@ -33,6 +33,9 @@ export interface SessionState {
   endsAt: number;
   status: SessionStatus;
   lastCheckedAt?: number;
+  lastSuccessfulCheckAt?: number;
+  attendanceConfirmedAt?: number;
+  issue?: 'browser' | 'network' | 'page' | 'course' | 'join' | 'answer';
   attendance: PageSnapshot['attendance'];
   question?: QuestionSnapshot;
   handled: Record<string, 'attempted' | 'confirmed'>;
@@ -62,6 +65,17 @@ export interface AttendanceAPI {
 }
 export const ACTIVE = (session: SessionState | null): session is SessionState => !!session && !['stopped', 'completed'].includes(session.status);
 export const STATUS_LABELS: Record<SessionStatus, string> = {
-  starting: '正在连接课堂', waiting: '等待老师开课', monitoring: '正在监控', 'needs-answer': '有题目待作答',
-  'needs-login': '需要重新登录', 'window-closed': '课堂窗口已关闭', offline: '等待网络恢复', attention: '需要检查页面', stopped: '已结束', completed: '课程时间已到',
+  starting: '正在连接课堂', waiting: '等待老师开课', monitoring: '监控正常', 'needs-answer': '有题目待作答',
+  'needs-login': '需要重新登录', 'window-closed': '课堂窗口已关闭', offline: '正在重连', attention: '需要检查页面', stopped: '已结束', completed: '课程时间已到',
 };
+
+export function sessionPresentation(session: SessionState | null) {
+  const status = session?.status;
+  const tone = status === 'monitoring' ? 'success'
+    : status === 'needs-answer' || status === 'needs-login' || status === 'window-closed' || status === 'offline' ? 'warning'
+    : status === 'attention' ? 'error' : 'neutral';
+  const action = status === 'needs-login' ? '重新登录' : status === 'window-closed' ? '恢复课堂'
+    : status === 'offline' ? '立即重试' : session?.issue === 'course' ? '返回监控课程'
+    : status === 'attention' ? '检查课堂' : '查看课堂';
+  return { label: status ? STATUS_LABELS[status] : '等待开始上课', tone, action };
+}

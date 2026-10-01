@@ -122,4 +122,28 @@ describe('classroom watchdog', () => {
     await vi.advanceTimersByTimeAsync(45000);
     expect(driver.join).toHaveBeenCalledTimes(3); expect(watchdog.session?.status).toBe('attention');
   });
+  it('retains the last successful check and clears stale questions while offline', async () => {
+    snapshot.question = question({ answered: true }); await watchdog.start(course);
+    const successful = watchdog.session!.lastSuccessfulCheckAt;
+    snapshot.state = 'offline'; await vi.advanceTimersByTimeAsync(5000);
+    expect(watchdog.session?.status).toBe('offline');
+    expect(watchdog.session?.lastSuccessfulCheckAt).toBe(successful);
+    expect(watchdog.session?.attendance).toBe('confirmed');
+    expect(watchdog.session?.question).toBeUndefined();
+    expect(watchdog.session?.issue).toBe('network');
+  });
+  it('reports an answer failure as an action requiring inspection, preserving deduplication', async () => {
+    snapshot.question = question(); vi.mocked(driver.answerA).mockRejectedValue(new Error('Answer button unavailable'));
+    await watchdog.start(course);
+    expect(watchdog.session?.status).toBe('attention'); expect(watchdog.session?.issue).toBe('answer');
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(driver.answerA).toHaveBeenCalledTimes(1);
+  });
+  it('does not mislabel page inspection failures as network failures', async () => {
+    vi.mocked(driver.read).mockRejectedValue(new Error('Page inspection timed out'));
+    await watchdog.start(course);
+    expect(watchdog.session?.status).toBe('attention'); expect(watchdog.session?.issue).toBe('page');
+    expect(watchdog.session?.lastSuccessfulCheckAt).toBeUndefined();
+  });
+
 });
