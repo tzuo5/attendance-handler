@@ -103,7 +103,7 @@
   - 保存已完成步骤；中途退出后继续，设置页可再次打开向导。
   - **验收：**分别在每一步退出并重开，已保存配置和进度可恢复；完成后正常启动直接进入课程页。
 
-- [ ] **P2.3 — 登录完成与导入衔接**（依赖 P2.2）
+- [x] **P2.3 — 登录完成与导入衔接**（依赖 P2.2）
   - 打开可见登录窗口，解释学校验证由用户完成；根据实际页面判断登录完成。
   - 登录成功后衔接课程导入，明确区分等待登录、账号无课程和读取失败。
   - **验收：**模拟成功、学校验证等待、取消登录、登录过期及空课程列表；窗口打开本身不算登录成功，用户无需复制课程链接即可完成正常导入。
@@ -224,6 +224,6 @@
 | Phase 1 回归补充 | 2026-09-30 | `fix: preserve classroom receipts and wait for confirmed smoke results` | 44 项单元测试、类型检查、模拟 UI、macOS 打包模拟课堂；补充签到历史、关题后的回执及延长后的唤醒边界 | macOS 打包测试使用明确标记的合成加密；系统钥匙串仍待授权验证，Windows 使用真实 DPAPI |
 | P1.3 保留上限边界 | 2026-09-30 | `fix: keep log reading position when older events expire` | 类型检查与模拟 UI：同时插入新事件、清理旧事件后，同一条可见记录的位置保持不变 | 已被清理的详细事件无法恢复，摘要仍按独立上限保留 |
 | Phase 1 阶段出口 | 2026-09-30 | [`a28135f`](https://github.com/tzuo5/attendance-handler/commit/a28135f) · 最终功能提交 | [验证记录](VERIFICATION.md)：44 项单元测试、17 项集成、生命周期、双平台 UI、生产构建、实际 Windows 安装版及隐私审计；[Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36813357714) 全部通过 | 本次 macOS 钥匙串授权、真实课堂及实体设备交互仍按验证记录单独标为待验证；此前 v0.1.1 下载包未更新 |
-| P2.1 | 2026-10-01 | `feat: add environment readiness checks and repair guidance` | 50 项单元测试、类型检查、renderer 验收、生产构建、18 项专用 Chrome 集成；检查探针不覆盖本机数据、不抢焦点 | 安全存储检查验证系统可用性，实际登录加密另行验证；Windows 待本阶段最终 CI |
-
-| P2.2 | 2026-10-01 | 本检查点提交 · `feat: guide first-run setup with resumable progress` | 53 项单元测试、类型检查、两套 renderer 验收、macOS 实际打包 App：五步分别退出并重开、登录页面判断、导入及配置保存、完成后重开和设置回访 | macOS 加密使用隔离测试进程中的合成替代，系统钥匙串待授权验证；Windows 首次向导 CI 待结果；新手真人走查待安排 |
+| P2.1 | 2026-10-01 | [`81f7306`](https://github.com/tzuo5/attendance-handler/commit/81f7306) · `feat: add environment readiness checks and repair guidance` | 50 项单元测试、类型检查、renderer 验收、生产构建、18 项专用 Chrome 集成；检查探针不覆盖本机数据、不抢焦点 | 安全存储检查验证系统可用性，实际登录加密另行验证；Windows 待本阶段最终 CI |
+| P2.2 | 2026-10-01 | [`0fd6253`](https://github.com/tzuo5/attendance-handler/commit/0fd6253) · `feat: guide first-run setup with resumable progress` | 53 项单元测试、类型检查、两套 renderer 验收、macOS 实际打包 App：五步分别退出并重开、登录页面判断、导入及配置保存、完成后重开和设置回访 | macOS 加密使用隔离测试进程中的合成替代，系统钥匙串待授权验证；Windows 首次向导 CI 待结果；新手真人走查待安排 |
+| P2.3 | 2026-10-01 | 本检查点提交 · `feat: verify sign-in and continue into current course import` | 54 项单元测试、类型检查、向导 renderer、25 项 Chrome 集成：学校验证等待、登录成功、过期、取消、空课程、读取失败及重试；macOS 打包首次向导及各步重启 | 真实学校登录尚待使用者验证；macOS 合成加密边界保持；最终 Windows CI 另记 |

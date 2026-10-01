@@ -5,10 +5,12 @@ type RecordValue = Record<string, unknown>;
 const object = (v: unknown): v is RecordValue => !!v && typeof v === 'object' && !Array.isArray(v);
 export class EvidenceTracker {
   courses = new Map<string, RemoteCourse>();
+  coursesLoaded = false;
   attendance = new Map<string, boolean>();
   question?: { key: string; ended: boolean };
   constructor(private origin: string) {}
   resetQuestion() { this.question = undefined; }
+  resetCourses() { this.courses.clear(); this.coursesLoaded = false; }
   observeFrame(raw: string) {
     try {
       const frame = JSON.parse(raw);
@@ -23,6 +25,7 @@ export class EvidenceTracker {
   observeResponse(url: string, value: unknown) {
     // Only passive observations of responses the page requested. Never replay private endpoints.
     if (/auth|token|login|logging|log-events|reporting|history|results/i.test(url)) return;
+    if (object(value) && ['courses','activeCourses'].some(key => Array.isArray(value[key])) || /\/courses(?:[/?]|$)/i.test(url) && Array.isArray(value)) this.coursesLoaded = true;
     if (object(value)) {
       if (typeof value.courseId === 'string' && object(value.attendanceStatus) && typeof value.attendanceStatus.userPresent === 'boolean') this.attendance.set(value.courseId, value.attendanceStatus.userPresent);
       const joinedCourse = url.match(/\/course\/attendance\/join\/([^/?]+)/)?.[1];
@@ -48,6 +51,8 @@ export class IClickerAdapter {
   readonly evidence: EvidenceTracker;
   private fallbackId = crypto.randomUUID();
   private hadQuestion = false;
+  private courseGeneration = 0;
+  resetCourses() { this.courseGeneration++; this.evidence.resetCourses(); }
   constructor(readonly page: Page, readonly origin: string) {
     this.evidence = new EvidenceTracker(origin);
     page.on('websocket', socket => {
@@ -58,10 +63,13 @@ export class IClickerAdapter {
       if (url.origin !== origin && !/(^|\.)iclicker\.com$/.test(url.hostname) && !/(^|\.)reef-education\.com$/.test(url.hostname)) return;
       if (!/json/.test(response.headers()['content-type'] || '')) return;
       if (/auth|token|login/i.test(url.pathname)) return;
-      void response.json().then(value => this.evidence.observeResponse(url.href, value)).catch(() => {});
+      const generation = this.courseGeneration;
+      if (!response.ok()) return;
+      void response.json().then(value => { if (generation === this.courseGeneration) this.evidence.observeResponse(url.href, value); }).catch(() => {});
     });
     page.on('framenavigated', frame => {
       if (frame === page.mainFrame() && !/\/class\//.test(frame.url())) { this.evidence.resetQuestion(); this.hadQuestion = false; }
+      if (frame === page.mainFrame() && (new URL(frame.url()).origin !== origin || /\/login(?:[/?#]|$)/.test(frame.url()))) this.resetCourses();
     });
   }
 
@@ -117,6 +125,24 @@ export class IClickerAdapter {
       return id && name && url.origin === origin ? [{ remoteId: id, name, url: `${origin}/#/course/${id}/overview` }] : [];
     }), this.origin);
     return [...new Map([...this.evidence.courses.values(), ...fromDOM].map(c => [c.remoteId, c])).values()];
+  }
+
+  async loginEvidence(): Promise<'verified' | 'waiting' | 'empty' | 'error'> {
+    return this.page.evaluate(origin => {
+      const visible = (el: Element | null) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
+      const route = `${location.pathname}${location.hash.replace(/^#/, '')}`;
+      if (!navigator.onLine || [...document.querySelectorAll('.connection-error,[data-courses-error]')].some(visible)) return 'error';
+      if (location.origin !== origin || /\/login(?:[/?#]|$)/.test(route) || visible(document.querySelector('#sign-in-button,[data-school-verification]'))) return 'waiting';
+      if (/\/courses\/?$/.test(route)) {
+        const empty = [...document.querySelectorAll('[data-courses-empty],.no-courses,.empty-courses')].some(visible) || /\bno (?:active )?courses\b|not enrolled in any (?:courses|classes)|haven[’']t (?:joined|enrolled in) any (?:courses|classes)/i.test(document.body?.innerText || '');
+        if (empty) return 'empty';
+        if ([...document.querySelectorAll('a[href*="/course/"]')].some(visible)) return 'verified';
+        // A loaded, authenticated course list can legitimately contain no links.
+        if ([...document.querySelectorAll('[data-course-list="loaded"]')].some(visible)) return 'verified';
+      }
+      if (/\/(?:course|class)\//.test(route) && [...document.querySelectorAll('.course-content-area,[data-course-overview],[data-attendance="confirmed"],app-multiple-choice-question,app-short-answer-question')].some(visible)) return 'verified';
+      return 'waiting';
+    }, this.origin);
   }
 
   async clickJoin(deadline: number, signal: AbortSignal) {

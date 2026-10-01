@@ -9,7 +9,7 @@ import { summarizeSession } from '../shared/session-summary';
 import { Store } from './store';
 import { Watchdog } from './watchdog';
 import { validateCourse } from '../shared/validation';
-import { ACTIVE, environmentReady, sessionPresentation, type AppState, type LogDetails, type EnvironmentReport, type LoginReport } from '../shared/types';
+import { ACTIVE, environmentReady, sessionPresentation, type AppState, type LogDetails, type EnvironmentReport, type LoginReport, type CourseImportReport } from '../shared/types';
 import { advanceSetup, initialSetup } from '../shared/setup';
 
 const demo = process.env.ATTENDANCE_DEMO === '1';
@@ -30,6 +30,10 @@ async function main() {
   let notificationError: string | undefined;
   let environment:EnvironmentReport|undefined;
   let loginReport:LoginReport|undefined;
+  let courseImport:CourseImportReport|undefined;
+  let checkingLogin:Promise<LoginReport>|undefined;
+  let importingCourses:Promise<CourseImportReport>|undefined;
+  let updatingSetup = false;
   let checkingEnvironment:Promise<EnvironmentReport>|undefined;
   const notifications = new Map<string, Notification>();
   let store: Store;
@@ -47,7 +51,7 @@ async function main() {
       { id: '22222222-2222-4222-8222-222222222222', remoteId: 'demo', name: '模拟课堂 · 提醒作答', url: `${origin}/#/course/demo/overview`, latitude: 0, longitude: 0, accuracy: 10, durationMinutes: 50, mode: 'notify' },
     ]; store.data.setup = initialSetup(true); store.save();
   }
-  const snapshot = (): AppState => ({ courses: store.data.courses, session: watchdog?.session || store.data.session, logs: store.data.logs, summaries: store.data.summaries, classroomOrigin: origin, browserConnected: browser?.isOpen() || false, demo, notificationError, environment, loginReport, setup: store.data.setup });
+  const snapshot = (): AppState => ({ courses: store.data.courses, session: watchdog?.session || store.data.session, logs: store.data.logs, summaries: store.data.summaries, classroomOrigin: origin, browserConnected: browser?.isOpen() || false, demo, notificationError, environment, loginReport, courseImport, setup: store.data.setup });
   const emit = () => {
     if (window && !window.isDestroyed()) window.webContents.send('state:changed', snapshot());
     if (tray) {
@@ -110,13 +114,27 @@ async function main() {
     });
   };
   invoke('state:get', snapshot);
-  const checkLogin = async () => { loginReport = await browser.checkLogin(); emit(); return loginReport; };
+  const checkLogin = () => {
+    if (checkingLogin) return checkingLogin;
+    checkingLogin = browser.checkLogin().then(report => { loginReport = report; emit(); return report; }).finally(() => { checkingLogin = undefined; });
+    return checkingLogin;
+  };
+  const importCourses = () => {
+    if (importingCourses) return importingCourses;
+    importingCourses = browser.checkCourseImport().then(report => { courseImport = report; emit(); return report; }).finally(() => { importingCourses = undefined; });
+    return importingCourses;
+  };
   invoke('setup:login-check', checkLogin);
+  invoke('setup:course-import', importCourses);
   invoke('setup:action', async input => {
     const action = z.enum(['next','back','dismiss','reopen','finish']).parse(input);
-    if (action === 'next' && store.data.setup.step === 'login' || action === 'finish') await checkLogin();
+    if (updatingSetup) throw new Error('配置正在保存，请稍候重试。');
+    updatingSetup = true;
+    try {
+    if ((action === 'next' && store.data.setup.step === 'login') || action === 'finish') await checkLogin();
     const setup = advanceSetup(store.data.setup, action, { environment: environmentReady(environment), login: loginReport?.status === 'verified', courses: store.data.courses.length });
     store.data.setup = setup; store.save(); emit(); return snapshot();
+    } finally { updatingSetup = false; }
   });
   invoke('environment:check',()=>{
     if(checkingEnvironment)return checkingEnvironment;
@@ -147,7 +165,7 @@ async function main() {
     if (ACTIVE(watchdog.session) && watchdog.session.course.id === id) throw new Error('请先结束这门课，再删除配置。');
     store.data.courses = store.data.courses.filter(c => c.id !== id); store.save(); emit(); return snapshot();
   });
-  invoke('course:import', () => browser.importCourses());
+  invoke('course:import', async () => { const report = await importCourses(); if (report.status !== 'courses') throw new Error(report.detail); return report.courses; });
   invoke('browser:login', () => browser.login());
   invoke('browser:show', showClassroom);
   invoke('browser:minimize', () => browser.minimize());

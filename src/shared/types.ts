@@ -75,6 +75,7 @@ export type SetupStep = typeof SETUP_STEPS[number];
 export type SetupAction = 'next' | 'back' | 'dismiss' | 'reopen' | 'finish';
 export interface SetupState { step: SetupStep; completedSteps: SetupStep[]; dismissed: boolean; completedAt?: number; }
 export interface LoginReport { status: 'waiting' | 'verified' | 'closed' | 'error'; checkedAt: number; detail: string; }
+export interface CourseImportReport { status: 'courses' | 'empty' | 'login' | 'error'; courses: RemoteCourse[]; checkedAt: number; detail: string; }
 export interface AppState {
   courses: CourseConfig[];
   session: SessionState | null;
@@ -87,6 +88,7 @@ export interface AppState {
   environment?: EnvironmentReport;
   setup?: SetupState;
   loginReport?: LoginReport;
+  courseImport?: CourseImportReport;
 }
 export interface AttendanceAPI {
   getState(): Promise<AppState>;
@@ -104,6 +106,7 @@ export interface AttendanceAPI {
   openHelp(target: HelpTarget): Promise<void>;
   setupAction(action: SetupAction): Promise<AppState>;
   checkLogin(): Promise<LoginReport>;
+  checkCourseImport(): Promise<CourseImportReport>;
   onState(listener: (state: AppState) => void): () => void;
 }
 export const ACTIVE = (session: SessionState | null): session is SessionState => !!session && !['stopped', 'completed'].includes(session.status);

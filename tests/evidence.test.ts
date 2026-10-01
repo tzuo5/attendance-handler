@@ -2,6 +2,19 @@ import { describe, it, expect } from 'vitest';
 import { EvidenceTracker } from '../src/main/iclicker';
 import { validateCourse } from '../src/shared/validation';
 describe('passive iClicker evidence', () => {
+  it('distinguishes a loaded empty list from an unread list and resets evidence for another account', () => {
+    const tracker = new EvidenceTracker('https://student.iclicker.com');
+    expect(tracker.coursesLoaded).toBe(false);
+    tracker.observeResponse('/student/courses', { activeCourses: [] });
+    expect(tracker.coursesLoaded).toBe(true);
+    tracker.observeResponse('/student/courses', [{ courseId: 'old', name: 'Old account' }]);
+    expect(tracker.courses.has('old')).toBe(true);
+    tracker.resetCourses();
+    expect(tracker.coursesLoaded).toBe(false);
+    expect(tracker.courses.size).toBe(0);
+    tracker.observeResponse('/auth/login', { courses: [] });
+    expect(tracker.coursesLoaded).toBe(false);
+  });
   it('extracts only usable course records and ignores auth responses', () => {
     const tracker = new EvidenceTracker('https://student.iclicker.com');
     tracker.observeResponse('/student/courses', { activeCourses: [{ courseId: 'c1', name: 'Physics' }], archivedCourses: [{ courseId: 'c2', name: 'Old', archived: true }] });

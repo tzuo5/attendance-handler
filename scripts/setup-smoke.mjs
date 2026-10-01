@@ -54,10 +54,9 @@ try{
  classroom=await chromium.connectOverCDP(`ws://127.0.0.1:${port}${path}`);const page=classroom.contexts()[0].pages().find(page=>page.url().startsWith(mock.origin));assert.ok(page);
  assert.equal((await window.evaluate(()=>window.attendance.checkLogin())).status,'waiting');
  await page.locator('#sign-in-button').click();await page.locator('.course-title').waitFor();
- await wizard().getByRole('button',{name:'下一步',exact:true}).click();await restart('course');
+ await wizard().getByRole('heading',{name:'添加第一门课',exact:true}).waitFor();await restart('course');
  // Login restoration is driven by encrypted session data, not saved setup progress.
- await window.evaluate(()=>window.attendance.login());
- await wizard().getByRole('button',{name:'导入并配置课程',exact:true}).click();
+ await wizard().getByRole('button',{name:'配置导入课程',exact:true}).click();
  await window.getByLabel('选择已加入的课程',{exact:true}).waitFor();
  await window.getByLabel('粘贴坐标（纬度，经度）',{exact:true}).fill('0, 0');await window.getByRole('button',{name:'填入坐标',exact:true}).click();
  await window.getByRole('radio',{name:'提醒我手动作答',exact:true}).check();await window.getByRole('button',{name:'保存课程',exact:true}).click();
@@ -65,6 +64,7 @@ try{
  await wizard().getByRole('button',{name:'下一步',exact:true}).click();await restart('notification');
  await wizard().getByRole('button',{name:'稍后确认提醒，继续',exact:true}).click();await restart('complete');
  await window.evaluate(()=>window.attendance.checkEnvironment());await window.evaluate(()=>window.attendance.login());
+ await window.waitForFunction(async()=>(await window.attendance.checkLogin()).status==='verified');
  await wizard().getByRole('button',{name:'完成配置',exact:true}).click();await window.getByRole('heading',{name:'我的课程',exact:true}).waitFor();
  await stop();await start();await window.getByRole('heading',{name:'我的课程',exact:true}).waitFor();assert.equal(await wizard().count(),0);
  await window.getByRole('button',{name:'连接与提醒',exact:true}).click();await window.getByRole('button',{name:'重新打开配置向导',exact:true}).click();await wizard().waitFor();

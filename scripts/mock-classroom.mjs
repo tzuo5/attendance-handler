@@ -1,7 +1,7 @@
 import { createServer } from 'node:http';
 
 export async function createMockClassroom(port = 0) {
-  const state = { version: 0, open: false, joined: false, question: null, submissions: [], joins: [], sequence: 0 };
+  const state = { version: 0, open: false, joined: false, question: null, submissions: [], joins: [], sequence: 0, emptyCourses: false, courseError: false, verification: false };
   const control = update => {
     if (update.newQuestion) {
       state.sequence++;
@@ -11,6 +11,7 @@ export async function createMockClassroom(port = 0) {
     if (typeof update.open === 'boolean') state.open = update.open;
     if (typeof update.joined === 'boolean') state.joined = update.joined;
     if (update.clearQuestion) state.question = null;
+    for (const key of ['emptyCourses','courseError','verification']) if(typeof update[key]==='boolean')state[key]=update[key];
     state.version++;
   };
   const server = createServer(async (req, res) => {
@@ -19,7 +20,7 @@ export async function createMockClassroom(port = 0) {
     const origin = `http://127.0.0.1:${address.port}`;
     res.setHeader('Cache-Control', 'no-store');
     if (req.url === '/state') {
-      res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ ...state, courses: [{ courseId: 'demo', name: '模拟课堂' }] })); return;
+      res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify({ ...state, courses: state.emptyCourses ? [] : [{ courseId: 'demo', name: '模拟课堂' }] })); return;
     }
     if (req.method === 'POST') {
       if (req.headers.origin && req.headers.origin !== origin || !req.headers['content-type']?.startsWith('application/json')) { res.writeHead(403); res.end(); return; }
@@ -45,7 +46,8 @@ body{margin:0;background:#f2f5f4;color:#293832;font:16px -apple-system,BlinkMacS
 let version=-1, snapshot, selected='';
 const post=(path,value)=>fetch(path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(value)});
 async function control(value){await post('/control',value);await load(true);}
-function login(){sessionStorage.setItem('access_token','demo-access-token');sessionStorage.setItem('refresh_token','demo-refresh-token');location.hash='/courses';load(true);}
+function login(){if(snapshot.verification){document.getElementById('content').innerHTML='<section data-school-verification><h1>完成学校验证</h1><button id="complete-school-sign-in" onclick="finishLogin()">完成模拟学校验证</button></section>';return;}finishLogin();}
+function finishLogin(){sessionStorage.setItem('access_token','demo-access-token');sessionStorage.setItem('refresh_token','demo-refresh-token');location.hash='/courses';load(true);}
 function logout(){sessionStorage.clear();location.hash='/login';load(true);}
 async function join(){navigator.geolocation.getCurrentPosition(async position=>{await post('/join',{latitude:position.coords.latitude,longitude:position.coords.longitude});location.hash='/class/demo';await load(true);},()=>{document.getElementById('content').innerHTML+='<p>Check In Failed: location unavailable</p>';});}
 async function answer(value){selected=value;await post('/answer',{id:snapshot.question.id,answer:value});await load(true);}
@@ -54,7 +56,7 @@ async function load(force=false){
  if(!force&&snapshot.version===version)return;version=snapshot.version;
  const el=document.getElementById('content');
  if(!sessionStorage.getItem('access_token')){el.innerHTML='<h1>登录模拟课堂</h1><p>这个本机页面复现 iClicker 的签到与答题流程。</p><button id="sign-in-button" onclick="login()">登录模拟账号</button>';return;}
- if(!location.hash.includes('/course/')&&!location.hash.includes('/class/')){el.innerHTML='<h1>Courses</h1><a href="#/course/demo/overview"><span class="course-title">模拟课堂</span></a>';return;}
+ if(!location.hash.includes('/course/')&&!location.hash.includes('/class/')){if(snapshot.courseError){el.innerHTML='<p data-courses-error>课程读取失败</p>';return;}if(snapshot.emptyCourses){el.innerHTML='<section data-course-list="loaded"><h1>Courses</h1><p data-courses-empty>No courses</p></section>';return;}el.innerHTML='<h1>Courses</h1><a href="#/course/demo/overview"><span class="course-title">模拟课堂</span></a>';return;}
  if(!snapshot.joined){el.innerHTML='<section class="course-content-area" data-course-overview><h1>模拟课堂</h1><p>'+ (snapshot.open?'Class is in session':'Waiting for instructor to start class')+'</p>'+(snapshot.open?'<button id="btnJoin" onclick="join()">Join</button>':'')+'</section>';return;}
  const q=snapshot.question;
  if(!q){location.hash='/class/demo';el.innerHTML='<section data-attendance="confirmed"><h1>You\'re checked in!</h1><p>Stay on this screen to remain in class. We will let you know when your instructor starts an activity.</p></section>';return;}

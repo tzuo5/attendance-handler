@@ -2,7 +2,7 @@ import { mkdir, readFile, writeFile, rename } from 'node:fs/promises';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { chromium, type Browser, type BrowserContext, type Page } from 'playwright-core';
-import type { CourseConfig, PageSnapshot, QuestionSnapshot, LoginReport } from '../shared/types';
+import type { CourseConfig, PageSnapshot, QuestionSnapshot, LoginReport, CourseImportReport } from '../shared/types';
 import { IClickerAdapter } from './iclicker';
 import type { ClassroomDriver } from './watchdog';
 import { activateChrome, launchChrome } from './platform';
@@ -172,29 +172,46 @@ export class ChromeClassroom implements ClassroomDriver {
     const checkedAt = Date.now();
     if (!this.isOpen()) return { status: 'closed', checkedAt, detail: '登录窗口已关闭，请重新打开。' };
     try {
-      const snapshot = await this.adapter!.read();
-      if (snapshot.state === 'login') return { status: 'waiting', checkedAt, detail: '请在 Chrome 中登录并完成学校验证，然后返回这里检查。' };
-      const links = await this.page!.locator('a[href*="/course/"]').count();
-      if (new URL(this.page!.url()).origin === this.origin && ((snapshot.state === 'waiting' && (snapshot.courseId || links)) || ['classroom','joinable'].includes(snapshot.state))) {
+      const evidence = await this.adapter!.loginEvidence();
+      if (evidence === 'error') return { status: 'error', checkedAt, detail: '课程页面无法读取，请检查网络后重试。' };
+      if (evidence === 'verified' || evidence === 'empty') {
         await this.capture();
         return { status: 'verified', checkedAt, detail: '已从实际 iClicker 页面确认登录。' };
       }
-      return { status: 'waiting', checkedAt, detail: '等待登录后的课程页面加载；打开窗口还不代表登录成功。' };
+      return { status: 'waiting', checkedAt, detail: '等待登录或学校验证完成。课程页面尚未加载，打开窗口还不代表登录成功。' };
     } catch { return { status: 'error', checkedAt, detail: '暂时无法检查登录，请检查网络和登录窗口后重试。' }; }
   }
   async importCourses() {
-    if (this.deadline > Date.now()) throw new Error('上课期间不能刷新课程列表，请先结束当前监控。');
+    const report = await this.checkCourseImport();
+    if (report.status === 'courses') return report.courses;
+    throw new Error(report.detail);
+  }
+  async checkCourseImport(): Promise<CourseImportReport> {
+    const checkedAt = Date.now();
+    const result = (status: CourseImportReport['status'], detail: string, courses: CourseImportReport['courses'] = []): CourseImportReport => ({ status, detail, courses, checkedAt });
+    if (this.deadline > Date.now()) return result('error', '上课期间不能刷新课程列表，请先结束当前监控。');
+    try {
     await this.ensureConnected();
     const page = await this.ensurePage();
+    this.adapter!.resetCourses();
+    const previousOrigin = new URL(page.url()).origin;
     await page.goto(`${this.origin}/#/courses`, { waitUntil: 'domcontentloaded', timeout: 25000 });
+    // A hash-only navigation can leave the previous account's visible list in
+    // place until its next fetch. A fresh document makes this import current.
+    if (previousOrigin === this.origin) { this.adapter!.resetCourses(); await page.reload({ waitUntil: 'domcontentloaded', timeout: 25000 }); }
     for (let i = 0; i < 20; i++) {
       const snapshot = await this.adapter!.read();
-      if (snapshot.state === 'login') throw new Error('请先点击“登录 iClicker”，在 Chrome 中完成登录。');
+      if (snapshot.state === 'login') return result('login', '请打开登录窗口，在 Chrome 中完成登录和学校验证后重新读取。');
+      const evidence = await this.adapter!.loginEvidence();
+      if (evidence === 'error') return result('error', '课程列表读取失败，请检查网络后重新读取。');
+      if (evidence === 'empty') return result('empty', '登录已确认，但这个账号暂时没有课程。请在 iClicker 中加入课程后重新读取，也可以手动添加。');
       const courses = await this.adapter!.courses();
-      if (courses.length) { await this.capture(); return courses; }
+      if (evidence === 'verified' && courses.length) { await this.capture(); return result('courses', `已读取 ${courses.length} 门课程，选择一门开始配置。`, courses); }
+      if (evidence === 'verified' && this.adapter!.evidence.coursesLoaded) return result('empty', '登录已确认，但这个账号暂时没有课程。请在 iClicker 中加入课程后重新读取，也可以手动添加。');
       await delay(500);
     }
-    throw new Error('未读取到课程。请确认已登录且课程列表已加载；也可以手动粘贴课程链接。');
+    return result('error', '课程列表尚未加载完成。请检查登录窗口和网络后重新读取，也可以手动添加。');
+    } catch { return result('error', '课程列表读取失败，请检查网络及 Chrome 窗口后重新读取。'); }
   }
   async read(): Promise<PageSnapshot> {
     if (!this.isOpen()) throw new Error('课堂窗口已关闭');
