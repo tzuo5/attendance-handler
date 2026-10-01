@@ -30,12 +30,13 @@ try {
   await window.getByLabel('iClicker 课程链接', { exact: true }).fill(`${mock.origin}/#/course/test/overview`);
   await window.getByLabel('纬度 Latitude').fill('0');
   await window.getByLabel('经度 Longitude').fill('0');
-  await window.getByLabel('答题方式').selectOption('notify');
+  await window.getByRole('radio', { name:'提醒我手动作答', exact:true }).check();
   await window.screenshot({ path: '.test-artifacts/app-course-form.png' });
   await window.getByRole('button', { name: '保存课程', exact: true }).click();
   await window.getByRole('heading', { name: 'UI 测试课程', exact: true }).waitFor();
   const saved = await window.evaluate(() => window.attendance.getState());
   assert.equal(saved.courses.length, 3);
+  await assert.rejects(window.evaluate(course => window.attendance.saveCourse({...course,id:crypto.randomUUID()}),saved.courses[2]),/已经添加/);
   assert.equal(JSON.parse(await readFile(join(data, 'state.json'), 'utf8')).courses.length, 3);
   // Exercise the installed app's unpacked native helper, Chrome discovery, and OS encryption.
   await window.evaluate(() => window.attendance.login());
@@ -52,7 +53,14 @@ try {
   assert.ok(!encrypted.includes(Buffer.from('demo-access-token')));
   const vault = await application.evaluate(({ safeStorage }, base64) => JSON.parse(safeStorage.decryptString(Buffer.from(base64, 'base64'))), encrypted.toString('base64'));
   assert.equal(vault.storage.access_token, 'demo-access-token');
+  const originalEnd = (await window.evaluate(() => window.attendance.getState())).session.endsAt;
+  await window.evaluate(() => window.attendance.extend());
+  assert.equal((await window.evaluate(() => window.attendance.getState())).session.endsAt,originalEnd+600000);
   await window.evaluate(() => window.attendance.stop());
+  const completed = await window.evaluate(() => window.attendance.getState());
+  assert.equal(completed.summaries.length,1);
+  assert.equal(completed.summaries[0].attendance,'confirmed');
+  assert.ok(completed.logs.some(entry=>entry.event==='session-extended'));
   await window.getByRole('button', { name: '连接与提醒', exact: true }).click();
   await window.screenshot({ path: '.test-artifacts/app-settings.png' });
   const notification = await application.evaluate(async ({ Notification }) => {
@@ -65,7 +73,7 @@ try {
   });
   const notifications = process.platform === 'darwin' ? await application.evaluate(async ({ Notification }) => (await Notification.getHistory()).map(n => ({ title: n.title, body: n.body }))) : [];
   assert.deepEqual(errors, []);
-  const checks = ['course list', 'course persistence', 'settings', 'packaged Chrome launch and native helper', 'mock attendance', 'OS-encrypted session round trip'];
+  const checks = ['course list', 'course persistence and duplicate protection', 'extension and persisted summary', 'settings', 'packaged Chrome launch and native helper', 'mock attendance', 'OS-encrypted session round trip'];
   await writeFile('.test-artifacts/ui-report.json', JSON.stringify({ checks, errors, notification, delivered: notifications, data }, null, 2));
   console.log(JSON.stringify({ checks, errors, notification, deliveredCount: notifications.length }, null, 2));
 } finally {

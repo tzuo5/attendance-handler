@@ -2,6 +2,7 @@ export type AnswerMode = 'auto-a' | 'notify';
 export interface RemoteCourse { remoteId: string; name: string; url: string; }
 export interface CourseConfig extends RemoteCourse {
   id: string;
+  locationName?: string;
   latitude: number;
   longitude: number;
   accuracy: number;
@@ -67,6 +68,7 @@ export interface AppState {
   session: SessionState | null;
   logs: LogEntry[];
   summaries: SessionSummary[];
+  classroomOrigin: string;
   browserConnected: boolean;
   demo: boolean;
   notificationError?: string;

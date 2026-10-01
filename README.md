@@ -26,6 +26,8 @@
 
 See the [phased development plan (中文)](dev-plans.md) for the MVP roadmap, dependencies, and acceptance checkpoints: classroom feedback and logs, first-run setup, background mode, scheduled starts, and calendar integration ideas. These are planned improvements; completed checkpoints and verification evidence are tracked in that document.
 
+The current source branch includes Phase 1: clearer monitoring and recovery states, question receipts, a full event log, a ten-minute session extension, saved end summaries, and simpler course configuration. The download links above still point to the earlier `v0.1.1` release.
+
 ## What it does
 
 Attendance Handler turns a repetitive classroom setup into one visible, supervised session:
@@ -37,6 +39,9 @@ Attendance Handler turns a repetitive classroom setup into one visible, supervis
 | A | **Automatic A** | For eligible open single-choice polls, selects A once and waits for the website receipt. Existing answers are never overwritten. |
 | ♧ | **Answer reminders** | For accuracy-sensitive courses or unsupported question types, sends a notification immediately and repeats every 30 seconds until the question is resolved. |
 | ⏱ | **Session watchdog** | Checks every 5 seconds, uses the configured duration as a hard deadline, backs off during network failures, and keeps the computer awake without preventing the display from sleeping. |
+| ↻ | **Recovery and feedback** | Shows reconnecting, expired login, and a closed classroom distinctly. Questions show pending attempts and confirmed receipts; extend only the current session by ten minutes. |
+| ≡ | **Classroom records** | Search and filter up to 2,000 local events, including question titles and timestamps. Review the last 100 end summaries and their associated logs. |
+| + | **Course setup** | Import the name and link, paste a coordinate pair, reuse a named classroom, and choose a common duration and answer mode. |
 | ◎ | **Local-first storage** | Courses stay on your computer. Login session storage is encrypted with Electron `safeStorage`; passwords are never stored. |
 
 ## The classroom flow
@@ -90,6 +95,7 @@ Requirements: Node.js 22.12+ and Google Chrome. On macOS, install Apple Command 
 npm install
 npm run dev                 # local app development
 npm test                    # unit tests
+npm run test:renderer       # synthetic UI, including the smallest app window
 npm run test:chrome-lifecycle # dedicated Chrome close and reopen checks
 npm run test:integration    # isolated mock Chrome classroom
 npm run audit:public        # public-data allowlist and secret scan
@@ -101,7 +107,7 @@ npm run dist:win            # on Windows: x64 installer + ZIP in release-public/
 
 ## Privacy boundary
 
-The public repository and release artifacts do not contain personal courses, real course IDs, coordinates, credentials, tokens, browser profiles, run logs, or personal screenshots. The app stores user-entered course coordinates locally because the classroom site needs them; the course list only displays **Location configured** instead of exposing them at a glance.
+The public repository and release artifacts do not contain personal courses, real course IDs, coordinates, credentials, tokens, browser profiles, run logs, or personal screenshots. The app stores user-entered course coordinates locally because the classroom site needs them; the course list displays a saved classroom name or **Location configured**, with coordinates visible only in the editor.
 
 Read the full [privacy and release boundary](PRIVACY.md) before sharing diagnostics. The public-data audit is part of the build workflow, but you should still review any file before attaching it to an issue.
 

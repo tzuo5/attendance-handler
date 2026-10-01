@@ -75,7 +75,7 @@
   - 本机保存摘要，并提供进入该节日志和查看课堂的入口；记录中断期间的数据限制。
   - **验收：**自动结束与手动结束均可查看摘要，重开 App 后仍可查看；尝试数与确认数分开统计，未观察到的题目不计为漏答。
 
-- [ ] **P1.7 — 简化课程配置**
+- [x] **P1.7 — 简化课程配置**
   - 导入课程自动填写名称与链接，已导入信息折叠为可编辑详情；明确提示已存在的课程。
   - 位置支持同时粘贴经纬度、保存教室名称及复用已有位置；提供常用时长选择和清楚的答题方式说明。
   - 表单错误定位到具体字段，使用普通语言；保存后提供明确反馈。完成 Escape 关闭、弹窗焦点管理及保存中状态。
@@ -220,3 +220,4 @@
 | P1.4 | 2026-09-30 | `feat: show question progress and confirmed receipts` | 28 项单元测试、类型检查、模拟 UI；尝试、回执及历史题目验证 | 真实题型适配仍按 VERIFICATION.md 的范围 |
 | P1.5 | 2026-09-30 | `feat: extend current monitoring deadline by ten minutes` | 33 项单元测试、类型检查、模拟 UI、16 项专用 Chrome 集成检查 | Windows 原生流程待 CI 验证 |
 | P1.6 | 2026-09-30 | `feat: persist classroom end summaries and history` | 36 项单元测试、类型检查、模拟 UI、17 项专用 Chrome 集成检查 | 最近 100 节摘要；更早详细日志受 2000 条保留上限约束 |
+| P1.7 | 2026-09-30 | `feat: simplify course setup and reuse saved classrooms` | 41 项单元测试、生产构建、macOS 900×640 模拟 UI；导入、手动配置、位置复用、字段错误、编辑及焦点验证；打包 App 保存与重复拦截通过 | Windows 完整界面流程待本次 CI；macOS 打包加密流程等待系统钥匙串授权 |

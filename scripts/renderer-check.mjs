@@ -19,7 +19,7 @@ try {
   page.on('pageerror', error => errors.push(error.message));
   await page.addInitScript(() => {
     const course = { id: '11111111-1111-4111-8111-111111111111', remoteId: 'demo', name: '示例课程', url: 'https://student.iclicker.com/#/course/demo/overview', latitude: 0, longitude: 0, accuracy: 10, durationMinutes: 50, mode: 'notify' };
-    const state = { courses: [course], session: null, logs: [], browserConnected: true, demo: true };
+    const state = { courses: [course], session: null, logs: [], browserConnected: true, demo: true, classroomOrigin:'https://student.iclicker.com' };
     let listener;
     window.__testState = patch => { Object.assign(state, patch); listener?.(structuredClone(state)); };
     window.attendance = {
@@ -88,8 +88,44 @@ try {
   await page.getByRole('button',{name:'本节日志',exact:true}).click();
   assert.equal(await page.getByLabel('课堂',{exact:true}).inputValue(),'session');
   assert.ok(await page.getByLabel('课堂历史',{exact:true}).count());
+  await page.getByRole('button',{name:'我的课程',exact:false}).click();
+  await page.getByRole('button',{name:'添加课程',exact:true}).click();
+  await page.getByRole('dialog').waitFor();
+  await page.keyboard.press('Escape');assert.equal(await page.getByRole('dialog').count(),0);
+  assert.equal(await page.evaluate(()=>document.activeElement.textContent.trim()),'添加课程');
+  await page.getByRole('button',{name:'添加课程',exact:true}).click();
+  for(let i=0;i<24;i++){await page.keyboard.press('Tab');assert.ok(await page.evaluate(()=>!!document.activeElement.closest('[role=dialog]')));}
+  await page.getByLabel('课程名称',{exact:true}).fill('新课程');
+  await page.getByLabel('iClicker 课程链接',{exact:true}).fill('https://invalid.example/#/course/manual/overview');
+  await page.getByRole('button',{name:'保存课程',exact:true}).click();
+  await page.getByText('请使用当前 iClicker 的课程链接，或重新导入课程。',{exact:true}).waitFor();
+  await page.getByLabel('iClicker 课程链接',{exact:true}).fill('https://student.iclicker.com/#/course/manual/overview');
+  await page.getByLabel('粘贴坐标（纬度，经度）',{exact:true}).fill('0, 0');
+  await page.getByRole('button',{name:'填入坐标',exact:true}).click();
+  assert.equal(await page.getByLabel('纬度 Latitude',{exact:true}).inputValue(),'0');
+  await page.getByLabel('教室名称（可选）',{exact:true}).fill('示例教室');
+  await page.getByLabel('常用时长',{exact:true}).selectOption('75');
+  await page.getByRole('radio',{name:'提醒我手动作答',exact:true}).check();
+  await page.getByRole('button',{name:'保存课程',exact:true}).click();
+  await page.getByText('课程已保存',{exact:true}).waitFor();
+  await page.getByRole('heading',{name:'新课程',exact:true}).waitFor();
+  const newId=await page.evaluate(async()=>(await window.attendance.getState()).courses.find(c=>c.name==='新课程').id);
+  await page.getByRole('button',{name:'编辑 新课程',exact:true}).click();
+  assert.equal(await page.getByLabel('纬度 Latitude',{exact:true}).inputValue(),'0');
+  assert.equal(await page.getByLabel('课程时长（分钟）',{exact:true}).inputValue(),'75');
+  await page.waitForFunction(()=>!!document.activeElement.closest('[role=dialog]'));
+  await page.keyboard.press('Escape');
+  await page.getByRole('dialog').waitFor({state:'hidden'});
+  await page.getByRole('button',{name:/从 iClicker 导入/}).click();
+  await page.getByLabel('选择已加入的课程',{exact:true}).waitFor();
+  assert.equal(await page.locator('.course-details').getAttribute('open'),null);
+  await page.getByLabel('复用已保存的教室',{exact:true}).selectOption(newId);
+  assert.equal(await page.getByLabel('教室名称（可选）',{exact:true}).inputValue(),'示例教室');
+  await page.getByRole('radio',{name:'自动选择 A',exact:true}).check();
+  await page.getByRole('button',{name:'保存课程',exact:true}).click();
+  await page.getByRole('heading',{name:'导入课程',exact:true}).waitFor();
   await mkdir('.test-artifacts/phase1', { recursive:true });
-  await page.screenshot({path:'.test-artifacts/phase1/logs.png'});
+  await page.screenshot({path:'.test-artifacts/phase1/courses.png'});
   assert.deepEqual(errors,[]);
-  console.log('Renderer acceptance passed: status, recovery actions, small window controls, full event log, reading position and question receipts and persisted-summary navigation.');
+  console.log('Renderer acceptance passed: status, recovery actions, small window controls, full event log, reading position and question receipts, summary navigation and simplified course configuration.');
 } finally { await browser?.close(); await server.close(); }

@@ -41,7 +41,7 @@ async function main() {
       { id: '22222222-2222-4222-8222-222222222222', remoteId: 'demo', name: '模拟课堂 · 提醒作答', url: `${origin}/#/course/demo/overview`, latitude: 0, longitude: 0, accuracy: 10, durationMinutes: 50, mode: 'notify' },
     ]; store.save();
   }
-  const snapshot = (): AppState => ({ courses: store.data.courses, session: watchdog?.session || store.data.session, logs: store.data.logs, summaries: store.data.summaries, browserConnected: browser?.isOpen() || false, demo, notificationError });
+  const snapshot = (): AppState => ({ courses: store.data.courses, session: watchdog?.session || store.data.session, logs: store.data.logs, summaries: store.data.summaries, classroomOrigin: origin, browserConnected: browser?.isOpen() || false, demo, notificationError });
   const emit = () => {
     if (window && !window.isDestroyed()) window.webContents.send('state:changed', snapshot());
     if (tray) {
@@ -107,6 +107,8 @@ async function main() {
   invoke('course:save', input => {
     const course = validateCourse(input, origin);
     if (ACTIVE(watchdog.session) && watchdog.session.course.id === course.id) throw new Error('请先结束这门课，再修改配置。');
+    const previous = store.data.courses.find(c => c.id === course.id);
+    if ((!previous || previous.remoteId !== course.remoteId) && store.data.courses.some(c => c.id !== course.id && c.remoteId === course.remoteId)) throw new Error('这门课程已经添加，请在课程列表中编辑原有课程。');
     const index = store.data.courses.findIndex(c => c.id === course.id);
     if (index === -1) store.data.courses.push(course); else store.data.courses[index] = course;
     store.save(); emit(); return snapshot();
