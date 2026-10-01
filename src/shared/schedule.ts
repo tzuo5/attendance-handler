@@ -139,3 +139,21 @@ export function decideSchedule(schedule: ScheduleConfig, occurrence: ScheduleOcc
 export function compareOccurrences(a: ScheduleOccurrence, b: ScheduleOccurrence) {
   return (a.scheduledStart ?? Infinity) - (b.scheduledStart ?? Infinity) || (a.scheduleId < b.scheduleId ? -1 : a.scheduleId > b.scheduleId ? 1 : 0);
 }
+export function nextOccurrences(schedule: ScheduleConfig, now: number, count = 3): ScheduleOccurrence[] {
+  const threshold = Math.max(now, schedule.effectiveFrom);
+  const localNow = partsAt(formatter(schedule.timeZone), threshold);
+  const repeat = schedule.recurrence;
+  const first = repeat.kind === 'once' ? repeat.date : repeat.startDate > localNow.date ? repeat.startDate : localNow.date;
+  if (first > '2100-12-31') return [];
+  const last = repeat.kind === 'once' ? first : addLocalDays(first, 35) > '2100-12-31' ? '2100-12-31' : addLocalDays(first, 35);
+  const result: ScheduleOccurrence[] = [];
+  for (let date = first; date <= last; date = addLocalDays(date, 1)) {
+    const item = occurrenceOnDate(schedule, date);
+    if (item && (item.scheduledStart === null ? item.localDate > localNow.date || item.localDate === localNow.date && item.localTime >= localNow.time : item.scheduledStart >= threshold)) result.push(item);
+    if (result.length >= Math.max(1, Math.min(5, count))) break;
+  }
+  return result;
+}
+export function formatScheduleTime(millis: number, zone: string) {
+  return new Intl.DateTimeFormat('zh-CN', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit', weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(millis);
+}

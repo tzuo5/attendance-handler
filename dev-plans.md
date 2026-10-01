@@ -172,10 +172,11 @@
   - **验收：**每个边界场景有可执行规则和用户文案；界面准确说明后台常驻、退出与睡眠对定时开启的影响。
   - **实绩：**共享单次 / 每周规则、城市时区、夏令时缺口 / 回拨、最多 10 分钟补开且保留原截止、冲突跳过、任务生效时间和稳定实例键已实现；第一版依赖托盘，不提供开机启动。94 单测、类型检查、构建与双 renderer 通过，设置明确当前尚未开放自动调度；详见 [定时开启规则](docs/scheduled-starts.md)。
 
-- [ ] **P4.2 — 定时任务配置与预览**（依赖 P4.1）
+- [x] **P4.2 — 定时任务配置与预览**（依赖 P4.1）
   - 在课程配置或独立页面中添加定时任务，显示下一次开始时刻、预计结束时刻、重复规则及启用状态。
   - 支持编辑、暂停、取消和持久化；删除课程时明确处理其关联任务。
   - **验收：**重开 App 后设置一致，下一次执行时间准确；无有效课程或完整配置的任务不能进入可执行状态。
+  - **实绩：**新增独立定时页面及单次 / 每周表单、三次预览、编辑 / 暂停 / 启用 / 取消、本机持久化、关联课程删除提示与原子取消；101 单测、双 renderer、构建及 macOS 实际打包四组配置 / 重启检查通过。主进程复核课程、生效时刻和完整配置；自动调度仍待 P4.3，详见 [定时开启规则](docs/scheduled-starts.md)。
 
 - [ ] **P4.3 — 调度执行与重复触发保护**（依赖 P4.1、P4.2）
   - 由应用主进程维护调度，按每次计划执行生成唯一记录；手动与定时开始共用课堂启动能力。
@@ -246,3 +247,4 @@
 | P3.3 | 2026-10-01 | [`6ee7269`](https://github.com/tzuo5/attendance-handler/commit/6ee7269) · `feat: return human-handled classrooms to background safely` | 66 单测、双 renderer、九组后台运行、25 原有集成、macOS 实际打包通知处理器 / 人工作答 / 返回后台 / 托盘失败提示；[后台模式记录](docs/background-mode.md) | [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36833334316) 全部通过，含真实 DPAPI；真实学校、真人通知与 Mac 钥匙串仍待验收；P3.4 生命周期尚未完成 |
 | P3.4 | 2026-10-01 | [`60c6730`](https://github.com/tzuo5/attendance-handler/commit/60c6730) · `feat: recover interrupted classrooms and wait for Chrome process exit` | 73 单测、双 renderer、25 原有集成、九组后台运行、立即重开及四轮生命周期、macOS 实际打包五组 App / Chrome 崩溃恢复与退出；[后台模式记录](docs/background-mode.md) | [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36837581087) 首次尝试全部通过（含实际安装版、DPAPI 与恢复）；真实学校、Mac 钥匙串和物理睡眠仍待验收 |
 | P4.1 | 2026-10-01 | [`ccb0d80`](https://github.com/tzuo5/attendance-handler/commit/ccb0d80) · `feat: define timezone-aware scheduled start rules and runtime guidance` | 94 单测、类型检查、生产构建、双 renderer；21 项定时规则测试与设置运行条件说明，见 [定时开启规则](docs/scheduled-starts.md) | 配置和自动调度分别在 P4.2 / P4.3 完成；[Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36839642451) 首次尝试全部通过（含原有 Chrome 与实际安装版回归）；真实课堂与系统边界仍待真人验收 |
+| P4.2 | 2026-10-01 | `feat: configure and persist single and weekly classroom schedules` · 本窗口功能提交 | 101 单测、类型检查、构建、双 renderer、macOS 实际打包四组配置与多次重开验证；[定时开启规则](docs/scheduled-starts.md) | 本功能提交 Windows 安装版 CI 随推送验证；自动调度待 P4.3，真实课堂 / Mac 钥匙串仍待验收 |

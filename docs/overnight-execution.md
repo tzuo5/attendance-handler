@@ -33,4 +33,5 @@ Phase 5 保持 [开发计划](../dev-plans.md) 中的 ideation 范围，交付�
 | P3.3 | 完成（02:57 提交；03:03 平台验收） | [`6ee7269`](https://github.com/tzuo5/attendance-handler/commit/6ee7269) · `feat: return human-handled classrooms to background safely`；66 单测、双 renderer、九组后台运行、25 原有集成、macOS 实际打包 UI / 通知处理器 / 托盘失败提示通过，[Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36833334316) 首次尝试全部通过，含实际安装版、首次向导和真实 DPAPI |
 | P3.4 | 完成（03:38 提交；03:44 平台验收） | [`60c6730`](https://github.com/tzuo5/attendance-handler/commit/60c6730) · `feat: recover interrupted classrooms and wait for Chrome process exit`；73 单测、双 renderer、25 原有集成、九组后台运行、四轮立即重开、macOS 实际打包五组恢复通过；[Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36837581087) 首次尝试全部通过，含实际安装版五组恢复及 DPAPI |
 | P4.1 | 完成（03:57 提交；04:04 平台验收） | [`ccb0d80`](https://github.com/tzuo5/attendance-handler/commit/ccb0d80) · `feat: define timezone-aware scheduled start rules and runtime guidance`； 单次 / 每周、城市时区与夏令时、迟到原截止、冲突、任务生效规则与设置说明；94 单测、构建、双 renderer 通过，见 [定时开启规则](scheduled-starts.md)；[Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36839642451) 首次尝试全部通过，含原有 Chrome 与实际安装版回归 |
-| P4.2–P5.4 | 等待各自窗口 | 尚未开始 |
+| P4.2 | 本机配置验收通过；本窗口提交 | 独立页面、单次 / 每周表单、下一次与三次预览、编辑 / 暂停 / 启用 / 取消、关联删除、本机持久化；101 单测、双 renderer、构建、macOS 实际打包四组及多次重开通过；本提交 Windows CI 随推送验证 |
+| P4.3–P5.4 | 等待各自窗口 | 尚未开始 |

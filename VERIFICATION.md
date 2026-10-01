@@ -1,5 +1,9 @@
 # 验证记录
 
+## Phase 4.2 定时配置（2026-10-01）
+
+101 单测、类型检查、生产构建、双 renderer 通过；macOS 实际打包新增四组 `test:schedule-config`：单次 / 每周预览、时区和 DST 拦截、900×640 保存入口、多次真实 App 重开、编辑 / 暂停 / 启用持久化、取消确认、课程关联取消及无课程禁用。首次两次定位失败及修正见 [定时开启规则](docs/scheduled-starts.md)。此配置检查未打开课堂或调用加密。本功能提交 Windows CI 将验证实际安装版配置重开及全部既有回归；自动调度尚未开放。
+
 ## Phase 4.1 定时规则（2026-10-01）
 
 94 单测（新增 21 项规则检查）、类型检查、生产构建、双 renderer 通过；覆盖单次 / 每周、城市时区、夏令时缺口 / 回拨、闰日、跨 DST 时长、迟到 / 结束边界、课堂冲突、生效时间和旧预览保护。设置页明确托盘、退出、睡眠、开机启动决策及尚未开放自动调度。详情与实际 renderer 定位失败修正见 [定时开启规则](docs/scheduled-starts.md)。功能提交 [`ccb0d80`](https://github.com/tzuo5/attendance-handler/commit/ccb0d80) 的 [Source checks](https://github.com/tzuo5/attendance-handler/actions/runs/36839642506) 与 [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36839642451) 首次尝试全部通过，含 94 单测、双 renderer、全部原有 Chrome 检查、实际安装版恢复 / UI / 向导、真实 DPAPI、包审计和 ZIP 一致性；实际调度和重启去重尚属 P4.3 / P4.4。
@@ -130,3 +134,5 @@ Windows 10/11 实体设备、系统通知显示和声音、点击通知后的焦
 - 正式系统通知授权、提示音及勿扰设置下的体验确认。
 
 模拟通过不等同于真实课堂验收完成。未取得真实签到和提交回执前，不应把 App 作为唯一签到保障。
+
+macOS 原有实际打包课堂 UI 回归通过，包含后台监控、通知处理器、草稿保护、回执确认返回后台、原截止与去重及退出清理；该课堂回归仍使用明确标记的隔离合成加密，未验证 Mac 钥匙串。源码审计 80 文件、包审计 16 文件通过。

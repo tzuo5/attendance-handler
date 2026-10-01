@@ -8,6 +8,7 @@ import { checkEnvironment, checkDataWritable } from './environment';
 import { Store } from './store';
 import { Watchdog } from './watchdog';
 import { validateCourse } from '../shared/validation';
+import { validateSchedule } from '../shared/schedule';
 import { ACTIVE, environmentReady, sessionPresentation, type AppState, type LogDetails, type EnvironmentReport, type LoginReport, type CourseImportReport } from '../shared/types';
 import { advanceSetup, initialSetup } from '../shared/setup';
 import { beginNotificationTest, notificationEvent, notificationResolved, recordNotificationChoice, unverifiedNotification } from '../shared/notification-check';
@@ -47,7 +48,7 @@ async function main() {
       { id: '22222222-2222-4222-8222-222222222222', remoteId: 'demo', name: '模拟课堂 · 提醒作答', url: `${origin}/#/course/demo/overview`, latitude: 0, longitude: 0, accuracy: 10, durationMinutes: 50, mode: 'notify' },
     ]; store.data.setup = initialSetup(true); store.save();
   }
-  const snapshot = (): AppState => ({ courses: store.data.courses, session: watchdog?.session || store.data.session, logs: store.data.logs, summaries: store.data.summaries, classroomOrigin: origin, browserConnected: browser?.isOpen() || false, browserMode: browser?.mode || 'visible', browserTransitioning: browser?.isTransitioning() || false, settings: store.data.settings, demo, notificationError, notificationCanConfirm: !!activeTestAttempt && activeTestAttempt === store.data.setup.notification?.attemptId && ['requested','pending'].includes(store.data.setup.notification.status), environment, loginReport, courseImport, setup: store.data.setup });
+  const snapshot = (): AppState => ({ courses: store.data.courses, schedules: store.data.schedules, session: watchdog?.session || store.data.session, logs: store.data.logs, summaries: store.data.summaries, classroomOrigin: origin, browserConnected: browser?.isOpen() || false, browserMode: browser?.mode || 'visible', browserTransitioning: browser?.isTransitioning() || false, settings: store.data.settings, demo, notificationError, notificationCanConfirm: !!activeTestAttempt && activeTestAttempt === store.data.setup.notification?.attemptId && ['requested','pending'].includes(store.data.setup.notification.status), environment, loginReport, courseImport, setup: store.data.setup });
   const emit = () => {
     if (window && !window.isDestroyed()) window.webContents.send('state:changed', snapshot());
     if (tray) {
@@ -189,8 +190,20 @@ async function main() {
   invoke('course:delete', input => {
     const id = z.string().uuid().parse(input);
     if (ACTIVE(watchdog.session) && watchdog.session.course.id === id) throw new Error('请先结束这门课，再删除配置。');
-    store.data.courses = store.data.courses.filter(c => c.id !== id); store.save(); emit(); return snapshot();
+    store.deleteCourse(id); emit(); return snapshot();
   });
+  invoke('schedule:save', input => {
+    const schedule = validateSchedule(input, store.data.courses.map(course => course.id));
+    validateCourse(store.data.courses.find(course => course.id === schedule.courseId), origin);
+    store.saveSchedule(schedule); emit(); return snapshot();
+  });
+  invoke('schedule:enabled', (input, value) => {
+    const id = z.string().uuid().parse(input), enabled = z.boolean().parse(value);
+    const schedule = store.data.schedules.find(item => item.id === id);
+    if (enabled && schedule) validateCourse(store.data.courses.find(course => course.id === schedule.courseId), origin);
+    store.setScheduleEnabled(id, enabled); emit(); return snapshot();
+  });
+  invoke('schedule:delete', input => { store.deleteSchedule(z.string().uuid().parse(input)); emit(); return snapshot(); });
   invoke('course:import', async () => { const report = await importCourses(); if (report.status !== 'courses') throw new Error(report.detail); return report.courses; });
   invoke('browser:login', () => watchdog.transition(signal => browser.login(signal)));
   invoke('browser:show', showClassroom);

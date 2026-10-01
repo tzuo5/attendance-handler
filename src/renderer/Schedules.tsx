@@ -1,0 +1,48 @@
+import React, { useLayoutEffect, useRef, useState } from 'react';
+import type { CourseConfig } from '../shared/types';
+import { dateInTimeZone, formatScheduleTime, nextOccurrences, SCHEDULE_RUNTIME_HELP, SCHEDULE_TIMING_HELP, validateSchedule, type ScheduleConfig, type ScheduleOccurrence } from '../shared/schedule';
+import { Icon } from './Icon';
+const DAYS = ['周日','周一','周二','周三','周四','周五','周六'];
+const ZONES = ['America/Chicago','America/New_York','America/Los_Angeles','Asia/Shanghai','Asia/Tokyo','Europe/London','Australia/Sydney','UTC'];
+function Preview({ occurrences }: { occurrences: ScheduleOccurrence[] }) {
+  return <div className="schedule-preview" aria-label="执行时间预览">{occurrences.length ? <ol>{occurrences.map(item => <li key={item.key}>{item.scheduledStart === null ? <><strong>{item.localDate} {item.localTime}</strong><p>夏令时变化使此时刻不存在，本次将跳过。</p></> : <><strong>开始：{formatScheduleTime(item.scheduledStart,item.timeZone)}</strong><p>结束：{formatScheduleTime(item.endsAt!,item.timeZone)}</p>{item.resolution==='earlier' && <p>重复时刻，采用第一次。</p>}</>}</li>)}</ol> : <p>没有未来执行时间，请调整日期或重复范围。</p>}</div>;
+}
+export function Schedules({courses,schedules,now,busy,onSave,onToggle,onDelete}: {courses:CourseConfig[];schedules:ScheduleConfig[];now:number;busy:boolean;onSave(schedule:ScheduleConfig):Promise<void>;onToggle(id:string,enabled:boolean):Promise<void>;onDelete(id:string):Promise<void>}) {
+  const [form,setForm]=useState<Partial<ScheduleConfig>|null>(null);
+  const [cancelId,setCancelId]=useState<string>();
+  return <section className="schedules-page"><div className="section-heading"><h2>已保存的计划 · {schedules.length}</h2><button className="primary" disabled={busy||!courses.length||schedules.length>=100} onClick={()=>setForm({})}><Icon name="plus" size={16}/>添加定时任务</button></div>
+    <p className="schedule-runtime">{SCHEDULE_RUNTIME_HELP}</p><p className="schedule-runtime">{SCHEDULE_TIMING_HELP}</p><p className="schedule-not-ready" role="status">定时配置会保存在本机，自动开启暂未开放。目前请手动开始上课。</p>
+    {!courses.length && <p className="schedule-empty">先在“我的课程”添加课程，再设置开始时间。</p>}
+    {!schedules.length && !!courses.length && <p className="schedule-empty">还没有定时任务。选择一门课程和开始时间，就能预览下一次计划。</p>}
+    <div className="schedule-list">{schedules.map(schedule=>{const repeat=schedule.recurrence;return <article className="panel schedule-card" key={schedule.id} aria-label={`任务 ${schedule.id}`}><div className="section-heading"><h2>{courses.find(course=>course.id===schedule.courseId)?.name||'课程已不存在'}</h2><span className="mode-badge">{schedule.enabled?'已启用':'已暂停'}</span></div><p>{repeat.kind==='once'?`单次 · ${repeat.date}`:`每周 ${repeat.weekdays.map(day=>DAYS[day]).join('、')} · ${repeat.startDate} 起${repeat.endDate?`，至 ${repeat.endDate}`:''}`} · {schedule.localTime} · {schedule.durationMinutes} 分钟</p><p className="schedule-zone">时区：{schedule.timeZone}（固定，不随电脑旅行改时）</p><h3>{schedule.enabled?'下一次计划':'重新启用后的计划参考'}</h3><Preview occurrences={nextOccurrences(schedule,now,1)}/><div className="schedule-actions"><button className="secondary" disabled={busy} onClick={()=>setForm(schedule)}>编辑任务</button><button className="secondary" disabled={busy} onClick={()=>void onToggle(schedule.id,!schedule.enabled)}>{schedule.enabled?'暂停任务':'启用任务'}</button>{cancelId===schedule.id?<><span>取消后不会再执行，当前课堂不受影响。</span><button className="delete-confirm" disabled={busy} onClick={()=>void onDelete(schedule.id).then(()=>setCancelId(undefined))}>确认取消任务</button><button className="text-button" disabled={busy} onClick={()=>setCancelId(undefined)}>保留任务</button></>:<button className="text-button" disabled={busy} onClick={()=>setCancelId(schedule.id)}>取消任务</button>}</div></article>;})}</div>
+    {form!==null && <ScheduleForm initial={form} courses={courses} onClose={()=>setForm(null)} onSave={async schedule=>{await onSave(schedule);setForm(null);}}/>}
+  </section>;
+}
+function ScheduleForm({initial,courses,onClose,onSave}:{initial:Partial<ScheduleConfig>;courses:CourseConfig[];onClose():void;onSave(schedule:ScheduleConfig):Promise<void>}) {
+  const id=useRef(initial.id||crypto.randomUUID()).current;
+  const [courseId,setCourse]=useState(initial.courseId||courses[0]?.id||'');
+  const [zone,setZone]=useState(initial.timeZone||Intl.DateTimeFormat().resolvedOptions().timeZone);
+  const soon=Date.now()+300_000;
+  const [date,setDate]=useState(()=>initial.recurrence?.kind==='once'?initial.recurrence.date:initial.recurrence?.startDate||dateInTimeZone(soon,zone));
+  const [time,setTime]=useState(()=>initial.localTime||new Intl.DateTimeFormat('en-GB',{timeZone:zone,hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format(soon));
+  const [duration,setDuration]=useState(String(initial.durationMinutes||courses.find(course=>course.id===courseId)?.durationMinutes||50));
+  const [kind,setKind]=useState<'once'|'weekly'>(initial.recurrence?.kind||'once');
+  const [weekdays,setWeekdays]=useState(initial.recurrence?.kind==='weekly'?initial.recurrence.weekdays:[new Date(`${date}T00:00:00Z`).getUTCDay()]);
+  const [endDate,setEndDate]=useState(initial.recurrence?.kind==='weekly'?initial.recurrence.endDate||'':'');
+  const [saving,setSaving]=useState(false),[error,setError]=useState('');
+  const dialog=useRef<HTMLElement>(null);
+  const elements=()=>[...dialog.current!.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled),select:not(:disabled)')];
+  useLayoutEffect(()=>{const previous=document.activeElement as HTMLElement;dialog.current?.querySelector<HTMLElement>('select')?.focus();return()=>{if(previous?.isConnected)previous.focus();};},[]);
+  let valid:ScheduleConfig|undefined,problem='',preview:ScheduleOccurrence[]=[];
+  try {valid=validateSchedule({id,courseId,enabled:initial.enabled??true,localTime:time,timeZone:zone,durationMinutes:Number(duration),effectiveFrom:Date.now(),recurrence:kind==='once'?{kind,date}:{kind,startDate:date,endDate:endDate||undefined,weekdays}},courses.map(course=>course.id));preview=nextOccurrences(valid,Date.now());}
+  catch(e){problem=(e as Error).message;}
+  const submit=async(event:React.FormEvent)=>{event.preventDefault();if(!valid||!preview.some(item=>item.scheduledStart!==null)){setError(problem||'请选择至少一次有效的未来开始时间。');return;}setSaving(true);setError('');try{await onSave(valid);}catch(e){setError((e as Error).message.replace(/^Error invoking remote method '[^']+': (?:Error: )?/,''));}finally{setSaving(false);}};
+  return <div className="modal-backdrop"><section className="modal panel schedule-form" ref={dialog} role="dialog" aria-modal="true" aria-labelledby="schedule-title" onKeyDown={event=>{if(event.key==='Escape'){event.preventDefault();if(!saving)onClose();}if(event.key==='Tab'){const items=elements(),first=items[0],last=items.at(-1);if(event.shiftKey&&document.activeElement===first){event.preventDefault();last?.focus();}else if(!event.shiftKey&&document.activeElement===last){event.preventDefault();first?.focus();}}}}><div className="modal-header"><h2 id="schedule-title">{initial.id?'编辑定时任务':'添加定时任务'}</h2><button className="icon-button" aria-label="关闭定时配置" disabled={saving} onClick={onClose}><Icon name="close"/></button></div><form onSubmit={submit} noValidate><fieldset className="course-fields" disabled={saving}>
+    <label>课程<select aria-label="定时课程" value={courseId} onChange={event=>{setCourse(event.target.value);if(!initial.id)setDuration(String(courses.find(course=>course.id===event.target.value)?.durationMinutes||50));}}>{courses.map(course=><option key={course.id} value={course.id}>{course.name}</option>)}</select></label>
+    <label>重复方式<select aria-label="重复方式" value={kind} onChange={event=>setKind(event.target.value as 'once'|'weekly')}><option value="once">只执行一次</option><option value="weekly">每周重复</option></select></label>
+    <div className="form-grid"><label>{kind==='once'?'开始日期':'重复开始日期'}<input type="date" min="2000-01-01" max="2100-12-31" value={date} onChange={event=>setDate(event.target.value)}/></label><label>当地开始时刻<input type="time" value={time} onChange={event=>setTime(event.target.value)}/></label></div>
+    {kind==='weekly'&&<><fieldset className="schedule-weekdays"><legend>每周哪几天</legend>{DAYS.map((day,index)=><label key={day}><input type="checkbox" aria-label={day} checked={weekdays.includes(index)} onChange={event=>setWeekdays(event.target.checked?[...weekdays,index]:weekdays.filter(value=>value!==index))}/>{day}</label>)}</fieldset><label>重复结束日期（可选）<input type="date" min={date} max="2100-12-31" value={endDate} onChange={event=>setEndDate(event.target.value)}/></label></>}
+    <label>城市时区<input list="schedule-zones" value={zone} onChange={event=>setZone(event.target.value)}/><datalist id="schedule-zones">{[...new Set([Intl.DateTimeFormat().resolvedOptions().timeZone,...ZONES])].map(zone=><option key={zone} value={zone}/>)}</datalist></label><p className="field-hint">默认是这台电脑所在的时区。保存后固定使用所选城市时区；旅行后需要改时，请编辑任务。</p>
+    <label>监控时长（分钟）<input type="number" min="1" max="720" step="1" value={duration} onChange={event=>setDuration(event.target.value)}/></label><h3>接下来三次 · {zone}</h3>{problem?<p className="form-error" role="alert">{problem}</p>:<Preview occurrences={preview}/>}<p className="field-hint">保存或重新启用只影响未来计划，不补开之前的实例。课堂按上课运行方式设置开始；登录和学校验证仍需你处理。</p>
+    </fieldset>{error&&<p className="form-error" role="alert">{error}</p>}<div className="modal-actions"><button type="button" className="secondary" disabled={saving} onClick={onClose}>返回</button><button className="primary" type="submit" disabled={saving||!valid||!preview.some(item=>item.scheduledStart!==null)}>{saving?'正在保存…':'保存定时任务'}</button></div></form></section></div>;
+}

@@ -1,3 +1,4 @@
+import type { ScheduleConfig } from './schedule';
 export type AnswerMode = 'auto-a' | 'notify';
 export type BrowserMode = 'visible' | 'background';
 export interface AppSettings { browserMode: BrowserMode; }
@@ -86,6 +87,7 @@ export interface LoginReport { status: 'waiting' | 'verified' | 'closed' | 'erro
 export interface CourseImportReport { status: 'courses' | 'empty' | 'login' | 'error'; courses: RemoteCourse[]; checkedAt: number; detail: string; }
 export interface AppState {
   courses: CourseConfig[];
+  schedules: ScheduleConfig[];
   session: SessionState | null;
   logs: LogEntry[];
   summaries: SessionSummary[];
@@ -106,6 +108,9 @@ export interface AttendanceAPI {
   getState(): Promise<AppState>;
   saveCourse(course: CourseConfig): Promise<AppState>;
   deleteCourse(id: string): Promise<AppState>;
+  saveSchedule(schedule: ScheduleConfig): Promise<AppState>;
+  setScheduleEnabled(id: string, enabled: boolean): Promise<AppState>;
+  deleteSchedule(id: string): Promise<AppState>;
   login(): Promise<void>;
   importCourses(): Promise<RemoteCourse[]>;
   start(id: string): Promise<void>;
