@@ -39,7 +39,7 @@ jobs:
       - name: Audit packaged application
         run: node scripts/audit-public.mjs --app release-public/win-unpacked
       - name: Install and test the actual installer
-        timeout-minutes: 3
+        timeout-minutes: 5
         shell: pwsh
         run: |
           $installer = (Get-ChildItem release-public/*-Setup.exe).FullName
@@ -52,6 +52,8 @@ jobs:
           $installed = (Get-FileHash (Join-Path $installDirectory 'resources/app.asar') -Algorithm SHA256).Hash
           if ($expected -ne $installed) { throw 'Installed application differs from the audited build' }
           npm run test:ui
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          npm run test:recovery
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           npm run test:setup
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

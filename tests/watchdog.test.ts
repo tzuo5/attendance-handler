@@ -18,6 +18,45 @@ describe('classroom watchdog', () => {
     watchdog = new Watchdog(driver, hooks);
   });
   afterEach(async () => { await watchdog.stop(); vi.useRealTimers(); });
+  it('offers interrupted recovery without starting Chrome, preserving deadline and uncertain answers', async () => {
+    snapshot.question=question();await watchdog.start(course);
+    const saved=structuredClone(watchdog.session!);await watchdog.stop();
+    watchdog=new Watchdog(driver,hooks);vi.mocked(driver.prepare).mockClear();vi.mocked(driver.answerA).mockClear();
+    watchdog.restore(saved);
+    expect(watchdog.session).toMatchObject({id:saved.id,status:'interrupted',endsAt:saved.endsAt,handled:{[question().key]:'attempted'}});
+    expect(driver.prepare).not.toHaveBeenCalled();
+    await watchdog.resumeInterrupted();
+    expect(driver.prepare).toHaveBeenCalledWith(saved.course,saved.endsAt,expect.any(AbortSignal));
+    expect(driver.answerA).not.toHaveBeenCalled();expect(watchdog.session!.status).toBe('needs-answer');
+  });
+  it('keeps an expired interrupted session ended without opening Chrome', async () => {
+    await watchdog.start(course);const saved=structuredClone(watchdog.session!);await watchdog.stop();
+    vi.setSystemTime(saved.endsAt+1);watchdog=new Watchdog(driver,hooks);vi.mocked(driver.prepare).mockClear();
+    watchdog.restore(saved);
+    expect(watchdog.session).toMatchObject({id:saved.id,status:'completed',summary:{reason:'expired',hadInterruptions:true}});
+    await expect(watchdog.resumeInterrupted()).rejects.toThrow('没有待恢复');expect(driver.prepare).not.toHaveBeenCalled();
+  });
+  it('reconnects an exited background browser at most three times without a new session', async () => {
+    await watchdog.start(course);const id=watchdog.session!.id,endsAt=watchdog.session!.endsAt;
+    driver.canRecoverAutomatically=()=>true;driver.recover=vi.fn(async()=>{throw new Error('synthetic connection unavailable');});
+    open=false;await watchdog.tick();expect(watchdog.session!.status).toBe('offline');
+    await watchdog.tick();await watchdog.tick();await watchdog.tick();
+    expect(driver.recover).toHaveBeenCalledTimes(3);expect(watchdog.session).toMatchObject({id,endsAt,status:'window-closed'});
+  });
+  it('rechecks the recovered background page and retains confirmed answers on wake', async () => {
+    snapshot.question=question({answered:true});await watchdog.start(course);const saved=structuredClone(watchdog.session!);
+    driver.canRecoverAutomatically=()=>true;driver.recover=vi.fn(async()=>{open=true;});
+    open=false;await watchdog.resumed();
+    expect(driver.recover).toHaveBeenCalledWith(saved.course,saved.endsAt,expect.any(AbortSignal));
+    expect(watchdog.session).toMatchObject({id:saved.id,endsAt:saved.endsAt,status:'monitoring',handled:saved.handled});expect(driver.answerA).not.toHaveBeenCalled();
+  });
+  it('waits for late automatic recovery and disarms again after stop', async () => {
+    await watchdog.start(course);let release!:()=>void,gate=0,signal!:AbortSignal;
+    driver.canRecoverAutomatically=()=>true;driver.recover=async(_course,deadline,input)=>{signal=input;await new Promise<void>(resolve=>{release=resolve;});gate=deadline;open=true;};
+    vi.mocked(driver.disarm).mockImplementation(async()=>{gate=0;});
+    open=false;const checking=watchdog.tick();const stopping=watchdog.stop();expect(signal.aborted).toBe(true);
+    release();await Promise.all([checking,stopping]);expect(gate).toBe(0);expect(watchdog.session!.status).toBe('stopped');
+  });
   it('pauses checks during a transition and retains the session, deadline and handled answers', async () => {
     snapshot.question=question({answered:true}); await watchdog.start(course);
     const id=watchdog.session!.id, deadline=watchdog.session!.endsAt;
@@ -38,8 +77,8 @@ describe('classroom watchdog', () => {
     const switching=watchdog.transition(async input=>{signal=input;await new Promise<void>(resolve=>{release=resolve;});});
     await vi.waitFor(()=>expect(release).toBeTypeOf('function'));
     const reads=vi.mocked(driver.read).mock.calls.length;
-    await watchdog.stop();expect(signal?.aborted).toBe(true);
-    release();await switching;await vi.advanceTimersByTimeAsync(10000);
+    const stopping=watchdog.stop();expect(signal?.aborted).toBe(true);
+    release();await Promise.all([switching,stopping]);await vi.advanceTimersByTimeAsync(10000);
     expect(driver.read).toHaveBeenCalledTimes(reads);expect(watchdog.session!.status).toBe('stopped');
   });
   it('still opens an explicit classroom action after a previous session ended', async () => {

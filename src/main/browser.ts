@@ -5,7 +5,7 @@ import { chromium, type Browser, type BrowserContext, type Page } from 'playwrig
 import type { BrowserMode, CourseConfig, PageSnapshot, QuestionSnapshot, LoginReport, CourseImportReport } from '../shared/types';
 import { IClickerAdapter } from './iclicker';
 import type { ClassroomDriver } from './watchdog';
-import { activateChrome, launchChrome } from './platform';
+import { activateChrome, launchChrome, type ChromeLaunch } from './platform';
 import { backgroundReturnIssue } from '../shared/background-return';
 
 export interface Cipher { isEncryptionAvailable(): boolean; encryptString(text: string): Buffer; decryptString(data: Buffer): string; }
@@ -48,6 +48,9 @@ export class ChromeClassroom implements ClassroomDriver {
   private checkpoint?: ReturnType<typeof setInterval>;
   private capturing?: Promise<void>;
   private changingMode?: Promise<void>;
+  private processPid?: number;
+  private startupAbort?: AbortController;
+  private disposing = false;
   mode: BrowserMode = 'visible';
   private activeCourse?: CourseConfig;
   private cachedCipherError = false;
@@ -59,6 +62,16 @@ export class ChromeClassroom implements ClassroomDriver {
   }
   isOpen() { return !!this.browser?.isConnected() && !!this.page && !this.page.isClosed(); }
   isTransitioning() { return !!this.changingMode; }
+  canRecoverAutomatically() { return this.mode === 'background'; }
+  private async waitForExit(pid = this.processPid) {
+    if (!pid) return;
+    for (let i = 0; i < 120; i++) {
+      try { process.kill(pid, 0); }
+      catch (error) { if ((error as NodeJS.ErrnoException).code !== 'ESRCH') throw error; if (this.processPid === pid) this.processPid = undefined; return; }
+      await delay(100);
+    }
+    throw new Error('专用 Chrome 尚未退出，请稍后恢复课堂。');
+  }
   async setMode(mode: BrowserMode, signal?: AbortSignal): Promise<void> {
     if (this.changingMode) {
       await this.changingMode;
@@ -106,6 +119,16 @@ export class ChromeClassroom implements ClassroomDriver {
     const page=await this.ensurePage();
     await page.evaluate(()=>true);
   }
+  async pauseExisting(close = false) {
+    // Startup recovery must not launch a browser or steal focus. Clear only an
+    // already-running dedicated profile's old page gates and geolocation.
+    if (!await this.endpoint()) return;
+    await this.ensureConnected();
+    this.deadline = 0;
+    for (const page of this.context!.pages()) await page.evaluate(() => { (window as unknown as { __attendanceDeadline: number }).__attendanceDeadline = 0; }).catch(() => {});
+    await this.context!.setGeolocation(null); await this.context!.clearPermissions();
+    if (close) await this.closeBrowser();
+  }
   private async endpoint(): Promise<string | undefined> {
     try {
       const [port, path] = (await readFile(join(this.profile, 'DevToolsActivePort'), 'utf8')).trim().split(/\r?\n/);
@@ -117,22 +140,29 @@ export class ChromeClassroom implements ClassroomDriver {
     } catch { return; }
   }
   private async ensureConnected(signal?: AbortSignal) {
+    if (this.disposing) throw new Error('专用浏览器正在退出。');
     if (this.shutdown) await this.shutdown;
     if (this.browser?.isConnected()) return;
     if (this.startup) return this.startup;
+    this.startupAbort = new AbortController();
+    signal = signal ? AbortSignal.any([signal, this.startupAbort.signal]) : this.startupAbort.signal;
+    let launched = false;
+    let ownedLaunch: ChromeLaunch | undefined;
     this.startup = (async () => {
       signal?.throwIfAborted();
       await mkdir(this.profile, { recursive: true, mode: 0o700 });
       let endpoint = await this.endpoint();
       if (!endpoint) {
-        await launchChrome(this.profile, this.mode);
+        await this.waitForExit(); signal?.throwIfAborted();
+        ownedLaunch = await launchChrome(this.profile, this.mode);
+        launched = true;
         for (let i = 0; i < 60 && !endpoint; i++) {
           signal?.throwIfAborted(); await delay(300); endpoint = await this.endpoint();
           // CDP can disconnect before Chrome releases the profile's process lock.
           // A launch during shutdown gets forwarded to the exiting process and is
           // lost. Retry only while this dedicated profile has no live endpoint.
           if (!endpoint && (i === 19 || i === 39)) {
-            signal?.throwIfAborted(); await launchChrome(this.profile, this.mode);
+            signal?.throwIfAborted(); if (!ownedLaunch || ownedLaunch.exited) ownedLaunch = await launchChrome(this.profile, this.mode);
           }
         }
       }
@@ -140,7 +170,12 @@ export class ChromeClassroom implements ClassroomDriver {
       signal?.throwIfAborted();
       this.browser = await chromium.connectOverCDP(endpoint, { timeout: 15000 });
       const modeCDP = await this.browser.newBrowserCDPSession();
-      try { this.mode = (await modeCDP.send('Browser.getVersion')).userAgent.includes('HeadlessChrome') ? 'background' : 'visible'; }
+      try {
+        this.mode = (await modeCDP.send('Browser.getVersion')).userAgent.includes('HeadlessChrome') ? 'background' : 'visible';
+        const pid = (await modeCDP.send('SystemInfo.getProcessInfo')).processInfo.find(p => p.type === 'browser')?.id;
+        if (!pid || !Number.isSafeInteger(pid) || pid <= 0) throw new Error('无法核实专用 Chrome 进程。');
+        this.processPid = pid;
+      }
       finally { await modeCDP.detach(); }
       this.context = this.browser.contexts()[0];
       if (!this.context) throw new Error('无法连接 Chrome 默认会话。');
@@ -158,7 +193,28 @@ export class ChromeClassroom implements ClassroomDriver {
       clearInterval(this.checkpoint);
       this.checkpoint = setInterval(() => { void this.capture(); }, 5000);
       this.changed();
-    })().finally(() => { this.startup = undefined; });
+    })().catch(async error => {
+      // A canceled launch may publish CDP after the abort. Adopt only this
+      // dedicated profile's endpoint for cleanup; never kill general Chrome.
+      if (launched) {
+        if (!this.browser?.isConnected()) {
+          for (let i = 0; i < 60; i++) {
+            const endpoint = await this.endpoint();
+            if (endpoint) {
+              this.browser = await chromium.connectOverCDP(endpoint, { timeout: 5000 });
+              const cdp = await this.browser.newBrowserCDPSession();
+              try { this.processPid = (await cdp.send('SystemInfo.getProcessInfo')).processInfo.find(p => p.type === 'browser')?.id; }
+              finally { await cdp.detach(); }
+              break;
+            }
+            await delay(100);
+          }
+        }
+        await this.closeBrowser().catch(cleanup => this.report(String(cleanup)));
+        if (ownedLaunch && !ownedLaunch.exited) { ownedLaunch.terminate(); await this.waitForExit(ownedLaunch.pid); }
+      }
+      throw error;
+    }).finally(() => { this.startup = undefined; this.startupAbort = undefined; });
     return this.startup;
   }
   private async attach(page: Page) {
@@ -187,6 +243,7 @@ export class ChromeClassroom implements ClassroomDriver {
     });
   }
   private async ensurePage() {
+    if (this.disposing) throw new Error('专用浏览器正在退出。');
     if (this.page && !this.page.isClosed()) return this.page;
     const existing = this.context!.pages().find(p => p.url().startsWith(this.origin)) || this.context!.pages().find(p => p.url() === 'about:blank');
     if (existing) { await this.attach(existing); return existing; }
@@ -202,8 +259,13 @@ export class ChromeClassroom implements ClassroomDriver {
     await this.page!.evaluate(deadline => { (window as unknown as { __attendanceDeadline: number }).__attendanceDeadline = deadline; }, this.deadline);
   }
   async prepare(course: CourseConfig, deadline: number, signal: AbortSignal) {
+    await this.recover(course, deadline, signal, this.preferredMode());
+  }
+  async recover(course: CourseConfig, deadline: number, signal: AbortSignal, mode = this.mode) {
+    signal.throwIfAborted();
+    if (deadline <= Date.now()) throw new Error('本节监控时间已到，不能恢复。');
     this.activeCourse = course; this.deadline = deadline;
-    await this.setMode(this.preferredMode(), signal); signal.throwIfAborted();
+    await this.setMode(mode, signal); signal.throwIfAborted();
     const page = await this.ensurePage(); signal.throwIfAborted();
     await this.context!.grantPermissions(['geolocation'], { origin: this.origin });
     await this.context!.setGeolocation({ latitude: course.latitude, longitude: course.longitude, accuracy: course.accuracy });
@@ -359,8 +421,9 @@ export class ChromeClassroom implements ClassroomDriver {
   private closeBrowser(browser = this.browser): Promise<void> {
     if (this.shutdown) return this.shutdown;
     if (browser !== this.browser) return Promise.resolve();
-    if (!browser?.isConnected()) return Promise.resolve();
+    if (!browser) return Promise.resolve();
     this.shutdown = (async () => {
+      if (!browser.isConnected()) { await this.waitForExit(); return; }
       let disconnectedListener!:()=>void;
       let timeout:ReturnType<typeof setTimeout>|undefined;
       const disconnected=new Promise<void>((resolve,reject)=>{
@@ -378,12 +441,16 @@ export class ChromeClassroom implements ClassroomDriver {
       finally{clearTimeout(timeout);browser.off('disconnected',disconnectedListener);}
       for (let i = 0; i < 50 && browser.isConnected(); i++) await delay(100);
       if (browser.isConnected()) throw new Error('专用 Chrome 未能正常退出');
+      await this.waitForExit();
     })().finally(() => { this.shutdown = undefined; });
     return this.shutdown;
   }
   async dispose() {
+    this.disposing = true; this.startupAbort?.abort();
     clearInterval(this.checkpoint);
-    try { await this.disarm(); }
-    finally { await this.closeBrowser(); }
+    try {
+      await this.startup?.catch(() => {}); await this.changingMode?.catch(() => {});
+      clearInterval(this.checkpoint); await this.disarm();
+    } finally { try { await this.closeBrowser(); } finally { this.disposing = false; } }
   }
 }

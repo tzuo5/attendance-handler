@@ -18,6 +18,7 @@ export async function findChrome() {
   return chrome;
 }
 export type ChromeMode = 'visible' | 'background';
+export interface ChromeLaunch { pid: number; exited: boolean; terminate(): void; }
 export async function launchChrome(profile: string, mode: ChromeMode = 'visible') {
   const chrome = await findChrome();
   if (!chrome) throw new Error(process.platform === 'darwin' ? '未找到 Google Chrome，请先安装到 Applications。' : '未找到 Google Chrome，请先为当前用户或所有用户安装 Google Chrome。');
@@ -27,11 +28,15 @@ export async function launchChrome(profile: string, mode: ChromeMode = 'visible'
     await exec('/usr/bin/open', ['-g', '-n', '-a', chrome, '--args', ...args]);
   } else {
     // No shell or console window. The app closes this dedicated process on exit.
-    await new Promise<void>((resolve, reject) => {
+    return await new Promise<ChromeLaunch>((resolve, reject) => {
       const executable = process.platform === 'darwin' ? join(chrome, 'Contents', 'MacOS', 'Google Chrome') : chrome;
       const child = spawn(executable, args, { detached: true, stdio: 'ignore', windowsHide: true });
       child.once('error', reject);
-      child.once('spawn', () => { child.unref(); resolve(); });
+      child.once('spawn', () => {
+        const launched: ChromeLaunch = { pid: child.pid!, exited: false, terminate: () => { if (!launched.exited) child.kill('SIGTERM'); } };
+        child.once('exit', () => { launched.exited = true; });
+        child.unref(); resolve(launched);
+      });
     });
   }
 }

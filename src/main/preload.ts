@@ -9,6 +9,7 @@ const api: AttendanceAPI = {
   start: id => ipcRenderer.invoke('session:start', id),
   stop: () => ipcRenderer.invoke('session:stop'),
   extend: () => ipcRenderer.invoke('session:extend'),
+  resumeInterrupted: () => ipcRenderer.invoke('session:resume'),
   showClassroom: () => ipcRenderer.invoke('browser:show'),
   minimizeClassroom: () => ipcRenderer.invoke('browser:minimize'),
   returnToBackground: () => ipcRenderer.invoke('browser:background'),

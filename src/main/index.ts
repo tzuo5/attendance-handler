@@ -5,7 +5,6 @@ import { z } from 'zod';
 import { ChromeClassroom } from './browser';
 import { nativeHelperName, findChrome } from './platform';
 import { checkEnvironment, checkDataWritable } from './environment';
-import { summarizeSession } from '../shared/session-summary';
 import { Store } from './store';
 import { Watchdog } from './watchdog';
 import { validateCourse } from '../shared/validation';
@@ -42,12 +41,6 @@ async function main() {
   let store: Store;
   try { store = new Store(app.getPath('userData')); }
   catch (error) { dialog.showErrorBox('无法读取课程数据', String(error)); app.exit(1); return; }
-  if (ACTIVE(store.data.session)) {
-    store.data.session.summary = summarizeSession(store.data.session, store.data.session.lastCheckedAt || store.data.session.startedAt, 'interrupted');
-    store.data.session.status = 'stopped';
-    store.data.session.detail = '上次运行已中断，请重新开始上课';
-    store.setSession(store.data.session);
-  }
   if (demo && process.env.ATTENDANCE_DEMO_EMPTY !== '1' && !store.data.courses.length) {
     store.data.courses = [
       { id: '11111111-1111-4111-8111-111111111111', remoteId: 'demo', name: '模拟课堂 · 自动 A', url: `${origin}/#/course/demo/overview`, latitude: 0, longitude: 0, accuracy: 10, durationMinutes: 50, mode: 'auto-a' },
@@ -67,7 +60,7 @@ async function main() {
         { label: ACTIVE(run) ? `${run.course.name} · ${sessionPresentation(run).label} · ${remaining} 分钟` : '课堂助手', enabled: false },
         { label: modeLabel, enabled: false },
         { label: '打开 App', click: () => { window.show(); window.focus(); } },
-        { label: sessionPresentation(run).action, click: () => { void showClassroom().catch(reportError); } },
+        { label: run?.status === 'interrupted' ? '恢复上次课堂' : sessionPresentation(run).action, click: () => { void (run?.status === 'interrupted' ? resumeInterrupted() : showClassroom()).catch(reportError); } },
         { label: '返回后台', visible: ACTIVE(run) && browser?.mode === 'visible', enabled: !browser?.isTransitioning(), click: () => { void returnToBackground().catch(error => { reportError(error); sendNotification('background-return', '暂时无法返回后台', error instanceof Error ? error.message : '请打开 App 查看课堂状态后重试。'); }); } },
         { label: '结束上课', enabled: ACTIVE(run), click: () => { void watchdog.stop().catch(reportError); } },
         { type: 'separator' }, { label: '退出', click: () => app.quit() },
@@ -112,6 +105,11 @@ async function main() {
     },
   });
   const showClassroom = () => watchdog.transition(signal => browser.show(signal));
+  const resumeInterrupted = async () => {
+    if (watchdog.session) validateCourse(watchdog.session.course, origin);
+    await watchdog.resumeInterrupted();
+    if (ACTIVE(watchdog.session) && browser.mode === 'visible') await showClassroom();
+  };
   const returnToBackground = async () => {
     if (!ACTIVE(watchdog.session)) throw new Error('请先开始本节监控。');
     const run = watchdog.session;
@@ -130,6 +128,7 @@ async function main() {
   const invoke = (channel: string, handler: (...args: any[]) => unknown) => {
     ipcMain.handle(channel, (event, ...args) => {
       if (event.sender !== window.webContents || event.senderFrame !== window.webContents.mainFrame) throw new Error('未授权的请求');
+      if (quitting) throw new Error('App 正在退出，请稍候。');
       return handler(...args);
     });
   };
@@ -206,6 +205,7 @@ async function main() {
   });
   invoke('session:stop', () => watchdog.stop());
   invoke('session:extend', () => watchdog.extend());
+  invoke('session:resume', resumeInterrupted);
   invoke('notification:test', () => {
     clearTimeout(notificationTimer);
     const check = beginNotificationTest(); activeTestAttempt = check.attemptId;
@@ -228,6 +228,11 @@ async function main() {
     { label: '编辑', submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }] },
     { label: '窗口', submenu: [{ role: 'minimize' }, { role: 'zoom' }, { role: 'close' }] },
   ]));
+  if (store.data.session) {
+    const interrupted = ACTIVE(store.data.session) || store.data.session.status === 'interrupted';
+    watchdog.restore(store.data.session);
+    if (interrupted) await browser.pauseExisting(watchdog.session?.status === 'completed').catch(reportError);
+  }
   if (process.env.ATTENDANCE_DEV === '1' && !app.isPackaged) await window.loadURL('http://127.0.0.1:5173');
   else await window.loadFile(join(__dirname, '../dist/index.html'));
   app.on('second-instance', () => { window.show(); window.focus(); });

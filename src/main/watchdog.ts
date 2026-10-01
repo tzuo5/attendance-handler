@@ -1,6 +1,7 @@
 import { summarizeSession } from '../shared/session-summary';
-import { ACTIVE, type CourseConfig, type LogDetails, type LogEvent, type PageSnapshot, type QuestionSnapshot, type SessionState } from '../shared/types';
+import { ACTIVE, type BrowserMode, type CourseConfig, type LogDetails, type LogEvent, type PageSnapshot, type QuestionSnapshot, type SessionState } from '../shared/types';
 export interface ClassroomDriver {
+  mode?: BrowserMode;
   isOpen(): boolean;
   prepare(course: CourseConfig, deadline: number, signal: AbortSignal): Promise<void>;
   read(): Promise<PageSnapshot>;
@@ -8,6 +9,8 @@ export interface ClassroomDriver {
   answerA(question: QuestionSnapshot, signal: AbortSignal): Promise<void>;
   disarm(): Promise<void>;
   extendDeadline(deadline: number): Promise<void>;
+  recover?(course: CourseConfig, deadline: number, signal: AbortSignal, mode?: BrowserMode): Promise<void>;
+  canRecoverAutomatically?(): boolean;
 }
 export interface WatchdogHooks {
   changed(session: SessionState): void;
@@ -30,14 +33,42 @@ export class Watchdog {
   private preparation?: Promise<void>;
   private stopping: Promise<void> | null = null;
   private transitioning = false;
+  private transitionWork?: Promise<void>;
+  private reconnects = 0;
   constructor(private driver: ClassroomDriver, private hooks: WatchdogHooks, private now = () => Date.now()) {}
+
+  restore(saved: SessionState) {
+    if (['stopped', 'completed'].includes(saved.status)) { this.session = structuredClone(saved); return; }
+    this.session = { ...structuredClone(saved), question: undefined, hadInterruptions: true, status: 'interrupted', detail: '上次监控已中断。恢复将沿用原结束时间和作答记录。' };
+    if (this.now() >= saved.endsAt) {
+      this.session.status = 'completed'; this.session.detail = '上次监控已中断且时间已到，不会重新开启。';
+      this.session.summary = summarizeSession(this.session, this.now(), 'expired');
+    }
+    this.emit();
+  }
+  async resumeInterrupted() {
+    if (this.session?.status !== 'interrupted') throw new Error('没有待恢复的课堂。');
+    if (this.transitioning) throw new Error('课堂正在切换，请稍候。');
+    if (this.stopping) await this.stopping;
+    const run = this.session;
+    if (this.now() >= run.endsAt) { this.restore(run); return; }
+    run.questions ||= {}; run.handled ||= {}; delete run.summary;
+    this.controller = new AbortController(); this.reconnects = 0;
+    this.hooks.keepAwake(true); this.hooks.clearNotifications();
+    this.change('starting', '正在恢复上次课堂，原结束时间和作答记录保留');
+    this.armDeadline(run);
+    this.preparation = this.driver.recover ? this.driver.recover(run.course, run.endsAt, this.controller.signal, run.browserMode) : this.driver.prepare(run.course, run.endsAt, this.controller.signal);
+    try { await this.preparation; if (this.live(run)) { this.event('info', '已连接上次课堂，正在重新核实页面', 'system'); await this.tick(); } else await this.driver.disarm(); }
+    catch (error) { if (this.live(run)) { this.change('window-closed', error instanceof Error ? error.message : '课堂恢复失败', 'browser'); this.schedule(5000); } }
+  }
 
   async start(course: CourseConfig) {
     if (this.transitioning) throw new Error('课堂正在切换，请稍候再开始。');
     if (ACTIVE(this.session)) throw new Error('已有课程正在监控，请先结束当前课程。');
     if (this.stopping) await this.stopping;
+    if (this.session?.status === 'interrupted') { this.session.summary = summarizeSession(this.session, this.now(), 'interrupted'); this.emit(); }
     this.controller = new AbortController();
-    this.lastReminders.clear(); this.failures = 0; this.joins = 0; this.lastJoin = -Infinity;
+    this.lastReminders.clear(); this.failures = 0; this.joins = 0; this.lastJoin = -Infinity; this.reconnects = 0;
     this.session = { id: crypto.randomUUID(), course: structuredClone(course), startedAt: this.now(), endsAt: this.now() + course.durationMinutes * 60000, status: 'starting', attendance: 'unknown', questions: {}, handled: {}, detail: '正在连接专用 Chrome 课堂' };
     const run = this.session;
     this.hooks.keepAwake(true); this.hooks.clearNotifications(); this.emit();
@@ -62,7 +93,7 @@ export class Watchdog {
   private live(run: SessionState) {
     return this.session === run && ACTIVE(run) && !this.controller?.signal.aborted && this.now() < run.endsAt;
   }
-  private emit() { if (this.session) this.hooks.changed(structuredClone(this.session)); }
+  private emit() { if (this.session) { if (ACTIVE(this.session) && this.driver.isOpen() && this.driver.mode) this.session.browserMode = this.driver.mode; this.hooks.changed(structuredClone(this.session)); } }
   private change(status: SessionState['status'], detail: string, issue?: SessionState['issue']) {
     if (!this.session) return;
     const changed = this.session.status !== status || this.session.detail !== detail || this.session.issue !== issue;
@@ -120,7 +151,7 @@ export class Watchdog {
     this.transitioning = true;
     clearTimeout(this.timer);
     const run = ACTIVE(this.session) ? this.session : null;
-    try {
+    this.transitionWork = (async () => { try {
       if (this.preparation) await this.preparation.catch(() => {});
       if (this.inFlight) await this.inFlight;
       if (run && !this.live(run)) return;
@@ -128,22 +159,36 @@ export class Watchdog {
       await action(run ? this.controller?.signal : undefined);
     } finally {
       this.transitioning = false;
+    } })();
+    try { await this.transitionWork; } finally {
+      this.transitionWork = undefined;
+      // Stop waits for the mode action only. A resumed tick may itself expire;
+      // making stop wait for that tick would create a circular wait.
       if (run && this.live(run)) { this.hooks.clearNotifications(); await this.resumed(); }
     }
   }
   private async check(run: SessionState) {
-    let operation: 'page' | 'join' | 'answer' = 'page';
+    let operation: 'page' | 'join' | 'answer' | 'browser' = 'page';
     try {
       if (!this.driver.isOpen()) {
+        if (this.driver.canRecoverAutomatically?.() && this.driver.recover && this.reconnects < 3) {
+          operation = 'browser'; this.reconnects++;
+          this.change('offline', `后台课堂已断开，正在重连（${this.reconnects}/3）；原结束时间保留。`, 'browser');
+          await this.driver.recover(run.course, run.endsAt, this.controller!.signal);
+          if (!this.live(run)) { await this.driver.disarm(); return; }
+          if (!this.driver.isOpen()) throw new Error('后台课堂尚未恢复。');
+        } else {
         if (run.status !== 'window-closed') this.hooks.clearNotifications();
         run.question = undefined;
-        this.change('window-closed', '课堂窗口已关闭。点击“恢复课堂”继续监控，原结束时间保留。');
+        this.change('window-closed', this.driver.canRecoverAutomatically?.() ? '后台课堂自动重连未成功。点击“恢复课堂”处理，原结束时间保留。' : '课堂窗口已关闭。点击“恢复课堂”继续监控，原结束时间保留。');
         this.remind('window-closed', '课堂监控已暂停', '点击此通知重新打开课堂。', Infinity);
         return;
+        }
       }
       const page = await this.driver.read();
       if (!this.live(run)) return;
       run.lastCheckedAt = this.now();
+      this.reconnects = 0;
       if (page.state === 'login') {
         if (run.status !== 'needs-login') this.hooks.clearNotifications();
         run.question = undefined;
@@ -221,7 +266,7 @@ export class Watchdog {
       const detail = error instanceof Error ? error.message : '网页检查失败';
       run.question = undefined;
       const network = /网络连接|net::ERR_|ERR_INTERNET|ERR_CONNECTION|ERR_NETWORK/i.test(detail);
-      const status = !this.driver.isOpen() ? 'window-closed' : operation === 'page' && network ? 'offline' : 'attention';
+      const status = operation === 'browser' && this.reconnects < 3 ? 'offline' : !this.driver.isOpen() ? 'window-closed' : operation === 'page' && network ? 'offline' : 'attention';
       this.change(status, detail, status === 'offline' ? 'network' : status === 'window-closed' ? 'browser' : operation);
       if (this.failures === 1) this.event('warning', detail, 'system', { result: 'failed' });
       this.remind('connection', '课堂监控暂时中断', detail, 60000);
@@ -269,6 +314,7 @@ export class Watchdog {
       await this.preparation?.catch(() => {});
       await this.inFlight?.catch(() => {});
       await this.extending?.catch(() => {});
+      await this.transitionWork?.catch(() => {});
       await this.driver.disarm().catch(() => { disarmFailed = true; });
       if (disarmFailed) this.event('warning', '浏览器曾断开；恢复连接时将清除残留定位设置。', 'system', { result:'failed' });
     })().finally(() => { this.stopping = null; });

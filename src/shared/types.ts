@@ -11,7 +11,7 @@ export interface CourseConfig extends RemoteCourse {
   durationMinutes: number;
   mode: AnswerMode;
 }
-export type SessionStatus = 'starting' | 'waiting' | 'monitoring' | 'needs-answer' | 'needs-login' | 'window-closed' | 'offline' | 'attention' | 'stopped' | 'completed';
+export type SessionStatus = 'starting' | 'waiting' | 'monitoring' | 'needs-answer' | 'needs-login' | 'window-closed' | 'offline' | 'attention' | 'interrupted' | 'stopped' | 'completed';
 export interface QuestionSnapshot {
   key: string;
   stable: boolean;
@@ -42,6 +42,7 @@ export interface SessionSummary {
 export interface SessionState {
   id: string;
   course: CourseConfig;
+  browserMode?: BrowserMode;
   startedAt: number;
   endsAt: number;
   status: SessionStatus;
@@ -110,6 +111,7 @@ export interface AttendanceAPI {
   start(id: string): Promise<void>;
   stop(): Promise<void>;
   extend(): Promise<void>;
+  resumeInterrupted(): Promise<void>;
   showClassroom(): Promise<void>;
   minimizeClassroom(): Promise<void>;
   returnToBackground(): Promise<void>;
@@ -123,16 +125,16 @@ export interface AttendanceAPI {
   notificationChoice(choice: NotificationChoice): Promise<AppState>;
   onState(listener: (state: AppState) => void): () => void;
 }
-export const ACTIVE = (session: SessionState | null): session is SessionState => !!session && !['stopped', 'completed'].includes(session.status);
+export const ACTIVE = (session: SessionState | null): session is SessionState & { status: Exclude<SessionStatus, 'stopped' | 'completed' | 'interrupted'> } => !!session && !['stopped', 'completed', 'interrupted'].includes(session.status);
 export const STATUS_LABELS: Record<SessionStatus, string> = {
   starting: '正在连接课堂', waiting: '等待老师开课', monitoring: '监控正常', 'needs-answer': '有题目待作答',
-  'needs-login': '需要重新登录', 'window-closed': '课堂窗口已关闭', offline: '正在重连', attention: '需要检查页面', stopped: '已结束', completed: '课程时间已到',
+  'needs-login': '需要重新登录', 'window-closed': '课堂窗口已关闭', offline: '正在重连', attention: '需要检查页面', interrupted: '上次监控已中断', stopped: '已结束', completed: '课程时间已到',
 };
 
 export function sessionPresentation(session: SessionState | null) {
   const status = session?.status;
   const tone = status === 'monitoring' ? 'success'
-    : status === 'needs-answer' || status === 'needs-login' || status === 'window-closed' || status === 'offline' ? 'warning'
+    : status === 'needs-answer' || status === 'needs-login' || status === 'window-closed' || status === 'offline' || status === 'interrupted' ? 'warning'
     : status === 'attention' ? 'error' : 'neutral';
   const action = status === 'needs-login' ? '重新登录' : status === 'window-closed' ? '恢复课堂'
     : status === 'offline' ? '立即重试' : session?.issue === 'course' ? '返回监控课程'

@@ -28,7 +28,7 @@ try {
       openHelp:async target=>{window.__lastHelp=target;},
       saveCourse: async c => { state.courses.push(c); listener?.(structuredClone(state)); return structuredClone(state); },
       deleteCourse: async () => structuredClone(state), login: async () => {}, importCourses: async () => [{ remoteId:'new',name:'导入课程',url:'https://student.iclicker.com/#/course/new/overview' }],
-      extend:async()=>{state.session.endsAt+=600000;listener?.(structuredClone(state));}, start: async () => {}, stop: async () => {}, showClassroom: async () => {}, minimizeClassroom: async () => {}, returnToBackground:async()=>{state.browserMode='background';listener?.(structuredClone(state));}, testNotification: async () => {},
+      extend:async()=>{state.session.endsAt+=600000;listener?.(structuredClone(state));}, resumeInterrupted:async()=>{state.session.status='monitoring';listener?.(structuredClone(state));}, start: async () => {}, stop: async () => {}, showClassroom: async () => {}, minimizeClassroom: async () => {}, returnToBackground:async()=>{state.browserMode='background';listener?.(structuredClone(state));}, testNotification: async () => {},
       saveSettings:async settings=>{state.settings=settings;listener?.(structuredClone(state));return structuredClone(state);},
     };
   });
@@ -161,6 +161,12 @@ try {
   await page.getByText('后台模式 · 无 Chrome 窗口',{exact:true}).waitFor();
   const afterReturn=await page.evaluate(()=>window.attendance.getState());
   assert.equal(afterReturn.session.id,beforeReturn.session.id);assert.equal(afterReturn.session.endsAt,beforeReturn.session.endsAt);
+  await page.evaluate(async()=>{const s=await window.attendance.getState();window.__testState({session:{...s.session,status:'interrupted',detail:'上次监控已中断'}});});
+  await page.getByRole('button',{name:'恢复上次课堂',exact:true}).waitFor();
+  const resumeBounds=await page.getByRole('button',{name:'恢复上次课堂',exact:true}).boundingBox();
+  assert.ok(resumeBounds.y>=0&&resumeBounds.y+resumeBounds.height<=640,'interrupted recovery must be visible in the small window');
+  await page.getByRole('button',{name:'恢复上次课堂',exact:true}).click();
+  assert.equal((await page.evaluate(()=>window.attendance.getState())).session.endsAt,afterReturn.session.endsAt);
   await mkdir('.test-artifacts/phase1', { recursive:true });
   await page.screenshot({path:'.test-artifacts/phase1/courses.png'});
   assert.deepEqual(errors,[]);

@@ -39,8 +39,8 @@ try {
   const first = browser.browser;
   const firstPid = await pidOf();
   await browser.page.close();
-  await until(() => !first.isConnected() && !isAlive(firstPid), 'closing the last dedicated Chrome tab left its process running');
   await prepare();
+  assert.ok(!first.isConnected() && !isAlive(firstPid),'immediate reopening must wait for previous PID exit, not just CDP disconnect');
   assert.equal(browser.isOpen(), true, 'the dedicated Chrome must reopen on demand');
   const second = browser.browser;
   const secondPid = await pidOf();
@@ -54,6 +54,11 @@ try {
   const thirdPid = await pidOf();
   await browser.dispose();
   await until(() => !third.isConnected() && !isAlive(thirdPid), 'quitting the app left its dedicated Chrome process running');
+  for(let i=0;i<4;i++){
+    await prepare();const pid=await pidOf();await browser.page.close();
+    await prepare();assert.ok(!isAlive(pid),'rapid last-tab reopening launched while the previous profile owner remained alive');
+    await browser.dispose();
+  }
   console.log('Dedicated Chrome exits with its last tab or the app, preserves other open tabs, and reopens on demand.');
 } finally {
   if (browser.browser?.isConnected()) {
