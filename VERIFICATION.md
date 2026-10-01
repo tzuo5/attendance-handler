@@ -4,7 +4,9 @@
 
 Apple Silicon macOS / Chrome 154.0.8037.58 的 `npm run test:background-feasibility` 通过六组隔离检查：有窗口登录、Headless 签到与确认作答、转回有窗口人工处理、返回 Headless、相同资料的 Cookie 与加密会话恢复、原会话/截止时间/去重记录保留、无可见后台窗口、自动模式切换保持焦点及四个浏览器进程退出。方案与完整证据见 [后台模式记录](docs/background-mode.md)。
 
-60 项单元测试、类型检查、生产构建、原有 25 项课堂集成及专用 Chrome 生命周期回归通过。Windows 工作流已加入原型检查，结果待 CI；真实课堂与系统钥匙串范围仍待验证。该原型只交付底层可行性，正式 App 开关和恢复路径按 [分时执行记录](docs/overnight-execution.md) 在后续窗口完成；不把它列作已发布功能。
+60 项单元测试、类型检查、生产构建、原有 25 项课堂集成及专用 Chrome 生命周期回归通过。功能提交 `334b2fb` 的 [源码 CI](https://github.com/tzuo5/attendance-handler/actions/runs/36827376632) 通过；[Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36827376760) 第二次尝试全部通过，包含同一模式往返原型和实际安装版 UI、首次向导、DPAPI 及包审核。第一次尝试在原有关窗恢复步骤出现 Chrome 连接超时，尚未进入新原型；重跑通过不代表该偶发时序问题已修复，P3.4 继续处理生命周期边界。
+
+真实课堂与系统钥匙串范围仍待验证。该原型只交付底层可行性，正式 App 开关和恢复路径按 [分时执行记录](docs/overnight-execution.md) 在后续窗口完成；不把它列作已发布功能。
 
 ## Phase 2 源码验收（2026-10-01）
 

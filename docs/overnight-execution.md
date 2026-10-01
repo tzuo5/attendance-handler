@@ -28,5 +28,5 @@ Phase 5 保持 [开发计划](../dev-plans.md) 中的 ideation 范围，交付�
 
 | MVP | 状态 | 提交与证据 |
 | --- | --- | --- |
-| P3.1 | 完成 | 提交消息 `feat: validate dedicated Chrome background mode round trips`；六组隔离模式往返、60 项单元测试、构建、25 项原有课堂集成与生命周期通过，详见 [后台模式记录](background-mode.md)；Windows 结果待 CI |
+| P3.1 | 完成（01:55 提交；02:06 平台验收） | [`334b2fb`](https://github.com/tzuo5/attendance-handler/commit/334b2fb) · `feat: validate dedicated Chrome background mode round trips`；macOS 与 Windows 六组隔离模式往返、60 单测、25 原有集成及生命周期通过，[Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36827376760) 第二次尝试全部通过；首次关窗恢复超时及剩余边界见 [后台模式记录](background-mode.md) |
 | P3.2–P5.4 | 等待各自窗口 | 尚未开始 |
