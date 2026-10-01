@@ -4,7 +4,7 @@
 
 135 单测、类型检查、生产构建、双 renderer 通过。补全每周跨日错过记录与持久扫描进度、DST / 固定时区、时钟跳变及异步检查中取消 / 暂停 / 修改 / 删除 / 手动冲突、中断领取提示与原绝对截止。旧截止定时器的回拨提前结束已通过回归复现并修正，首次新增清理次数断言失败与调整见 [定时规则记录](docs/scheduled-starts.md)。
 
-最新 macOS 实际打包六组 `test:scheduler` 通过：单次自动后台开始保持焦点；真实 App 重开去重；每周实例经注入唤醒开始、按原截止自动结束、真实网站签到 / 答案及摘要 / 门禁核对；取消实例经唤醒不再开始；重开加注入唤醒后过期任务记为错过且不启动 Chrome；900×640 执行记录与 App / 专用 Chrome 退出清理。四组配置与多次重开、最终 App 原有课堂 UI / 人工往返 / 通知处理器 / 延长与摘要回归通过，源码审计 83 文件与包审计 16 文件通过。系统 resume 是隔离事件注入，未操作实体睡眠或系统时钟；Mac 加密为合成替代，真实学校 / 课堂、Keychain 及实体睡眠待验证。Windows 本次 CI 待推送后核实。
+最新 macOS 实际打包六组 `test:scheduler` 通过：单次自动后台开始保持焦点；真实 App 重开去重；每周实例经注入唤醒开始、按原截止自动结束、真实网站签到 / 答案及摘要 / 门禁核对；取消实例经唤醒不再开始；重开加注入唤醒后过期任务记为错过且不启动 Chrome；900×640 执行记录与 App / 专用 Chrome 退出清理。四组配置与多次重开、最终 App 原有课堂 UI / 人工往返 / 通知处理器 / 延长与摘要回归通过，源码审计 83 文件与包审计 16 文件通过。系统 resume 是隔离事件注入，未操作实体睡眠或系统时钟；Mac 加密为合成替代，真实学校 / 课堂、Keychain 及实体睡眠待验证。功能提交 [`82b6546`](https://github.com/tzuo5/attendance-handler/commit/82b6546) 的 [Source checks](https://github.com/tzuo5/attendance-handler/actions/runs/36849699219) 与 [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36849699225) 首次全部通过：135 单测、双 renderer、25 原有 Chrome 集成、生命周期、六组模式原型、九组后台运行、实际 Windows 安装版六组调度 / 四组配置 / 原有 UI / 恢复 / 向导、真实 DPAPI、源码及包审计、ZIP 一致性。
 
 ## Phase 4.3 调度与重复保护（2026-10-01）
 

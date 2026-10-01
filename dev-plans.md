@@ -188,7 +188,7 @@
   - 按 P4.1 的规则处理时区变化、夏令时、系统时间调整、睡眠唤醒及 App 重启；到点已取消的任务保持取消。
   - 错过开始时间时给出实际处理结果，过期任务避免在恢复后意外开启。
   - **验收：**通过可控时钟测试覆盖上述场景；结束时间与触发策略一致，重复任务不漏记、不重复启动，取消与触发并发有确定结果。
-  - **实绩：**历史日期分批核对与进度持久化、唤醒后复核、领取中断提示、取消竞态、固定时区 / DST / 系统时间调整与原截止修正；135 单测、双 renderer、构建、最新 macOS 实际打包六组调度和四组配置通过。物理睡眠未操作，只注入隔离 resume 事件；Windows 本次推送后待核实。
+  - **实绩：**历史日期分批核对与进度持久化、唤醒后复核、领取中断提示、取消竞态、固定时区 / DST / 系统时间调整与原截止修正；135 单测、双 renderer、构建、最新 macOS 实际打包六组调度和四组配置通过。物理睡眠未操作，只注入隔离 resume 事件；功能提交 `82b6546` 的 Source checks 与 Windows CI 首次全部通过，含实际安装版六组与真实 DPAPI。
 
 ### 阶段出口
 
@@ -253,4 +253,4 @@
 
 | P4.3 | 2026-10-01 | [`a352c1a`](https://github.com/tzuo5/attendance-handler/commit/a352c1a) · `feat: dispatch scheduled classrooms with durable execution claims` | 113 单测、类型检查、生产构建、双 renderer、25 原有 Chrome 集成、macOS 实际打包四组调度验收 | Windows 安装版 CI 首次全部通过；真实学校 / 课堂、Mac 钥匙串与物理睡眠待验收；P4.4 补全时间变化 |
 
-| P4.4 | 2026-10-01 | `feat: recover scheduled starts across clock changes and interrupted scans` | 135 单测、类型检查、构建、双 renderer、macOS 实际打包六组调度与四组配置 | Windows 本次 CI 待核实；实体睡眠、真实学校 / 课堂、Mac 钥匙串待验收；历史记录分批补齐 |
+| P4.4 | 2026-10-01 | [`82b6546`](https://github.com/tzuo5/attendance-handler/commit/82b6546) · `feat: recover scheduled starts across clock changes and interrupted scans` | 135 单测、类型检查、构建、双 renderer、macOS 实际打包六组调度与四组配置 | Windows 安装版六组与 DPAPI 首次全部通过；实体睡眠、真实学校 / 课堂、Mac 钥匙串待验收；历史记录分批补齐 |
