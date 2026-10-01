@@ -4,9 +4,11 @@
 
 新增 [映射契约](docs/calendar-mapping.md) 和 [11 组手写设计轨迹](docs/examples/calendar-mapping-traces.json)，共 36 步。一次性隔离检查将 33 个预期任务的 ISO 生效时刻转为 epoch，通过当前 `validateSchedule` / `occurrenceOnDate` 校验课程引用、UTC 单次日期、起止与 50 分钟时长；复核稳定计划 ID、无变化同步保留生效时刻、领取后原截止与至多一次决定、取消一个重复例外不影响另一节、Chicago 回拨第二个 01:30 的 UTC 07:30 投影。未指定结束 / 秒精度 / 非整数时长的预期均不生成任务；权限失败、410、本机暂停和 Apple 身份变化保留绑定并暂停。
 
-这些是设计数据一致性与现有任务模型兼容性检查，没有运行日历同步器、真实 API、产品日历领取或课堂。当前 Phase 4 的 `scheduleId / localDate` 不能独自保护日历实例跨日改时，契约明确未来需同一次原子保存日历领取与执行事实，产品没有被接入。上一提交 `8a4dc05` 的 Source checks / Windows CI 已成功，本次提交的回归结果待补记。P5.4 在下一窗口提供可执行隔离样例；真实授权、Apple 桥接和来源时序仍待验证。
+这些是设计数据一致性与现有任务模型兼容性检查，没有运行日历同步器、真实 API、产品日历领取或课堂。当前 Phase 4 的 `scheduleId / localDate` 不能独自保护日历实例跨日改时，契约明确未来需同一次原子保存日历领取与执行事实，产品没有被接入。上一提交 `8a4dc05` 的 Source checks / Windows CI 已成功。P5.4 在下一窗口提供可执行隔离样例；真实授权、Apple 桥接和来源时序仍待验证。
 
 65 处本地文档引用、fixture 课程引用、88 文件公开审核和 diff 格式检查通过。首次引用检查的简单正则把相邻中文链接合并成错误路径，修正后通过；随后使用平衡括号解析复核，同时把 P5.2 的来源链接统计由 37 更正为 39（原统计漏分邻接链接，官方来源内容没有改变）。
+
+映射提交 [`7ff8107`](https://github.com/tzuo5/attendance-handler/commit/7ff8107) 的 [Source checks](https://github.com/tzuo5/attendance-handler/actions/runs/36858482170) 与 [Windows CI](https://github.com/tzuo5/attendance-handler/actions/runs/36858482158) 首次全部通过，包含既有运行代码、实际 Windows 安装版调度 / 配置 / UI / 恢复 / 向导、真实 DPAPI、Chrome 回归和包检查。它们不代表手写状态轨迹已由日历同步器执行。
 
 ## Phase 5.2 官方接入调研（2026-10-01）
 
